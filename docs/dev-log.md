@@ -38,6 +38,80 @@
   - [ ] 条件成熟时，申请成立正式团支部或挂靠学校组织，获取政策背书。  
 
 
+## 2026-05-10
+-  自习室功能完整实现（区域自习室 + 个人创建 + 番茄钟 + 轮询同步）
+  - 数据库新建 3 张表：`study_rooms`（自习室基本信息，含 `room_type` 区分区域/个人）、`study_room_members`（成员状态，含 `status` 和 `session_start`）、`study_records`（历史专注记录，预留）。
+  - 初始化 11 条区域自习室数据（南山区、福田区、罗湖区、宝安区、龙岗区、盐田区、龙华区、坪山区、光明区、大鹏新区、深汕特别合作区）。
+  - 后端新增 6 个接口：
+    - `GET /api/study-rooms`：获取自习室列表（支持按区域/个人筛选、名称搜索、分页），返回在线人数和专注人数。
+    - `POST /api/study-rooms`：创建个人自习室（需登录，名称唯一，人数上限可选 4/6/8/10）。
+    - `GET /api/study-rooms/:id`：获取自习室详情 + 成员状态列表（含头像、昵称、当前状态），判断当前用户是否已加入。
+    - `POST /api/study-rooms/:id/join`：加入自习室（自动退出旧自习室，检查人数上限）。
+    - `POST /api/study-rooms/:id/leave`：退出自习室。
+    - `PATCH /api/study-rooms/:id/status`：更新自身状态（`idle`/`studying`/`resting`），同步番茄钟 `session_start`。
+    - `DELETE /api/study-rooms/:id`：关闭个人自习室（仅创建者或管理员）。
+  - 前端新建 `study.html`：
+    - 复用统一的顶部栏和侧边栏结构，补全基础样式（全局样式、背景装饰、顶部栏、侧边栏 CSS），与其他页面风格完全一致。
+    - 自习室广场：双选项卡切换“区域自习室”和“个人自习室”，卡片展示名称、简介、在线人数、专注人数。
+    - 创建自习室模态框：填写名称（2-20字符）、简介、人数上限，提交 `POST /api/study-rooms`。
+    - 自习室内部：座位网格（头像 + 状态角标：绿色学习中 / 黄色休息 / 灰色空闲），轮询每 8 秒刷新成员状态。
+    - 番茄钟面板：25分钟专注 + 5分钟休息，手动开始/暂停/结束，自动切换阶段，同步状态到后端。
+    - 移动端适配：与首页相同的移动端导航和侧边栏弹出逻辑。
+  - 移动端导航更新：在 `mobile.js` 中将底部导航的“圈子”替换为“自习室”（图标 `fa-clock`，链接 `/study.html`），高亮逻辑自动适配。
+  - 修复自习室头像过大问题：为 `.seat-avatar img` 添加 `width:100%; height:100%; object-fit:cover;` 限制尺寸。
+
+-  宣传页 `landing.html` 创建
+  - 单页下拉式设计，包含 Hero 大图、项目简介（4卡片）、实时数据展示、特色功能（6图标）、APP 下载预留（iOS / Android 标注“即将推出”）、页脚。
+  - 背景图使用本地 `/assets/gangxiabei.jpg`（岗厦北），叠加蓝色渐变蒙版和波浪 SVG 装饰。
+  - 数据展示区域调用后端接口实时获取用户数、发帖量、回复数等，数字有缓动动画。
+  - 平滑滚动：`html { scroll-behavior: smooth; }` 实现锚点跳转动画。
+  - 导航栏滚动效果：超过 60px 后背景变实并加阴影。
+  - 移动端响应式：Hero 标题缩小、导航链接隐藏。
+
+-  公开统计接口新增
+  - 新增 `GET /api/public/stats`，无需登录权限，返回 `totalUsers`、`totalPosts`、`totalReplies`、`totalLikes`、`totalCircles`，供宣传页使用。
+
+-  Git 仓库推送
+  - 初始化本地 Git 仓库 `git init`，关联远程 `https://github.com/MuSHANw/szhss-community.git`。
+  - 创建 `.gitignore` 文件，排除 `node_modules/` 和 `.env`。
+  - 分支重命名 `master` → `main`（`git branch -M main`）。
+  - 拉取远程内容并解决冲突（`git pull origin main --allow-unrelated-histories`）。
+  - 强制推送覆盖远程（`git push -f origin main`），最终推送成功。
+  - 修改提交信息为 `[项目] 初始化`（`git commit --amend -m "[项目] 初始化"` + `git push -f`）。
+
+### 遇到的问题与解决
+1.  创建自习室接口 404
+   - 原因：后端缺少 `POST /api/study-rooms` 路由。
+   - 解决：在 `server.js` 自习室 API 区块中补充创建路由，放置在 `GET /api/study-rooms` 和 `GET /api/study-rooms/:id` 之间。
+
+2.  修改 `server.js` 后重启仍 404
+   - 原因：两个 `node.exe` 进程同时运行，旧进程占着 3000 端口，新进程启动失败。
+   - 解决：`taskkill /f /im node.exe` 强制结束所有 Node 进程后重新启动。
+
+3.  Git 推送时分支名不匹配 (`src refspec main does not match any`)
+   - 原因：本地默认分支名为 `master`。
+   - 解决：`git branch -M main` 重命名后推送。
+
+4.  Git 推送时大量文件冲突（CONFLICT add/add）
+   - 原因：远程仓库已有完整项目代码，本地也是完整代码，两套同名文件冲突。
+   - 解决：`git push -f origin main` 强制以本地版本覆盖远程。
+
+5.  自习室座位头像过大
+   - 原因：`.seat-avatar img` 缺少尺寸限制。
+   - 解决：添加 `width:100%; height:100%; object-fit:cover;`。
+
+6.  宣传页统计接口 401
+   - 原因：`/api/admin/stats` 需要管理员权限。
+   - 解决：新增公开接口 `/api/public/stats`，`landing.html` 改用该接口。
+
+### 备注
+- 自习室功能已形成完整闭环：创建/加入→状态同步→番茄钟计时→退出，前后端联调通过。
+- 全站所有页面（包括 `study.html`）的侧边栏均已包含“自习室”菜单入口。
+- 移动端底部导航已更新，用户可通过底部快捷入口直接进入自习室。
+- 宣传页可用于对外推广，数据区域实时展示社区活跃度。
+- 项目代码已成功推送至 GitHub 远程仓库，协作者可 `git pull` 同步最新代码。
+
+
 ## 2026-05-02
 -  用户关注功能实现（前端 + 后端 + 数据库）  
   - 创建 `user_follows` 表，包含 `follower_id`、`followee_id`、`created_at`，并添加唯一约束和索引。  
