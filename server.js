@@ -1107,6 +1107,28 @@ app.put('/api/notifications/read-all', authMiddleware, async (req, res) => {
     }
 });
 
+// ---------- 公开统计 API（供宣传页使用）----------
+app.get('/api/public/stats', async (req, res) => {
+    try {
+        const userCount = await pool.query('SELECT COUNT(*) as total FROM users');
+        const postCount = await pool.query('SELECT COUNT(*) as total FROM posts');
+        const replyCount = await pool.query('SELECT COUNT(*) as total FROM replies');
+        const likeCount = await pool.query('SELECT SUM(likes) as total FROM posts');
+        const circleCount = await pool.query('SELECT COUNT(*) as total FROM circles');
+
+        res.json({
+            totalUsers: parseInt(userCount.rows[0].total),
+            totalPosts: parseInt(postCount.rows[0].total),
+            totalReplies: parseInt(replyCount.rows[0].total),
+            totalLikes: parseInt(likeCount.rows[0].total) || 0,
+            totalCircles: parseInt(circleCount.rows[0].total)
+        });
+    } catch (err) {
+        console.error('获取公开统计数据失败:', err);
+        res.status(500).json({ error: '获取数据失败' });
+    }
+});
+
 // ---------- 管理员 API ----------
 app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) => {
     try {

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深圳高中生社区 - 属于深圳高中生的学习交流平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            color: #1f2d3d;
+            background: #F5F7FA;
+            overflow-x: hidden;
+        }
+
+        /* ====== 导航栏 ====== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            transition: background 0.3s;
+        }
+
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .nav-logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1E88E5;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            margin-left: auto;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #4a5568;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #1E88E5;
+        }
+
+        .nav-cta {
+            background: #1E88E5;
+            color: white !important;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600 !important;
+        }
+
+        .nav-cta:hover {
+            background: #1565C0;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #4a5568;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+        /* ====== Hero 区域 ====== */
+        .hero {
+            position: relative;
+            height: 100vh;
+            min-height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(30, 136, 229, 0.75), rgba(21, 101, 192, 0.85)),
+                url('/assets/gangxiabei.jpg') center/cover no-repeat;
+            z-index: 0;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.08)" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') bottom/cover no-repeat;
+            z-index: 0;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            padding: 0 24px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #1E88E5;
+            padding: 14px 32px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: white;
+            padding: 14px 32px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            transition: background 0.2s;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+        }
+
+        /* ====== 公共区块样式 ====== */
+        .section {
+            padding: 80px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: #6c757d;
+            margin-bottom: 48px;
+            font-size: 1rem;
+        }
+
+        /* ====== 项目简介 ====== */
+        .intro-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+        }
+
+        .intro-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px 24px;
+            text-align: center;
+            border: 1px solid #eef2f6;
+            transition: box-shadow 0.3s, transform 0.2s;
+        }
+
+        .intro-card:hover {
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+            transform: translateY(-4px);
+        }
+
+        .intro-card i {
+            font-size: 2.5rem;
+            color: #1E88E5;
+            margin-bottom: 16px;
+        }
+
+        .intro-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        .intro-card p {
+            color: #6c757d;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* ====== 数据展示 ====== */
+        .stats-bg {
+            background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);
+            color: white;
+            padding: 80px 24px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 32px;
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .stat-item .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            font-family: monospace;
+        }
+
+        .stat-item .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 8px;
+        }
+
+        /* ====== 特色功能 ====== */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 24px;
+        }
+
+        .feature-item i {
+            font-size: 2.5rem;
+            color: #1E88E5;
+            margin-bottom: 12px;
+        }
+
+        .feature-item h4 {
+            font-size: 1.1rem;
+            margin-bottom: 6px;
+        }
+
+        .feature-item p {
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+
+        /* ====== 下载区域 ====== */
+        .download-bg {
+            background: #f8f9fa;
+            padding: 80px 24px;
+            text-align: center;
+        }
+
+        .download-btns {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 32px;
+        }
+
+        .download-btn {
+            background: #1f2d3d;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 16px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .download-btn i {
+            font-size: 2rem;
+        }
+
+        .download-btn .coming-soon {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #f5b042;
+            color: #1f2d3d;
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+
+        /* ====== 页脚 ====== */
+        .footer {
+            background: #1f2d3d;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            padding: 32px 24px;
+            font-size: 0.8rem;
+            line-height: 1.8;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 导航栏 -->
+    <nav class="navbar" id="navbar">
+        <a href="#" class="nav-logo">🏫 深圳高中生社区</a>
+        <button class="menu-toggle"><i class="fas fa-bars"></i></button>
+        <div class="nav-links">
+            <a href="#intro">项目简介</a>
+            <a href="#stats">数据</a>
+            <a href="#download">下载</a>
+            <a href="index.html" class="nav-cta">进入社区</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1>深圳高中生社区</h1>
+            <p>专为深圳地区高中生打造的学习交流平台<br>学习互助 · 生活分享 · 圈子社交 · 一起自习</p>
+            <div class="hero-btns">
+                <a href="index.html" class="btn-primary">🚀 进入社区</a>
+                <a href="#intro" class="btn-outline">了解更多 ↓</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 项目简介 -->
+    <section class="section" id="intro">
+        <h2 class="section-title">为什么选择我们？</h2>
+        <p class="section-subtitle">一个真正属于深圳高中生的社区</p>
+        <div class="intro-grid">
+            <div class="intro-card">
+                <i class="fas fa-graduation-cap"></i>
+                <h3>学习互助</h3>
+                <p>分享学习方法、考试经验、学科疑问，一起攻克学业难关。</p>
+            </div>
+            <div class="intro-card">
+                <i class="fas fa-users"></i>
+                <h3>圈子社交</h3>
+                <p>按行政区划、兴趣爱好自由组圈，找到志同道合的同学。</p>
+            </div>
+            <div class="intro-card">
+                <i class="fas fa-clock"></i>
+                <h3>线上自习室</h3>
+                <p>和同区同学一起云端自习，番茄钟计时，互相监督不摸鱼。</p>
+            </div>
+            <div class="intro-card">
+                <i class="fas fa-shield-alt"></i>
+                <h3>安全友善</h3>
+                <p>严格的社区公约和管理机制，杜绝网络暴力和校园欺凌。</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 数据展示 -->
+    <section class="stats-bg" id="stats">
+        <h2 class="section-title" style="color:white;">社区数据</h2>
+        <p class="section-subtitle" style="color:rgba(255,255,255,0.7);">实时更新，每一份数据都来自真实的深圳同学</p>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number" id="statUsers">--</div>
+                <div class="stat-label">注册用户</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="statPosts">--</div>
+                <div class="stat-label">总发帖量</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="statReplies">--</div>
+                <div class="stat-label">总回复数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="statLikes">--</div>
+                <div class="stat-label">总点赞数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="statCircles">--</div>
+                <div class="stat-label">活跃圈子</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 特色功能 -->
+    <section class="section">
+        <h2 class="section-title">核心功能</h2>
+        <p class="section-subtitle">从发帖到自习，一站式满足你的校园社交需求</p>
+        <div class="features-grid">
+            <div class="feature-item">
+                <i class="fas fa-edit"></i>
+                <h4>帖子互动</h4>
+                <p>发帖 / 点赞 / 收藏 / 回复</p>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-search"></i>
+                <h4>全文搜索</h4>
+                <p>标题 / 内容 / 标签模糊匹配</p>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-bell"></i>
+                <h4>实时通知</h4>
+                <p>点赞 / 回复 / 关注 / 系统通知</p>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-clock"></i>
+                <h4>番茄自习</h4>
+                <p>25分钟专注 + 5分钟休息</p>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-calendar-alt"></i>
+                <h4>活跃度日历</h4>
+                <p>像 GitHub 一样的贡献图</p>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-mobile-alt"></i>
+                <h4>移动端适配</h4>
+                <p>手机也能完整使用</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 下载区域 -->
+    <section class="download-bg" id="download">
+        <h2 class="section-title">📱 随时随地访问</h2>
+        <p class="section-subtitle">浏览器访问即可使用，客户端 APP 即将推出</p>
+        <div class="download-btns">
+            <a href="#" class="download-btn">
+                <i class="fab fa-apple"></i>
+                <div>App Store<span style="display:block;font-size:0.7rem;opacity:0.7;">即将推出</span></div>
+                <span class="coming-soon">coming soon</span>
+            </a>
+            <a href="#" class="download-btn">
+                <i class="fab fa-google-play"></i>
+                <div>Google Play<span style="display:block;font-size:0.7rem;opacity:0.7;">即将推出</span></div>
+                <span class="coming-soon">coming soon</span>
+            </a>
+        </div>
+        <p style="margin-top:24px; color:#6c757d; font-size:0.85rem;">
+            也可以直接用手机浏览器访问 <strong>社区官网</strong>，已全面适配移动端
+        </p>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>© 2026 深圳高中生社区 | <a href="rules.html">社区公约</a> | 粤ICP备xxxxxxxx号</p>
+        <p>由 <strong>MuSHAN</strong> & <strong>MING</strong> 用 ❤️ 开发 | <a
+                href="https://github.com/MuSHANw/szhss-community"><i class="fab fa-github"></i> GitHub</a></p>
+        <p>联系邮箱：MuSHANwyc@outlook.com / yingming988@qq.com</p>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+
+        // 导航栏滚动效果
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 60) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // 加载实时数据
+        async function loadStats() {
+            try {
+                const res = await fetch(`${window.API_BASE}/public/stats`);
+                if (!res.ok) {
+                    // 没有管理员权限时，使用模拟数据
+                    setFallbackStats();
+                    return;
+                }
+                const stats = await res.json();
+                animateNumber('statUsers', stats.totalUsers || 0);
+                animateNumber('statPosts', stats.totalPosts || 0);
+                animateNumber('statReplies', stats.totalReplies || 0);
+                animateNumber('statLikes', stats.totalLikes || 0);
+                animateNumber('statCircles', stats.totalFavorites || 0);
+            } catch (e) {
+                setFallbackStats();
+            }
+        }
+
+        function setFallbackStats() {
+            // 如果 API 不可用，显示占位符
+            document.querySelectorAll('.stat-number').forEach(el => {
+                el.textContent = '---';
+            });
+        }
+
+        function animateNumber(elementId, target) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const duration = 1500;
+            const start = 0;
+            const startTime = performance.now();
+
+            function update(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                el.textContent = Math.floor(start + (target - start) * easeOut);
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    el.textContent = target;
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        loadStats();
+    </script>
+</body>
+
+</html>
