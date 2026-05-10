@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>学习 · 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- 移动端适配 -->
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ========== 全局样式（与 index 一致） ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA;
+            color: #1f2d3d;
+            line-height: 1.5;
+            padding-top: 60px;
+            margin-left: 260px;
+            transition: margin-left 0.3s ease;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        body.sidebar-collapsed {
+            margin-left: 70px;
+        }
+
+        /* 背景装饰（与登录页面类似） */
+        .bg-decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-decorations .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .bg-decorations .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(30, 136, 229, 0.05);
+        }
+
+        .bg-decorations .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .bg-decorations .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .bg-decorations .circle3 {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: 10%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ========== 顶部栏 ========== */
+        .top-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-right: 20px;
+            color: #4a5568;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1E88E5;
+            text-decoration: none;
+            margin-right: auto;
+        }
+
+        .search-area {
+            display: flex;
+            align-items: center;
+            background: #f1f3f5;
+            border-radius: 24px;
+            padding: 4px 12px;
+            width: 260px;
+        }
+
+        .search-area input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .search-area button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        /* 关于链接 */
+        .about-link {
+            margin-left: 16px;
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .about-link:hover {
+            color: #1E88E5;
+        }
+
+        .about-link i {
+            margin-right: 4px;
+        }
+
+        .notifications-icon {
+            position: relative;
+            margin-left: 16px;
+            font-size: 1.4rem;
+            color: #6c757d;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== 侧边栏 ========== */
+        #sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: white;
+            border-right: 1px solid #eef2f6;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            z-index: 99;
+            overflow-x: hidden;
+        }
+
+        #sidebar.collapsed {
+            width: 70px;
+        }
+
+        #sidebar.collapsed .sidebar-user-info,
+        #sidebar.collapsed .sidebar-link span {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-logout {
+            font-size: 0;
+            padding: 8px;
+        }
+
+        #sidebar.collapsed .sidebar-logout::before {
+            content: "🚪";
+            font-size: 1.2rem;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            padding: 20px 16px;
+            border-bottom: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .sidebar-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-avatar i {
+            font-size: 48px;
+            color: #1E88E5;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-nickname {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .sidebar-email {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 0;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a5568;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar-link i {
+            width: 28px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            margin-left: 12px;
+        }
+
+        .sidebar-link:hover {
+            background: #f0f2f5;
+        }
+
+        .sidebar-link.active {
+            background: #e9f0fe;
+            color: #1E88E5;
+        }
+
+        .notif-dot {
+            color: #e53e3e;
+            font-size: 0.7rem;
+            margin-left: 4px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #eef2f6;
+        }
+
+        .sidebar-logout {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: #e53e3e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .sidebar-logout:hover {
+            background: #ffe5e5;
+        }
+
+        /* ========== 右侧面板（sticky 固定） ========== */
+        .right-sidebar {
+            flex: 1;
+            position: sticky;
+            top: 80px;
+            align-self: flex-start;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border: 1px solid #eef2f6;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+
+        .date-box {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .today-date {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1f2d3d;
+        }
+
+        .gaokao-countdown {
+            background: #e9f0fe;
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .countdown-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1E88E5;
+        }
+
+        .daily-poem {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 12px;
+            font-style: italic;
+            color: #4a5568;
+            margin-bottom: 16px;
+        }
+
+        .sidebar-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid #eef2f6;
+        }
+
+        .sidebar-card h3 {
+            font-size: 1rem;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1f2d3d;
+            border-left: 3px solid #1E88E5;
+            padding-left: 10px;
+        }
+
+        .circle-list,
+        .announce-list {
+            list-style: none;
+        }
+
+        .circle-list li,
+        .announce-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #f0f2f5;
+        }
+
+        .announce-list li {
+            justify-content: space-between;
+        }
+
+        .announce-list a {
+            text-decoration: none;
+            color: #1f2d3d;
+        }
+
+        .announce-list a:hover {
+            color: #1E88E5;
+        }
+
+        .announce-list span {
+            color: #8a9aa8;
+            font-size: 0.75rem;
+        }
+
+        .activity-item p {
+            font-size: 0.9rem;
+            margin: 8px 0;
+            color: #4a5568;
+        }
+
+        /* ========== 学习页面特有样式 ========== */
+        .page-header {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #eef2f6;
+        }
+
+        .page-header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .page-header p {
+            color: #4a5568;
+            margin-bottom: 16px;
+        }
+
+        .announcement {
+            background: #e9f0fe;
+            border-radius: 16px;
+            padding: 12px 20px;
+            color: #1E88E5;
+            font-size: 0.9rem;
+        }
+
+        .sort-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .sort-btn {
+            background: #f0f2f5;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .sort-btn.active {
+            background: #1E88E5;
+            color: white;
+        }
+
+        .posts-list {
+            flex: 2.5;
+        }
+
+        .post-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            transition: box-shadow 0.2s, transform 0.1s;
+            border: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .post-card:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+        }
+
+        .post-category {
+            background: #e9f0fe;
+            color: #1E88E5;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .post-time {
+            color: #8a9aa8;
+        }
+
+        .post-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .post-title a {
+            text-decoration: none;
+            color: #1f2d3d;
+            font-weight: 600;
+        }
+
+        .post-title a:hover {
+            color: #1E88E5;
+        }
+
+        .post-content {
+            color: #4a5568;
+            margin-bottom: 16px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .post-footer {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .post-author {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .post-author img {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .post-author i {
+            font-size: 22px;
+            color: #1E88E5;
+        }
+
+        .post-footer i {
+            margin-right: 4px;
+        }
+
+        .like-btn,
+        .favorite-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        .like-btn:hover,
+        .favorite-btn:hover {
+            background: #f0f2f5;
+        }
+
+        .like-btn.liked {
+            color: #e53e3e;
+        }
+
+        .favorite-btn.favorited {
+            color: #f5b042;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 32px;
+        }
+
+        .pagination button {
+            background: #f0f2f5;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .pagination button.active {
+            background: #1E88E5;
+            color: white;
+        }
+
+        .footer {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 40px;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            background-color: #1E88E5;
+            color: white;
+            border-radius: 50%;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 32px;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: 0.2s;
+            z-index: 1000;
+            line-height: 1;
+            padding: 0;
+            margin: 0;
+        }
+
+        .loading,
+        .error,
+        .no-posts {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 16px;
+            color: #6c757d;
+        }
+
+        /* 移动端信息栏（PC端隐藏） */
+        .mobile-info-bar {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin-left: 0;
+            }
+
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+
+            #sidebar.open-mobile {
+                transform: translateX(0);
+            }
+
+            .two-columns {
+                flex-direction: column;
+            }
+
+            .right-sidebar {
+                position: static;
+                top: auto;
+                order: 2;
+            }
+
+            .posts-list {
+                order: 1;
+            }
+
+            /* 移动端信息栏显示 */
+            .mobile-info-bar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: white;
+                border-radius: 12px;
+                padding: 10px 12px;
+                margin-bottom: 16px;
+                font-size: 0.8rem;
+                color: #4a5568;
+                border: 1px solid #eef2f6;
+            }
+
+            .mobile-info-item {
+                text-align: center;
+                flex: 1;
+                border-right: 1px solid #f0f2f5;
+            }
+
+            .mobile-info-item:last-child {
+                border-right: none;
+                flex: 2;
+                text-align: left;
+                padding-left: 8px;
+            }
+
+            .mobile-date {
+                font-weight: 600;
+                font-size: 0.85rem;
+                display: block;
+            }
+
+            .mobile-countdown {
+                font-weight: 700;
+                font-size: 1.2rem;
+                color: #1E88E5;
+            }
+
+            .mobile-poem {
+                font-style: italic;
+                line-height: 1.3;
+            }
+        }
+    </style>
+</head>
+
+<body id="appBody">
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <!-- 顶部栏 -->
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <a href="/about.html" class="about-link" id="aboutLink">
+                <i class="fas fa-info-circle"></i> 关于
+            </a>
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link active" title="学习"><i
+                    class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子"><i class="fas fa-users"></i><span>圈子</span></a>
+            <a href="/study.html" class="sidebar-link" title="自习室">
+                <i class="fas fa-clock"></i><span>自习室</span>
+            </a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="#" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="#" class="sidebar-link" title="社团"><i class="fas fa-users"></i><span>社团</span></a>
+            <a href="#" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i
+                    class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
+                <i class="fas fa-comment-dots"></i><span>反馈</span>
+            </a>
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <a href="/post.html" class="fab" id="fabBtn">+</a>
+
+    <main class="main container">
+        <div class="two-columns">
+            <div class="posts-list">
+                <!-- 移动端信息栏 -->
+                <div class="mobile-info-bar">
+                    <div class="mobile-info-item">
+                        <span class="mobile-date" id="mobileDate"></span>
+                    </div>
+                    <div class="mobile-info-item">
+                        <span class="mobile-countdown" id="mobileCountdown">计算中...</span>
+                        <small>距高考</small>
+                    </div>
+                    <div class="mobile-info-item mobile-poem">
+                        <span id="mobilePoem">加载中...</span>
+                    </div>
+                </div>
+
+                <div class="page-header">
+                    <h1><i class="fas fa-graduation-cap"></i> 学习 · 交流 · 进步</h1>
+                    <p>分享学习方法、考试经验、学科疑问，一起攻克学业难关！</p>
+                    <div class="announcement">
+                        <i class="fas fa-bullhorn"></i> 置顶公告：请文明交流，严禁发布任何违规信息。优质内容将获得推荐。
+                    </div>
+                </div>
+
+                <div class="sort-bar">
+                    <button class="sort-btn active" data-sort="hot">🔥 最热</button>
+                    <button class="sort-btn" data-sort="latest">🕒 最新发布</button>
+                    <button class="sort-btn" data-sort="replied">💬 最新回复</button>
+                </div>
+
+                <div id="postsList">加载中...</div>
+                <div id="pagination" class="pagination"></div>
+            </div>
+
+            <!-- 右侧面板（PC端可见） -->
+            <aside class="right-sidebar">
+                <div class="info-card">
+                    <div class="date-box">
+                        <div class="today-date" id="todayDate"></div>
+                    </div>
+                    <div class="gaokao-countdown">
+                        <div class="countdown-number" id="gaokaoCountdown">计算中...</div>
+                        <div style="font-size: 0.8rem; color: #6c757d;">距离高考还有</div>
+                    </div>
+                    <div class="daily-poem" id="dailyPoem">
+                        今日诗句加载中...
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-users"></i> 热门圈子</h3>
+                    <ul class="circle-list">
+                        <li><i class="fas fa-book"></i> 学习交流</li>
+                        <li><i class="fas fa-gamepad"></i> 游戏动漫</li>
+                        <li><i class="fas fa-music"></i> 音乐社</li>
+                        <li><i class="fas fa-futbol"></i> 运动爱好者</li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-bullhorn"></i> 公告</h3>
+                    <ul class="announce-list">
+                        <li><a href="rules.html">社区公约（试行）</a><span>04-04</span></li>
+                        <li><a href="#">招募校园大使</a><span>04-01</span></li>
+                        <li><a href="#">功能更新日志</a><span>03-28</span></li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-calendar-alt"></i> 近期活动</h3>
+                    <div class="activity-item">
+                        <p><strong>摄影大赛</strong> - 4月10日截止</p>
+                        <p><strong>校园辩论赛</strong> - 4月15日报名</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
+        </div>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+
+        // ---------- 侧边栏展开/收起 ----------
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) {
+            sidebar.classList.add('collapsed');
+            body.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            body.classList.remove('sidebar-collapsed');
+        }
+        toggleBtn.addEventListener('click', () => {
+            const currentlyExpanded = !sidebar.classList.contains('collapsed');
+            if (currentlyExpanded) {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'false');
+            } else {
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'true');
+            }
+        });
+
+        // ---------- 用户信息 ----------
+        const token = localStorage.getItem('token');
+        const avatarDiv = document.getElementById('sidebarAvatar');
+        const nicknameSpan = document.getElementById('sidebarNickname');
+        const emailSpan = document.getElementById('sidebarEmail');
+        async function updateSidebarUser() {
+            if (!token) {
+                nicknameSpan.innerText = '未登录';
+                emailSpan.innerText = '';
+                avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                return;
+            }
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    nicknameSpan.innerText = user.nickname || '用户';
+                    emailSpan.innerText = user.email || '';
+                    if (user.avatar_url) {
+                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
+                    } else {
+                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                    }
+                }
+            } catch (e) { console.warn(e); }
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
+            window.location.href = '/profile.html';
+        });
+
+        // ---------- 未读小红点 ----------
+        async function updateNotifDot() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const unreadCount = data.unreadCount || 0;
+                const topBadge = document.getElementById('notifBadge');
+                const sidebarDot = document.getElementById('sidebarNotifDot');
+                if (topBadge) {
+                    if (unreadCount > 0) {
+                        topBadge.style.display = 'flex';
+                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                    } else {
+                        topBadge.style.display = 'none';
+                    }
+                }
+                if (sidebarDot) {
+                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) { }
+        }
+        updateNotifDot();
+        if (token) setInterval(updateNotifDot, 30000);
+
+        // ---------- 退出登录 ----------
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        });
+
+        // ---------- 搜索 ----------
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        searchBtn?.addEventListener('click', () => {
+            const keyword = searchInput.value.trim();
+            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
+            else alert('请输入搜索关键词');
+        });
+        searchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBtn.click();
+        });
+
+        // ---------- 右侧面板动态内容 ----------
+        function updateDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const weekday = weekdays[now.getDay()];
+            const dateStr = `${year}.${month}.${day} ${weekday}`;
+            document.getElementById('todayDate').innerText = dateStr;
+            // 更新移动端日期
+            const mobileDateEl = document.getElementById('mobileDate');
+            if (mobileDateEl) mobileDateEl.innerText = dateStr;
+        }
+        updateDate();
+
+        function updateGaokaoCountdown() {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            let gaokaoDate = new Date(currentYear, 5, 7);
+            if (now > gaokaoDate) {
+                gaokaoDate = new Date(currentYear + 1, 5, 7);
+            }
+            const diff = Math.ceil((gaokaoDate - now) / (1000 * 60 * 60 * 24));
+            document.getElementById('gaokaoCountdown').innerText = diff;
+            // 更新移动端倒计时
+            const mobileCountdownEl = document.getElementById('mobileCountdown');
+            if (mobileCountdownEl) mobileCountdownEl.innerText = diff;
+        }
+        updateGaokaoCountdown();
+
+        const poemList = [
+            { line: "长风破浪会有时，直挂云帆济沧海。", author: "李白《行路难》" },
+            { line: "读书破万卷，下笔如有神。", author: "杜甫《奉赠韦左丞丈二十二韵》" },
+            { line: "黑发不知勤学早，白首方悔读书迟。", author: "颜真卿《劝学》" },
+            { line: "宝剑锋从磨砺出，梅花香自苦寒来。", author: "佚名" },
+            { line: "业精于勤，荒于嬉；行成于思，毁于随。", author: "韩愈《进学解》" },
+            { line: "青春须早为，岂能长少年。", author: "孟郊《劝学》" },
+            { line: "纸上得来终觉浅，绝知此事要躬行。", author: "陆游《冬夜读书示子聿》" },
+            { line: "莫等闲，白了少年头，空悲切。", author: "岳飞《满江红》" }
+        ];
+        function updateDailyPoem() {
+            const today = new Date().toISOString().slice(0, 10);
+            let index = 0;
+            for (let i = 0; i < today.length; i++) {
+                index += today.charCodeAt(i);
+            }
+            index = index % poemList.length;
+            const poem = poemList[index];
+            document.getElementById('dailyPoem').innerHTML = `“${poem.line}”<br>— ${poem.author}`;
+            // 更新移动端诗句（只显示诗句内容）
+            const mobilePoemEl = document.getElementById('mobilePoem');
+            if (mobilePoemEl) mobilePoemEl.innerText = `“${poem.line}”`;
+        }
+        updateDailyPoem();
+
+        // ---------- 学习页面帖子加载 ----------
+        let likeStatus = {}, favStatus = {};
+        let currentPage = 1;
+        let currentSort = 'hot';
+        let totalPages = 1;
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        }
+
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        async function toggleLike(e, postId, btn, countSpan) {
+            e.stopPropagation();
+            if (!token) { alert('请先登录'); return; }
+            try {
+                const res = await fetch(`${window.API_BASE}/posts/${postId}/like`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (data.liked) btn.classList.add('liked');
+                    else btn.classList.remove('liked');
+                    btn.querySelector('i').className = data.liked ? 'fas fa-heart' : 'far fa-heart';
+                    countSpan.innerText = data.likes;
+                    likeStatus[postId] = data.liked;
+                } else alert(data.error);
+            } catch (err) { alert('网络错误'); }
+        }
+
+        async function toggleFavorite(e, postId, btn) {
+            e.stopPropagation();
+            if (!token) { alert('请先登录'); return; }
+            try {
+                const res = await fetch(`${window.API_BASE}/posts/${postId}/favorite`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (data.favorited) btn.classList.add('favorited');
+                    else btn.classList.remove('favorited');
+                    btn.querySelector('i').className = data.favorited ? 'fas fa-star' : 'far fa-star';
+                    favStatus[postId] = data.favorited;
+                } else alert(data.error);
+            } catch (err) { alert('网络错误'); }
+        }
+
+        async function loadPosts() {
+            const container = document.getElementById('postsList');
+            container.innerHTML = '<div class="loading">加载中...</div>';
+            try {
+                const res = await fetch(`${window.API_BASE}/posts?category=learning&sort=${currentSort}&page=${currentPage}&limit=10`);
+                const data = await res.json();
+                const posts = data.posts;
+                totalPages = data.totalPages || 1;
+
+                if (!posts.length) {
+                    container.innerHTML = '<div class="no-posts">暂无学习相关帖子，快去发布第一条吧~</div>';
+                    document.getElementById('pagination').innerHTML = '';
+                    return;
+                }
+
+                if (token && posts.length) {
+                    const ids = posts.map(p => p.id);
+                    const [likeRes, favRes] = await Promise.all([
+                        fetch(`${window.API_BASE}/posts/likes/status?ids=${ids.join(',')}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                        fetch(`${window.API_BASE}/posts/favorites/status?ids=${ids.join(',')}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                    ]);
+                    if (likeRes.ok) likeStatus = await likeRes.json();
+                    if (favRes.ok) favStatus = await favRes.json();
+                }
+
+                container.innerHTML = posts.map(post => {
+                    const isLiked = likeStatus[post.id] || false;
+                    const isFav = favStatus[post.id] || false;
+                    const avatarHtml = post.avatar_url
+                        ? `<img src="${post.avatar_url}" alt="头像">`
+                        : `<i class="fas fa-user-circle"></i>`;
+                    return `
+                        <div class="post-card" data-post-id="${post.id}">
+                            <div class="post-header">
+                                <span class="post-category">${escapeHtml(post.category || '综合')}</span>
+                                <span class="post-time">${formatDate(post.created_at)}</span>
+                            </div>
+                            <h3 class="post-title">${escapeHtml(post.title)}</h3>
+                            <div class="post-content">${escapeHtml(post.content.substring(0, 150))}${post.content.length > 150 ? '...' : ''}</div>
+                            <div class="post-footer">
+                                <div class="post-author">
+                                    ${avatarHtml}
+                                    <a href="/user-profile.html?uid=${post.user_id}" style="color: inherit; text-decoration: none;" onclick="event.stopPropagation()">${escapeHtml(post.nickname)}</a>
+                                </div>
+                                <span><i class="fas fa-eye"></i> ${post.view_count || 0}</span>
+                                <span><i class="fas fa-comment"></i> ${post.reply_count || 0}</span>
+                                <button class="like-btn ${isLiked ? 'liked' : ''}" data-id="${post.id}">
+                                    <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> <span class="likes-count">${post.likes || 0}</span>
+                                </button>
+                                <button class="favorite-btn ${isFav ? 'favorited' : ''}" data-id="${post.id}">
+                                    <i class="${isFav ? 'fas' : 'far'} fa-star"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // 卡片点击跳转
+                document.querySelectorAll('.post-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const postId = card.dataset.postId;
+                        window.location.href = `/post-detail.html?id=${postId}`;
+                    });
+                });
+
+                document.querySelectorAll('.like-btn').forEach(btn => {
+                    const id = parseInt(btn.dataset.id);
+                    const countSpan = btn.querySelector('.likes-count');
+                    btn.addEventListener('click', (e) => toggleLike(e, id, btn, countSpan));
+                });
+                document.querySelectorAll('.favorite-btn').forEach(btn => {
+                    const id = parseInt(btn.dataset.id);
+                    btn.addEventListener('click', (e) => toggleFavorite(e, id, btn));
+                });
+                renderPagination();
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<div class="error">加载失败</div>';
+            }
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+            let html = '';
+            for (let i = 1; i <= totalPages; i++) {
+                html += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            container.innerHTML = html;
+            container.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const page = parseInt(btn.dataset.page);
+                    if (page && page !== currentPage) {
+                        currentPage = page;
+                        loadPosts();
+                    }
+                });
+            });
+        }
+
+        function initSortButtons() {
+            const btns = document.querySelectorAll('.sort-btn');
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sort = btn.dataset.sort;
+                    if (sort === currentSort) return;
+                    currentSort = sort;
+                    currentPage = 1;
+                    btns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    loadPosts();
+                });
+            });
+        }
+
+        initSortButtons();
+        loadPosts();
+    </script>
+</body>
+
+</html>

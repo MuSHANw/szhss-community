@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>通知中心 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- 移动端适配 -->
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ========== 全局样式（与 index 一致） ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA;
+            color: #1f2d3d;
+            line-height: 1.5;
+            padding-top: 60px;
+            margin-left: 260px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body.sidebar-collapsed {
+            margin-left: 70px;
+        }
+
+        /* 背景装饰 */
+        .bg-decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-decorations .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .bg-decorations .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(30, 136, 229, 0.05);
+        }
+
+        .bg-decorations .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .bg-decorations .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .bg-decorations .circle3 {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: 10%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ========== 顶部栏 ========== */
+        .top-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-right: 20px;
+            color: #4a5568;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1E88E5;
+            text-decoration: none;
+            margin-right: auto;
+        }
+
+        .search-area {
+            display: flex;
+            align-items: center;
+            background: #f1f3f5;
+            border-radius: 24px;
+            padding: 4px 12px;
+            width: 260px;
+        }
+
+        .search-area input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .search-area button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        /* 关于链接 */
+        .about-link {
+            margin-left: 16px;
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .about-link:hover {
+            color: #1E88E5;
+        }
+
+        .about-link i {
+            margin-right: 4px;
+        }
+
+        .notifications-icon {
+            position: relative;
+            margin-left: 16px;
+            font-size: 1.4rem;
+            color: #6c757d;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== 侧边栏 ========== */
+        #sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: white;
+            border-right: 1px solid #eef2f6;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            z-index: 99;
+            overflow-x: hidden;
+        }
+
+        #sidebar.collapsed {
+            width: 70px;
+        }
+
+        #sidebar.collapsed .sidebar-user-info,
+        #sidebar.collapsed .sidebar-link span {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-logout {
+            font-size: 0;
+            padding: 8px;
+        }
+
+        #sidebar.collapsed .sidebar-logout::before {
+            content: "🚪";
+            font-size: 1.2rem;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            padding: 20px 16px;
+            border-bottom: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .sidebar-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-avatar i {
+            font-size: 48px;
+            color: #1E88E5;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-nickname {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .sidebar-email {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 0;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a5568;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar-link i {
+            width: 28px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            margin-left: 12px;
+        }
+
+        .sidebar-link:hover {
+            background: #f0f2f5;
+        }
+
+        .sidebar-link.active {
+            background: #e9f0fe;
+            color: #1E88E5;
+        }
+
+        .notif-dot {
+            color: #e53e3e;
+            font-size: 0.7rem;
+            margin-left: 4px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #eef2f6;
+        }
+
+        .sidebar-logout {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: #e53e3e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .sidebar-logout:hover {
+            background: #ffe5e5;
+        }
+
+        /* ========== 通知页面特有样式 ========== */
+        .notifications-wrapper {
+            max-width: 800px;
+            margin: 32px auto;
+        }
+
+        .notifications-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .notifications-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eef2f6;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 8px 20px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6c757d;
+            cursor: pointer;
+            transition: 0.2s;
+            border-radius: 30px;
+        }
+
+        .tab-btn.active {
+            color: #1E88E5;
+            background: #e9f0fe;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .notification-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            border: 1px solid #eef2f6;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .notification-card.unread {
+            background: #e9f0fe;
+            border-left: 4px solid #1E88E5;
+        }
+
+        .notification-card:hover {
+            background: #f8f9fa;
+        }
+
+        .notif-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .notif-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1E88E5;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .notif-details {
+            flex: 1;
+        }
+
+        .notif-text {
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+            color: #1f2d3d;
+        }
+
+        .notif-time {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+
+        .notif-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .notif-actions button {
+            background: #f0f2f5;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .notif-actions .btn-confirm {
+            background: #1E88E5;
+            color: white;
+        }
+
+        .notif-actions .btn-ignore {
+            color: #e53e3e;
+        }
+
+        .loading,
+        .empty {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 16px;
+            color: #6c757d;
+            border: 1px solid #eef2f6;
+        }
+
+        .footer {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin-left: 0;
+            }
+
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+
+            #sidebar.open-mobile {
+                transform: translateX(0);
+            }
+
+            .search-area {
+                width: 180px;
+            }
+        }
+    </style>
+</head>
+
+<body id="appBody">
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <!-- 顶部栏 -->
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <!-- 新增：关于按钮 -->
+            <a href="/about.html" class="about-link" id="aboutLink">
+                <i class="fas fa-info-circle"></i> 关于
+            </a>
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i
+                    class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子">
+                <i class="fas fa-users"></i><span>圈子</span>
+            </a>
+            <a href="/study.html" class="sidebar-link" title="自习室">
+                <i class="fas fa-clock"></i><span>自习室</span>
+            </a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="#" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="#" class="sidebar-link" title="社团"><i class="fas fa-users"></i><span>社团</span></a>
+            <a href="#" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i
+                    class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
+                <i class="fas fa-comment-dots"></i><span>反馈</span>
+            </a>
+            <a href="/notifications.html" class="sidebar-link active" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <main class="container">
+        <div class="notifications-wrapper">
+            <div class="notifications-header">
+                <h1>通知中心</h1>
+                <button id="markAllReadBtn" class="tab-btn" style="background:#f0f2f5;">全部已读</button>
+            </div>
+
+            <!-- 分类标签 -->
+            <div class="tabs">
+                <button class="tab-btn active" data-type="all">全部</button>
+                <button class="tab-btn" data-type="like">点赞</button>
+                <button class="tab-btn" data-type="reply">回复</button>
+                <button class="tab-btn" data-type="favorite">收藏</button>
+                <button class="tab-btn" data-type="system">系统</button>
+            </div>
+
+            <!-- 通知列表容器 -->
+            <div id="notificationsList" class="tab-content active">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
+        </div>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        // ---------- 侧边栏展开/收起 ----------
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) {
+            sidebar.classList.add('collapsed');
+            body.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            body.classList.remove('sidebar-collapsed');
+        }
+        toggleBtn.addEventListener('click', () => {
+            const currentlyExpanded = !sidebar.classList.contains('collapsed');
+            if (currentlyExpanded) {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'false');
+            } else {
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'true');
+            }
+        });
+
+        // ---------- 用户信息 ----------
+        const avatarDiv = document.getElementById('sidebarAvatar');
+        const nicknameSpan = document.getElementById('sidebarNickname');
+        const emailSpan = document.getElementById('sidebarEmail');
+        async function updateSidebarUser() {
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    nicknameSpan.innerText = user.nickname || '用户';
+                    emailSpan.innerText = user.email || '';
+                    if (user.avatar_url) {
+                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
+                    } else {
+                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                    }
+                }
+            } catch (e) { console.warn(e); }
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
+            window.location.href = '/profile.html';
+        });
+
+        // ---------- 未读小红点 ----------
+        async function updateNotifDot() {
+            try {
+                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const unreadCount = data.unreadCount || 0;
+                const topBadge = document.getElementById('notifBadge');
+                const sidebarDot = document.getElementById('sidebarNotifDot');
+                if (topBadge) {
+                    if (unreadCount > 0) {
+                        topBadge.style.display = 'flex';
+                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                    } else {
+                        topBadge.style.display = 'none';
+                    }
+                }
+                if (sidebarDot) {
+                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) { }
+        }
+        updateNotifDot();
+        setInterval(updateNotifDot, 30000);
+
+        // ---------- 退出登录 ----------
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        });
+
+        // ---------- 搜索 ----------
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        searchBtn?.addEventListener('click', () => {
+            const keyword = searchInput.value.trim();
+            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
+            else alert('请输入搜索关键词');
+        });
+        searchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBtn.click();
+        });
+
+        // ---------- 通知页面逻辑 ----------
+        let currentType = 'all';
+        let allNotifications = [];
+
+        function formatTime(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diff = now - date;
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
+            return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+        }
+
+        function getIconForType(type) {
+            switch (type) {
+                case 'like': return '❤️';
+                case 'reply': return '💬';
+                case 'favorite': return '⭐';
+                case 'report_resolved': return '📋';
+                case 'circle_invite': return '👥';
+                case 'circle_approved': return '✅';
+                case 'circle_rejected': return '❌';
+                case 'follow': return '👤';
+                default: return '🔔';
+            }
+        }
+
+        function formatNotification(notif) {
+            const sourceName = notif.source_nickname || '系统';
+            switch (notif.type) {
+                case 'like': return `${sourceName} 点赞了你的帖子`;
+                case 'favorite': return `${sourceName} 收藏了你的帖子`;
+                case 'reply': return `${sourceName} 回复了你的帖子`;
+                case 'report_resolved': return notif.content || '你的举报已处理';
+                case 'circle_invite': return notif.content || `${sourceName} 邀请你参与创建圈子`;
+                case 'circle_approved': return notif.content || '你参与的圈子已通过审核';
+                case 'circle_rejected': return notif.content || '你的圈子申请已被拒绝';
+                case 'follow': return `${sourceName} 关注了你`;
+                default: return '新通知';
+            }
+        }
+
+        function getTypeCategory(type) {
+            if (type === 'like') return 'like';
+            if (type === 'reply') return 'reply';
+            if (type === 'favorite') return 'favorite';
+            return 'system';
+        }
+
+        function filterNotifications() {
+            if (currentType === 'all') return allNotifications;
+            return allNotifications.filter(n => getTypeCategory(n.type) === currentType);
+        }
+
+        async function loadNotifications() {
+            const container = document.getElementById('notificationsList');
+            container.innerHTML = '<div class="loading">加载中...</div>';
+            try {
+                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=100`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                allNotifications = data.notifications || [];
+                renderNotifications();
+                updateNotifDot();
+            } catch (err) {
+                container.innerHTML = '<div class="error">加载失败，请刷新重试</div>';
+            }
+        }
+
+        function renderNotifications() {
+            const container = document.getElementById('notificationsList');
+            const filtered = filterNotifications();
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty">暂无通知</div>';
+                return;
+            }
+            container.innerHTML = filtered.map(notif => {
+                const isCircleInvite = (notif.type === 'circle_invite' && notif.source_id);
+                const actionsHtml = isCircleInvite ? `
+                    <div class="notif-actions">
+                        <button class="btn-confirm" data-app-id="${notif.source_id}" data-notif-id="${notif.id}">确认参与</button>
+                        <button class="btn-ignore" data-app-id="${notif.source_id}" data-notif-id="${notif.id}">忽略</button>
+                    </div>
+                ` : '';
+                return `
+                    <div class="notification-card ${!notif.is_read ? 'unread' : ''}" 
+                        data-id="${notif.id}" 
+                        data-type="${notif.type}" 
+                        data-source-id="${notif.source_id}"
+                        data-source-user-id="${notif.source_user_id || ''}">
+                        <div class="notif-content">
+                            <div class="notif-icon">${getIconForType(notif.type)}</div>
+                            <div class="notif-details">
+                                <div class="notif-text">${formatNotification(notif)}</div>
+                                <div class="notif-time">${formatTime(notif.created_at)}</div>
+                                ${actionsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 绑定点击跳转（非操作按钮区域）
+            document.querySelectorAll('.notification-card').forEach(card => {
+                card.addEventListener('click', async (e) => {
+                    // 如果点击的是按钮，不触发卡片跳转
+                    if (e.target.closest('button')) return;
+                    const notifId = parseInt(card.dataset.id);
+                    const type = card.dataset.type;
+                    const sourceId = parseInt(card.dataset.sourceId);
+                    const sourceUserId = parseInt(card.dataset.sourceUserId);
+                    await fetch(`${window.API_BASE}/notifications/${notifId}/read`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (type === 'like' || type === 'favorite' || type === 'reply') {
+                        window.location.href = `/post-detail.html?id=${sourceId}`;
+                    } else if (type === 'report_resolved') {
+                        window.location.href = '/feedback.html';
+                    } else if (type === 'circle_invite' || type === 'circle_approved') {
+                        window.location.href = `/circle-detail.html?id=${sourceId}`;
+                    } else if (type === 'follow') {
+                        window.location.href = `/user-profile.html?uid=${sourceUserId}`;
+                    }
+                });
+            });
+
+            // 绑定确认/忽略按钮事件
+            document.querySelectorAll('.btn-confirm').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const appId = btn.dataset.appId;
+                    const notifId = btn.dataset.notifId;
+                    await handleInviteResponse(appId, 'confirm', notifId);
+                });
+            });
+            document.querySelectorAll('.btn-ignore').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const appId = btn.dataset.appId;
+                    const notifId = btn.dataset.notifId;
+                    await handleInviteResponse(appId, 'ignore', notifId);
+                });
+            });
+        }
+
+        async function handleInviteResponse(applicationId, action, notifId) {
+            try {
+                const res = await fetch(`${window.API_BASE}/circle-applications/${applicationId}/respond`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ action })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    // 标记通知已读
+                    await fetch(`${window.API_BASE}/notifications/${notifId}/read`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    alert(action === 'confirm' ? '已确认参与' : '已忽略邀请');
+                    loadNotifications();
+                } else {
+                    alert(data.error || '操作失败');
+                }
+            } catch (err) {
+                alert('网络错误');
+            }
+        }
+
+        async function markAllRead() {
+            try {
+                await fetch(`${window.API_BASE}/notifications/read-all`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                loadNotifications();
+            } catch (err) {
+                alert('操作失败');
+            }
+        }
+
+        // 标签页切换
+        const tabBtns = document.querySelectorAll('.tab-btn[data-type]');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.type;
+                currentType = type;
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderNotifications();
+            });
+        });
+
+        document.getElementById('markAllReadBtn').addEventListener('click', markAllRead);
+
+        // 初始加载
+        loadNotifications();
+    </script>
+</body>
+
+</html>

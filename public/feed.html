@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>关注动态 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- 移动端适配 -->
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ========== 全局样式（与 index 一致） ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA;
+            color: #1f2d3d;
+            line-height: 1.5;
+            padding-top: 60px;
+            margin-left: 260px;
+            transition: margin-left 0.3s ease;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        body.sidebar-collapsed {
+            margin-left: 70px;
+        }
+
+        /* 背景装饰 */
+        .bg-decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-decorations .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .bg-decorations .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(30, 136, 229, 0.05);
+        }
+
+        .bg-decorations .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .bg-decorations .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .bg-decorations .circle3 {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: 10%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ========== 顶部栏 ========== */
+        .top-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-right: 20px;
+            color: #4a5568;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1E88E5;
+            text-decoration: none;
+            margin-right: auto;
+        }
+
+        .search-area {
+            display: flex;
+            align-items: center;
+            background: #f1f3f5;
+            border-radius: 24px;
+            padding: 4px 12px;
+            width: 260px;
+        }
+
+        .search-area input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .search-area button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .about-link {
+            margin-left: 16px;
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .about-link:hover {
+            color: #1E88E5;
+        }
+
+        .about-link i {
+            margin-right: 4px;
+        }
+
+        .notifications-icon {
+            position: relative;
+            margin-left: 16px;
+            font-size: 1.4rem;
+            color: #6c757d;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== 侧边栏 ========== */
+        #sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: white;
+            border-right: 1px solid #eef2f6;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            z-index: 99;
+            overflow-x: hidden;
+        }
+
+        #sidebar.collapsed {
+            width: 70px;
+        }
+
+        #sidebar.collapsed .sidebar-user-info,
+        #sidebar.collapsed .sidebar-link span {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-logout {
+            font-size: 0;
+            padding: 8px;
+        }
+
+        #sidebar.collapsed .sidebar-logout::before {
+            content: "🚪";
+            font-size: 1.2rem;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            padding: 20px 16px;
+            border-bottom: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .sidebar-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-avatar i {
+            font-size: 48px;
+            color: #1E88E5;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-nickname {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .sidebar-email {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 0;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a5568;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar-link i {
+            width: 28px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            margin-left: 12px;
+        }
+
+        .sidebar-link:hover {
+            background: #f0f2f5;
+        }
+
+        .sidebar-link.active {
+            background: #e9f0fe;
+            color: #1E88E5;
+        }
+
+        .notif-dot {
+            color: #e53e3e;
+            font-size: 0.7rem;
+            margin-left: 4px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #eef2f6;
+        }
+
+        .sidebar-logout {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: #e53e3e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .sidebar-logout:hover {
+            background: #ffe5e5;
+        }
+
+        /* ========== 帖子列表 ========== */
+        .feed-wrapper {
+            max-width: 800px;
+            margin: 32px auto;
+        }
+
+        .page-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .post-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            transition: box-shadow 0.2s, transform 0.1s;
+            border: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .post-card:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+        }
+
+        .post-category {
+            background: #e9f0fe;
+            color: #1E88E5;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .post-time {
+            color: #8a9aa8;
+        }
+
+        .post-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .post-title a {
+            text-decoration: none;
+            color: #1f2d3d;
+            font-weight: 600;
+        }
+
+        .post-title a:hover {
+            color: #1E88E5;
+        }
+
+        .post-content {
+            color: #4a5568;
+            margin-bottom: 16px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .post-footer {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .post-author {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .post-author img {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .post-author i {
+            font-size: 22px;
+            color: #1E88E5;
+        }
+
+        .post-footer i {
+            margin-right: 4px;
+        }
+
+        .like-btn,
+        .favorite-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        .like-btn:hover,
+        .favorite-btn:hover {
+            background: #f0f2f5;
+        }
+
+        .like-btn.liked {
+            color: #e53e3e;
+        }
+
+        .favorite-btn.favorited {
+            color: #f5b042;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 32px;
+        }
+
+        .pagination button {
+            background: #f0f2f5;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .pagination button.active {
+            background: #1E88E5;
+            color: white;
+        }
+
+        .loading,
+        .error,
+        .no-posts {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 16px;
+            color: #6c757d;
+            border: 1px solid #eef2f6;
+        }
+
+        .footer {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin-left: 0;
+            }
+
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+
+            #sidebar.open-mobile {
+                transform: translateX(0);
+            }
+
+            .search-area {
+                width: 180px;
+            }
+        }
+    </style>
+</head>
+
+<body id="appBody">
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <!-- 顶部栏 -->
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="topSearchInput">
+                <button id="topSearchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <a href="/about.html" class="about-link" id="aboutLink">
+                <i class="fas fa-info-circle"></i> <span>关于</span>
+            </a>
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i
+                    class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子"><i class="fas fa-users"></i><span>圈子</span></a>
+            <a href="/study.html" class="sidebar-link" title="自习室">
+                <i class="fas fa-clock"></i><span>自习室</span>
+            </a>
+            <a href="feed.html" class="sidebar-link active" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="#" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="#" class="sidebar-link" title="社团"><i class="fas fa-users"></i><span>社团</span></a>
+            <a href="#" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i
+                    class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
+                <i class="fas fa-comment-dots"></i><span>反馈</span>
+            </a>
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <main class="container">
+        <div class="feed-wrapper">
+            <h1 class="page-title"><i class="fas fa-bolt" style="color: #1E88E5;"></i> 关注动态</h1>
+            <div id="postsList">
+                <div class="loading">加载中...</div>
+            </div>
+            <div id="pagination" class="pagination"></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
+        </div>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+
+        // ---------- 侧边栏展开/收起 ----------
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) {
+            sidebar.classList.add('collapsed');
+            body.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            body.classList.remove('sidebar-collapsed');
+        }
+        toggleBtn.addEventListener('click', () => {
+            const currentlyExpanded = !sidebar.classList.contains('collapsed');
+            if (currentlyExpanded) {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'false');
+            } else {
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'true');
+            }
+        });
+
+        // ---------- 用户信息 ----------
+        const token = localStorage.getItem('token');
+        const avatarDiv = document.getElementById('sidebarAvatar');
+        const nicknameSpan = document.getElementById('sidebarNickname');
+        const emailSpan = document.getElementById('sidebarEmail');
+        async function updateSidebarUser() {
+            if (!token) {
+                nicknameSpan.innerText = '未登录';
+                emailSpan.innerText = '';
+                avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                return;
+            }
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    nicknameSpan.innerText = user.nickname || '用户';
+                    emailSpan.innerText = user.email || '';
+                    if (user.avatar_url) {
+                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
+                    } else {
+                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                    }
+                }
+            } catch (e) { console.warn(e); }
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
+            window.location.href = '/profile.html';
+        });
+
+        // ---------- 未读小红点 ----------
+        async function updateNotifDot() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const unreadCount = data.unreadCount || 0;
+                const topBadge = document.getElementById('notifBadge');
+                const sidebarDot = document.getElementById('sidebarNotifDot');
+                if (topBadge) {
+                    if (unreadCount > 0) {
+                        topBadge.style.display = 'flex';
+                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                    } else {
+                        topBadge.style.display = 'none';
+                    }
+                }
+                if (sidebarDot) {
+                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) { }
+        }
+        updateNotifDot();
+        if (token) setInterval(updateNotifDot, 30000);
+
+        // ---------- 退出登录 ----------
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        });
+
+        // ---------- 顶部搜索 ----------
+        const topSearchBtn = document.getElementById('topSearchBtn');
+        const topSearchInput = document.getElementById('topSearchInput');
+        topSearchBtn?.addEventListener('click', () => {
+            const keyword = topSearchInput.value.trim();
+            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
+            else alert('请输入搜索关键词');
+        });
+        topSearchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') topSearchBtn.click();
+        });
+
+        // ---------- 动态流加载 ----------
+        let currentPage = 1;
+        let totalPages = 1;
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        }
+
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        async function loadPosts() {
+            const container = document.getElementById('postsList');
+            container.innerHTML = '<div class="loading">加载中...</div>';
+
+            if (!token) {
+                container.innerHTML = '<div class="no-posts">请先登录，查看你关注用户的动态</div>';
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${window.API_BASE}/following-posts?page=${currentPage}&limit=10`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('加载失败');
+                const data = await res.json();
+                const posts = data.posts;
+                totalPages = data.totalPages || 1;
+
+                if (!posts.length) {
+                    container.innerHTML = '<div class="no-posts">你还没有关注任何人，去发现有趣的人吧~</div>';
+                    document.getElementById('pagination').innerHTML = '';
+                    return;
+                }
+
+                container.innerHTML = posts.map(post => {
+                    const avatarHtml = post.avatar_url
+                        ? `<img src="${post.avatar_url}" alt="头像">`
+                        : `<i class="fas fa-user-circle"></i>`;
+                    return `
+                        <div class="post-card" data-post-id="${post.id}">
+                            <div class="post-header">
+                                <span class="post-category">${escapeHtml(post.category || '综合')}</span>
+                                <span class="post-time">${formatDate(post.created_at)}</span>
+                            </div>
+                            <h3 class="post-title">${escapeHtml(post.title)}</h3>
+                            <div class="post-content">${escapeHtml(post.content.substring(0, 150))}${post.content.length > 150 ? '...' : ''}</div>
+                            <div class="post-footer">
+                                <div class="post-author">
+                                    ${avatarHtml}
+                                    <a href="/user-profile.html?uid=${post.user_id}" style="color: inherit; text-decoration: none;" onclick="event.stopPropagation()">${escapeHtml(post.nickname)}</a>
+                                </div>
+                                <span><i class="fas fa-eye"></i> ${post.view_count || 0}</span>
+                                <span><i class="fas fa-comment"></i> ${post.reply_count || 0}</span>
+                                <span><i class="far fa-heart"></i> ${post.likes || 0}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // 卡片点击跳转
+                document.querySelectorAll('.post-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const postId = card.dataset.postId;
+                        window.location.href = `/post-detail.html?id=${postId}`;
+                    });
+                });
+
+                renderPagination();
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<div class="error">加载失败，请刷新重试</div>';
+            }
+        }
+
+        function renderPagination() {
+            const paginationDiv = document.getElementById('pagination');
+            if (totalPages <= 1) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+            let html = '';
+            for (let i = 1; i <= totalPages; i++) {
+                html += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            paginationDiv.innerHTML = html;
+            paginationDiv.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const page = parseInt(btn.dataset.page);
+                    if (page && page !== currentPage) {
+                        currentPage = page;
+                        loadPosts();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                });
+            });
+        }
+
+        // 启动加载
+        loadPosts();
+    </script>
+</body>
+
+</html>

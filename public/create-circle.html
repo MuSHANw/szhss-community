@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>创建圈子 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- 移动端适配 -->
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ========== 全局样式（与 index 一致） ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA;
+            color: #1f2d3d;
+            line-height: 1.5;
+            padding-top: 60px;
+            margin-left: 260px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body.sidebar-collapsed {
+            margin-left: 70px;
+        }
+
+        /* 背景装饰 */
+        .bg-decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-decorations .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .bg-decorations .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(30, 136, 229, 0.05);
+        }
+
+        .bg-decorations .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .bg-decorations .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .bg-decorations .circle3 {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: 10%;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ========== 顶部栏 ========== */
+        .top-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-right: 20px;
+            color: #4a5568;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1E88E5;
+            text-decoration: none;
+            margin-right: auto;
+        }
+
+        .search-area {
+            display: flex;
+            align-items: center;
+            background: #f1f3f5;
+            border-radius: 24px;
+            padding: 4px 12px;
+            width: 260px;
+        }
+
+        .search-area input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .search-area button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .about-link {
+            margin-left: 16px;
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .about-link:hover {
+            color: #1E88E5;
+        }
+
+        .about-link i {
+            margin-right: 4px;
+        }
+
+        .notifications-icon {
+            position: relative;
+            margin-left: 16px;
+            font-size: 1.4rem;
+            color: #6c757d;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== 侧边栏 ========== */
+        #sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: white;
+            border-right: 1px solid #eef2f6;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            z-index: 99;
+            overflow-x: hidden;
+        }
+
+        #sidebar.collapsed {
+            width: 70px;
+        }
+
+        #sidebar.collapsed .sidebar-user-info,
+        #sidebar.collapsed .sidebar-link span {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-logout {
+            font-size: 0;
+            padding: 8px;
+        }
+
+        #sidebar.collapsed .sidebar-logout::before {
+            content: "🚪";
+            font-size: 1.2rem;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            padding: 20px 16px;
+            border-bottom: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .sidebar-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-avatar i {
+            font-size: 48px;
+            color: #1E88E5;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-nickname {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .sidebar-email {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 0;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a5568;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar-link i {
+            width: 28px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            margin-left: 12px;
+        }
+
+        .sidebar-link:hover {
+            background: #f0f2f5;
+        }
+
+        .sidebar-link.active {
+            background: #e9f0fe;
+            color: #1E88E5;
+        }
+
+        .notif-dot {
+            color: #e53e3e;
+            font-size: 0.7rem;
+            margin-left: 4px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #eef2f6;
+        }
+
+        .sidebar-logout {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: #e53e3e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .sidebar-logout:hover {
+            background: #ffe5e5;
+        }
+
+        /* ========== 创建圈子表单 ========== */
+        .create-wrapper {
+            max-width: 700px;
+            margin: 32px auto;
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            border: 1px solid #eef2f6;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #1E88E5;
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+        }
+
+        .hint {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        /* 图标/封面上传 */
+        .upload-row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .upload-item {
+            flex: 1;
+        }
+
+        .upload-preview {
+            width: 100%;
+            height: 80px;
+            background: #f0f2f5;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border: 1px dashed #cbd5e1;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            overflow: hidden;
+            transition: border 0.2s;
+        }
+
+        .upload-preview:hover {
+            border-color: #1E88E5;
+        }
+
+        .upload-preview i {
+            margin-right: 6px;
+        }
+
+        .upload-item input[type="file"] {
+            display: none;
+        }
+
+        /* 申请人管理 */
+        .member-search {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .member-search input {
+            flex: 1;
+        }
+
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-top: 8px;
+            background: white;
+        }
+
+        .search-result-item {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .search-result-item:hover {
+            background: #f0f2f5;
+        }
+
+        .search-result-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .selected-members {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 16px 0;
+        }
+
+        .member-tag {
+            background: #e9f0fe;
+            padding: 6px 12px;
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .member-tag button {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .member-tag.initiator {
+            background: #1E88E5;
+            color: white;
+        }
+
+        .member-tag.initiator button {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .min-members-hint {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 16px;
+        }
+
+        .btn-submit {
+            background: #1E88E5;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 16px;
+        }
+
+        .btn-submit:disabled {
+            background: #b0c4de;
+            cursor: not-allowed;
+        }
+
+        .error-msg {
+            color: #e53e3e;
+            margin-top: 8px;
+        }
+
+        .footer {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin-left: 0;
+            }
+
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+
+            #sidebar.open-mobile {
+                transform: translateX(0);
+            }
+
+            .search-area {
+                width: 180px;
+            }
+
+            .create-wrapper {
+                margin: 20px;
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body id="appBody">
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <!-- 顶部栏 -->
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="topSearchInput">
+                <button id="topSearchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <a href="/about.html" class="about-link" id="aboutLink">
+                <i class="fas fa-info-circle"></i> <span>关于</span>
+            </a>
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i
+                    class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link active" title="圈子"><i
+                    class="fas fa-users"></i><span>圈子</span></a>
+            <a href="/study.html" class="sidebar-link" title="自习室">
+                <i class="fas fa-clock"></i><span>自习室</span>
+            </a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="#" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="#" class="sidebar-link" title="社团"><i class="fas fa-users"></i><span>社团</span></a>
+            <a href="#" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i
+                    class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
+                <i class="fas fa-comment-dots"></i><span>反馈</span>
+            </a>
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <main class="container">
+        <div class="create-wrapper">
+            <h1 class="page-title"><i class="fas fa-plus-circle" style="color:#1E88E5;"></i> 创建新圈子</h1>
+            <p class="min-members-hint"><i class="fas fa-info-circle"></i>
+                创建圈子需要至少5人联合申请（包括你自己）。填写信息并邀请至少4位成员后提交，他们将收到确认通知，全部确认后申请将自动提交给管理员审核。</p>
+
+            <form id="createCircleForm">
+                <div class="form-group">
+                    <label>圈子名称 *</label>
+                    <input type="text" id="circleName" placeholder="例如：深技大附中交流圈" maxlength="20" required>
+                    <div class="hint">2-20个字符，不能与已有圈子重名</div>
+                </div>
+                <div class="form-group">
+                    <label>圈子简介 *</label>
+                    <textarea id="circleDesc" rows="3" placeholder="介绍一下这个圈子的主题和目的..." required></textarea>
+                </div>
+
+                <!-- 图标和封面上传 -->
+                <div class="form-group">
+                    <label>圈子图标 & 封面（可选）</label>
+                    <div class="upload-row">
+                        <div class="upload-item">
+                            <div class="upload-preview" id="iconPreview">
+                                <i class="fas fa-image"></i> 点击上传图标
+                            </div>
+                            <input type="file" id="iconInput" accept="image/jpeg,image/png,image/gif">
+                        </div>
+                        <div class="upload-item">
+                            <div class="upload-preview" id="bannerPreview">
+                                <i class="fas fa-image"></i> 点击上传封面
+                            </div>
+                            <input type="file" id="bannerInput" accept="image/jpeg,image/png,image/gif">
+                        </div>
+                    </div>
+                    <div class="hint">支持 JPG、PNG、GIF，大小不超过2MB</div>
+                </div>
+
+                <div class="form-group">
+                    <label>联合申请人（至少4位其他成员）</label>
+                    <div class="member-search">
+                        <input type="text" id="memberSearchInput" placeholder="输入昵称或邮箱搜索用户">
+                        <button type="button" id="searchMemberBtn"><i class="fas fa-search"></i></button>
+                    </div>
+                    <div id="searchResults" class="search-results" style="display:none;"></div>
+
+                    <div class="selected-members" id="selectedMembersList">
+                        <!-- 发起人标签自动显示 -->
+                    </div>
+                    <div class="hint">已选择 <span id="memberCount">1</span> 人（包含自己），还需至少 <span
+                            id="remainingCount">4</span> 人</div>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submitBtn" disabled>提交申请，邀请成员确认</button>
+                <div id="formError" class="error-msg"></div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
+        </div>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+
+        // ---------- 侧边栏展开/收起 ----------
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) {
+            sidebar.classList.add('collapsed');
+            body.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            body.classList.remove('sidebar-collapsed');
+        }
+        toggleBtn.addEventListener('click', () => {
+            const currentlyExpanded = !sidebar.classList.contains('collapsed');
+            if (currentlyExpanded) {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'false');
+            } else {
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'true');
+            }
+        });
+
+        // ---------- 用户信息 ----------
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+        const avatarDiv = document.getElementById('sidebarAvatar');
+        const nicknameSpan = document.getElementById('sidebarNickname');
+        const emailSpan = document.getElementById('sidebarEmail');
+        let currentUser = null;
+
+        async function updateSidebarUser() {
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    currentUser = user;
+                    nicknameSpan.innerText = user.nickname || '用户';
+                    emailSpan.innerText = user.email || '';
+                    if (user.avatar_url) {
+                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
+                    } else {
+                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                    }
+                    initInitiator(user);
+                }
+            } catch (e) { console.warn(e); }
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
+            window.location.href = '/profile.html';
+        });
+
+        // ---------- 未读小红点 ----------
+        async function updateNotifDot() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const unreadCount = data.unreadCount || 0;
+                const topBadge = document.getElementById('notifBadge');
+                const sidebarDot = document.getElementById('sidebarNotifDot');
+                if (topBadge) {
+                    if (unreadCount > 0) {
+                        topBadge.style.display = 'flex';
+                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                    } else {
+                        topBadge.style.display = 'none';
+                    }
+                }
+                if (sidebarDot) {
+                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) { }
+        }
+        updateNotifDot();
+        setInterval(updateNotifDot, 30000);
+
+        // ---------- 退出登录 ----------
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        });
+
+        // ---------- 顶部搜索 ----------
+        const topSearchBtn = document.getElementById('topSearchBtn');
+        const topSearchInput = document.getElementById('topSearchInput');
+        topSearchBtn?.addEventListener('click', () => {
+            const keyword = topSearchInput.value.trim();
+            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
+            else alert('请输入搜索关键词');
+        });
+        topSearchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') topSearchBtn.click();
+        });
+
+        // ---------- 创建圈子逻辑 ----------
+        let selectedMembers = new Map(); // key: userId, value: user object
+        let currentUserId = null;
+        let iconFile = null, bannerFile = null;
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        }
+
+        function initInitiator(user) {
+            currentUserId = user.id;
+            selectedMembers.set(user.id, user);
+            renderSelectedMembers();
+            updateMemberCount();
+        }
+
+        function renderSelectedMembers() {
+            const container = document.getElementById('selectedMembersList');
+            let html = '';
+            for (const user of selectedMembers.values()) {
+                const isInitiator = user.id === currentUserId;
+                html += `
+                    <div class="member-tag ${isInitiator ? 'initiator' : ''}">
+                        ${escapeHtml(user.nickname)} ${isInitiator ? '(发起人)' : ''}
+                        ${!isInitiator ? `<button type="button" data-user-id="${user.id}"><i class="fas fa-times"></i></button>` : ''}
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+
+            container.querySelectorAll('button[data-user-id]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const userId = parseInt(btn.dataset.userId);
+                    selectedMembers.delete(userId);
+                    renderSelectedMembers();
+                    updateMemberCount();
+                    validateForm();
+                });
+            });
+        }
+
+        function updateMemberCount() {
+            const count = selectedMembers.size;
+            document.getElementById('memberCount').innerText = count;
+            const remaining = Math.max(0, 5 - count);
+            document.getElementById('remainingCount').innerText = remaining;
+        }
+
+        function validateForm() {
+            const name = document.getElementById('circleName').value.trim();
+            const desc = document.getElementById('circleDesc').value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+            if (name.length >= 2 && name.length <= 20 && desc && selectedMembers.size >= 5) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+
+        // 搜索用户
+        let searchTimeout = null;
+        document.getElementById('searchMemberBtn').addEventListener('click', performSearch);
+        document.getElementById('memberSearchInput').addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(performSearch, 300);
+        });
+
+        async function performSearch() {
+            const keyword = document.getElementById('memberSearchInput').value.trim();
+            if (!keyword || keyword.length === 0) {
+                document.getElementById('searchResults').style.display = 'none';
+                return;
+            }
+            try {
+                const res = await fetch(`${window.API_BASE}/users/search?q=${encodeURIComponent(keyword)}&limit=10`);
+                if (!res.ok) {
+                    if (res.status === 400) {
+                        document.getElementById('searchResults').innerHTML = '<div style="padding:12px;text-align:center;color:#6c757d;">未找到用户</div>';
+                        document.getElementById('searchResults').style.display = 'block';
+                        return;
+                    }
+                    throw new Error('搜索失败');
+                }
+                const users = await res.json();
+                const resultsDiv = document.getElementById('searchResults');
+
+                if (users.length === 0) {
+                    resultsDiv.innerHTML = '<div style="padding:12px;text-align:center;color:#6c757d;">未找到用户</div>';
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+
+                resultsDiv.innerHTML = users.map(u => {
+                    const alreadySelected = selectedMembers.has(u.id);
+                    return `
+                        <div class="search-result-item ${alreadySelected ? 'disabled' : ''}" data-user-id="${u.id}" data-user-nickname="${escapeHtml(u.nickname)}" data-user-avatar="${escapeHtml(u.avatar_url || '')}">
+                            <span><i class="fas fa-user-circle"></i> ${escapeHtml(u.nickname)} (${escapeHtml(u.email)})</span>
+                            ${alreadySelected ? '<span style="color:#1E88E5;">已添加</span>' : '<button type="button" class="add-btn" style="background:#1E88E5;color:white;border:none;padding:4px 12px;border-radius:20px;cursor:pointer;">添加</button>'}
+                        </div>
+                    `;
+                }).join('');
+                resultsDiv.style.display = 'block';
+
+                resultsDiv.querySelectorAll('.add-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const item = btn.closest('.search-result-item');
+                        const userId = parseInt(item.dataset.userId);
+                        const nickname = item.dataset.userNickname;
+                        const avatarUrl = item.dataset.userAvatar;
+                        if (!selectedMembers.has(userId)) {
+                            selectedMembers.set(userId, { id: userId, nickname, avatar_url: avatarUrl });
+                            renderSelectedMembers();
+                            updateMemberCount();
+                            validateForm();
+                            item.classList.add('disabled');
+                            btn.remove();
+                            item.insertAdjacentHTML('beforeend', '<span style="color:#1E88E5;">已添加</span>');
+                        }
+                    });
+                });
+            } catch (err) {
+                console.error('搜索失败', err);
+                document.getElementById('searchResults').innerHTML = '<div style="padding:12px;text-align:center;color:#e53e3e;">搜索出错，请稍后重试</div>';
+                document.getElementById('searchResults').style.display = 'block';
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#searchResults') && !e.target.closest('#memberSearchInput')) {
+                document.getElementById('searchResults').style.display = 'none';
+            }
+        });
+
+        document.getElementById('circleName').addEventListener('input', validateForm);
+        document.getElementById('circleDesc').addEventListener('input', validateForm);
+
+        // ---------- 图片上传预览 ----------
+        const iconInput = document.getElementById('iconInput');
+        const bannerInput = document.getElementById('bannerInput');
+        const iconPreview = document.getElementById('iconPreview');
+        const bannerPreview = document.getElementById('bannerPreview');
+
+        iconPreview.addEventListener('click', () => iconInput.click());
+        bannerPreview.addEventListener('click', () => bannerInput.click());
+
+        iconInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                alert('图片不能超过2MB');
+                return;
+            }
+            iconFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                iconPreview.style.backgroundImage = `url('${e.target.result}')`;
+                iconPreview.innerHTML = '';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        bannerInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                alert('图片不能超过2MB');
+                return;
+            }
+            bannerFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                bannerPreview.style.backgroundImage = `url('${e.target.result}')`;
+                bannerPreview.innerHTML = '';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+            try {
+                const res = await fetch(`${window.API_BASE}/upload/circle-image`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    return data.url;
+                } else {
+                    console.warn('图片上传失败，将忽略图片');
+                    return null;
+                }
+            } catch (err) {
+                console.warn('图片上传接口不可用，将忽略图片');
+                return null;
+            }
+        }
+
+        // 提交申请（新流程：创建等待确认的申请，通知参与者）
+        document.getElementById('createCircleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('circleName').value.trim();
+            const description = document.getElementById('circleDesc').value.trim();
+            const participantIds = Array.from(selectedMembers.keys()).filter(id => id !== currentUserId);
+
+            if (selectedMembers.size < 5) {
+                document.getElementById('formError').innerText = '至少需要5人联合申请（包括你自己）';
+                return;
+            }
+
+            let iconUrl = null, bannerUrl = null;
+            if (iconFile) iconUrl = await uploadImage(iconFile);
+            if (bannerFile) bannerUrl = await uploadImage(bannerFile);
+
+            const payload = {
+                name,
+                description,
+                participant_ids: participantIds,
+                icon_url: iconUrl,
+                banner_url: bannerUrl
+            };
+
+            try {
+                const res = await fetch(`${window.API_BASE}/circle-applications`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('申请已创建，已向成员发送确认邀请，待全部确认后将自动提交给管理员审核。');
+                    window.location.href = '/circles.html';
+                } else {
+                    document.getElementById('formError').innerText = data.error || '提交失败';
+                }
+            } catch (err) {
+                document.getElementById('formError').innerText = '网络错误';
+            }
+        });
+
+        validateForm();
+    </script>
+</body>
+
+</html>

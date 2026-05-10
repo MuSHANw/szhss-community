@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>自习室 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ========== 全局样式（与 index 一致） ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA;
+            color: #1f2d3d;
+            line-height: 1.5;
+            padding-top: 60px;
+            margin-left: 260px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body.sidebar-collapsed {
+            margin-left: 70px;
+        }
+
+        /* 背景装饰 */
+        .bg-decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-decorations .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .bg-decorations .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(30, 136, 229, 0.05);
+        }
+
+        .bg-decorations .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .bg-decorations .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .bg-decorations .circle3 {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: 10%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ========== 顶部栏 ========== */
+        .top-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-right: 20px;
+            color: #4a5568;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1E88E5;
+            text-decoration: none;
+            margin-right: auto;
+        }
+
+        .search-area {
+            display: flex;
+            align-items: center;
+            background: #f1f3f5;
+            border-radius: 24px;
+            padding: 4px 12px;
+            width: 260px;
+        }
+
+        .search-area input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .search-area button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .about-link {
+            margin-left: 16px;
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .about-link:hover {
+            color: #1E88E5;
+        }
+
+        .about-link i {
+            margin-right: 4px;
+        }
+
+        .notifications-icon {
+            position: relative;
+            margin-left: 16px;
+            font-size: 1.4rem;
+            color: #6c757d;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== 侧边栏 ========== */
+        #sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: white;
+            border-right: 1px solid #eef2f6;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            z-index: 99;
+            overflow-x: hidden;
+        }
+
+        #sidebar.collapsed {
+            width: 70px;
+        }
+
+        #sidebar.collapsed .sidebar-user-info,
+        #sidebar.collapsed .sidebar-link span {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-logout {
+            font-size: 0;
+            padding: 8px;
+        }
+
+        #sidebar.collapsed .sidebar-logout::before {
+            content: "🚪";
+            font-size: 1.2rem;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            padding: 20px 16px;
+            border-bottom: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .sidebar-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-avatar i {
+            font-size: 48px;
+            color: #1E88E5;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-nickname {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .sidebar-email {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 0;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a5568;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar-link i {
+            width: 28px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            margin-left: 12px;
+        }
+
+        .sidebar-link:hover {
+            background: #f0f2f5;
+        }
+
+        .sidebar-link.active {
+            background: #e9f0fe;
+            color: #1E88E5;
+        }
+
+        .notif-dot {
+            color: #e53e3e;
+            font-size: 0.7rem;
+            margin-left: 4px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #eef2f6;
+        }
+
+        .sidebar-logout {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: #e53e3e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .sidebar-logout:hover {
+            background: #ffe5e5;
+        }
+
+        .loading,
+        .error,
+        .no-posts {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 16px;
+            color: #6c757d;
+        }
+
+        /* 移动端响应式（基础部分） */
+        @media (max-width: 768px) {
+            body {
+                margin-left: 0;
+            }
+
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+
+            #sidebar.open-mobile {
+                transform: translateX(0);
+            }
+        }
+
+        /* ========== 自习室专属样式 ========== */
+        .study-tabs {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .study-tab {
+            padding: 10px 24px;
+            border-radius: 40px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .study-tab.active-tab {
+            background: #1E88E5;
+            color: white;
+            border-color: #1E88E5;
+        }
+
+        .create-btn {
+            margin-left: auto;
+            background: #1E88E5;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 24px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .room-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid #eef2f6;
+            cursor: pointer;
+            transition: box-shadow 0.2s, transform 0.1s;
+        }
+
+        .room-card:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .room-card .room-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .room-card .room-desc {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 12px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .room-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.85rem;
+            color: #4a5568;
+        }
+
+        .room-meta i {
+            color: #1E88E5;
+        }
+
+        .room-meta .studying-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2ecc71;
+            display: inline-block;
+        }
+
+        .room-creator {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #8a9aa8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .room-creator img {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* 自习室内部 */
+        #studyRoom {
+            display: none;
+        }
+
+        .room-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .room-header h2 {
+            font-size: 1.8rem;
+        }
+
+        .leave-btn {
+            background: none;
+            border: 1px solid #ddd;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .leave-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .seats-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .seat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            width: 100px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            position: relative;
+            border: 1px solid #eef2f6;
+        }
+
+        .seat-card .seat-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin: 0 auto 8px;
+        }
+
+        .seat-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .seat-card .seat-avatar i {
+            font-size: 48px;
+            color: #1E88E5;
+        }
+
+        .seat-card .seat-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .seat-status {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .status-idle {
+            background: #adb5bd;
+        }
+
+        .status-studying {
+            background: #2ecc71;
+        }
+
+        .status-resting {
+            background: #f1c40f;
+        }
+
+        /* 番茄钟控制面板 */
+        .pomodoro-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid #eef2f6;
+        }
+
+        .timer-display {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1E88E5;
+            font-family: monospace;
+            margin: 12px 0;
+        }
+
+        .timer-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .timer-btn {
+            padding: 10px 24px;
+            border-radius: 40px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .timer-btn.btn-primary {
+            background: #1E88E5;
+            color: white;
+        }
+
+        .timer-btn.btn-secondary {
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        .timer-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 响应式微调 */
+        @media (max-width: 768px) {
+            .room-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .seats-grid {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body id="appBody">
+    <!-- 背景装饰（同 index.html） -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <!-- 顶部栏（同 index.html） -->
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索自习室..." id="studySearchInput">
+                <button id="studySearchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <a href="/about.html" class="about-link">
+                <i class="fas fa-info-circle"></i> 关于
+            </a>
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 侧边栏（同 index.html，但自习室链接高亮） -->
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link"><i class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link"><i class="fas fa-users"></i><span>圈子</span></a>
+            <a href="feed.html" class="sidebar-link"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="study.html" class="sidebar-link active"><i class="fas fa-clock"></i><span>自习室</span></a>
+            <a href="#" class="sidebar-link"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="#" class="sidebar-link"><i class="fas fa-users"></i><span>社团</span></a>
+            <a href="#" class="sidebar-link"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link"><i class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="feedback.html" class="sidebar-link"><i class="fas fa-comment-dots"></i><span>反馈</span></a>
+            <a href="notifications.html" class="sidebar-link" id="sidebarNotifLink">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <main class="main container">
+
+        <!-- 自习室广场 -->
+        <div id="studyLobby">
+            <div class="study-tabs">
+                <button class="study-tab active-tab" data-type="district">🏙️ 区域自习室</button>
+                <button class="study-tab" data-type="personal">👤 个人自习室</button>
+                <button class="create-btn" id="createRoomBtn" style="display:none;">➕ 创建自习室</button>
+            </div>
+            <div class="room-grid" id="roomGrid">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 自习室内部 -->
+        <div id="studyRoom">
+            <div class="room-header">
+                <h2 id="currentRoomName"></h2>
+                <button class="leave-btn" id="leaveRoomBtn">🚪 退出自习室</button>
+            </div>
+            <p style="color:#6c757d; margin-bottom:20px;" id="currentRoomDesc"></p>
+
+            <!-- 座位区 -->
+            <h3>🧑‍🤝‍🧑 当前成员 (<span id="memberCount">0</span>)</h3>
+            <div class="seats-grid" id="seatsGrid"></div>
+
+            <!-- 番茄钟面板 -->
+            <div class="pomodoro-panel">
+                <div>当前状态：<strong id="statusText">空闲中</strong></div>
+                <div class="timer-display" id="timerDisplay">00:00</div>
+                <div class="timer-controls">
+                    <button class="timer-btn btn-primary" id="startFocusBtn">开始专注 (25分钟)</button>
+                    <button class="timer-btn btn-secondary" id="startRestBtn">休息一下 (5分钟)</button>
+                    <button class="timer-btn btn-secondary" id="stopTimerBtn">结束</button>
+                </div>
+                <p style="font-size:0.8rem; color:#8a9aa8; margin-top:8px;">番茄钟会自动切换到下一阶段</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 创建自习室模态框（隐藏） -->
+    <div id="createRoomModal" class="modal-overlay" style="display:none;">
+        <div class="modal-dialog">
+            <button class="modal-close-btn" id="closeCreateModal">&times;</button>
+            <div class="modal-icon">✨</div>
+            <div class="modal-title">创建个人自习室</div>
+            <div class="modal-body" style="text-align:left;">
+                <label>名称</label>
+                <input type="text" id="newRoomName"
+                    style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; margin-bottom:12px;"
+                    placeholder="如：深中冲刺团">
+                <label>简介</label>
+                <input type="text" id="newRoomDesc"
+                    style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; margin-bottom:12px;"
+                    placeholder="一起加油！">
+                <label>人数上限</label>
+                <select id="newRoomMax"
+                    style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; margin-bottom:12px;">
+                    <option value="4">4人</option>
+                    <option value="6" selected>6人</option>
+                    <option value="8">8人</option>
+                    <option value="10">10人</option>
+                </select>
+            </div>
+            <div class="modal-footer-actions">
+                <button class="btn-primary-sm" id="submitCreateRoom">创建</button>
+                <button class="btn-secondary-sm" id="cancelCreateRoom">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+        const token = localStorage.getItem('token');
+        let currentTab = 'district';
+        let currentRoomId = null;
+        let pollTimer = null;
+        let pomodoroTimer = null;
+        let pomodoroSeconds = 0;
+        let pomodoroStatus = 'idle'; // idle, studying, resting
+
+        // ---------- 复用侧边栏逻辑（与 index.html 相同）----------
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) {
+            sidebar.classList.add('collapsed');
+            body.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            body.classList.remove('sidebar-collapsed');
+        }
+        toggleBtn.addEventListener('click', () => {
+            const currentlyExpanded = !sidebar.classList.contains('collapsed');
+            if (currentlyExpanded) {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'false');
+            } else {
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'true');
+            }
+        });
+
+        // 用户信息
+        async function updateSidebarUser() {
+            if (!token) {
+                document.getElementById('sidebarNickname').innerText = '未登录';
+                document.getElementById('sidebarEmail').innerText = '';
+                document.getElementById('sidebarAvatar').innerHTML = '<i class="fas fa-user-circle"></i>';
+                return;
+            }
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    document.getElementById('sidebarNickname').innerText = user.nickname || '用户';
+                    document.getElementById('sidebarEmail').innerText = user.email || '';
+                    if (user.avatar_url) {
+                        document.getElementById('sidebarAvatar').innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
+                    } else {
+                        document.getElementById('sidebarAvatar').innerHTML = '<i class="fas fa-user-circle"></i>';
+                    }
+                }
+            } catch (e) { }
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn').addEventListener('click', () => {
+            window.location.href = '/profile.html';
+        });
+        document.getElementById('sidebarLogoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        });
+
+        // 小红点逻辑（简化）
+        async function updateNotifDot() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const unreadCount = data.unreadCount || 0;
+                const topBadge = document.getElementById('notifBadge');
+                const sidebarDot = document.getElementById('sidebarNotifDot');
+                if (topBadge) {
+                    topBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+                    topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                }
+                if (sidebarDot) {
+                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) { }
+        }
+        updateNotifDot();
+        if (token) setInterval(updateNotifDot, 30000);
+
+        // ---------- 自习室逻辑 ----------
+
+        // 广场搜索
+        document.getElementById('studySearchBtn').addEventListener('click', () => {
+            const keyword = document.getElementById('studySearchInput').value.trim();
+            loadRooms(currentTab, keyword);
+        });
+        document.getElementById('studySearchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('studySearchBtn').click();
+        });
+
+        // 切换选项卡
+        document.querySelectorAll('.study-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.study-tab').forEach(t => t.classList.remove('active-tab'));
+                tab.classList.add('active-tab');
+                currentTab = tab.dataset.type;
+                document.getElementById('studySearchInput').value = '';
+                loadRooms(currentTab);
+                // 显示/隐藏创建按钮
+                const createBtn = document.getElementById('createRoomBtn');
+                if (token && currentTab === 'personal') {
+                    createBtn.style.display = 'inline-block';
+                } else {
+                    createBtn.style.display = 'none';
+                }
+            });
+        });
+
+        // 创建按钮事件
+        document.getElementById('createRoomBtn').addEventListener('click', () => {
+            if (!token) {
+                alert('请先登录');
+                return;
+            }
+            document.getElementById('createRoomModal').style.display = 'flex';
+        });
+        document.getElementById('closeCreateModal').addEventListener('click', () => {
+            document.getElementById('createRoomModal').style.display = 'none';
+        });
+        document.getElementById('cancelCreateRoom').addEventListener('click', () => {
+            document.getElementById('createRoomModal').style.display = 'none';
+        });
+        document.getElementById('submitCreateRoom').addEventListener('click', async () => {
+            const name = document.getElementById('newRoomName').value.trim();
+            const desc = document.getElementById('newRoomDesc').value.trim() || '';
+            const max = parseInt(document.getElementById('newRoomMax').value);
+            if (!name) {
+                alert('请输入自习室名称');
+                return;
+            }
+            try {
+                const res = await fetch(`${window.API_BASE}/study-rooms`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name, description: desc, max_members: max })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('自习室创建成功');
+                    document.getElementById('createRoomModal').style.display = 'none';
+                    document.getElementById('newRoomName').value = '';
+                    document.getElementById('newRoomDesc').value = '';
+                    loadRooms('personal');
+                } else {
+                    alert(data.error || '创建失败');
+                }
+            } catch (err) {
+                alert('网络错误');
+            }
+        });
+
+        // 加载自习室列表
+        async function loadRooms(type = 'district', search = '') {
+            const grid = document.getElementById('roomGrid');
+            grid.innerHTML = '<div class="loading">加载中...</div>';
+            let url = `${window.API_BASE}/study-rooms?type=${type}&limit=50`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const rooms = data.rooms || [];
+                if (rooms.length === 0) {
+                    grid.innerHTML = '<div class="no-posts">暂无自习室</div>';
+                    return;
+                }
+                grid.innerHTML = rooms.map(room => {
+                    let meta = '';
+                    if (room.room_type === 'district') {
+                        meta = `<span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(room.name)}</span>`;
+                    } else {
+                        meta = `<span>👤 ${escapeHtml(room.creator_nickname || '未知')}</span>`;
+                    }
+                    return `
+                    <div class="room-card" data-id="${room.id}" data-type="${room.room_type}">
+                        <div class="room-name">${escapeHtml(room.name)}</div>
+                        <div class="room-desc">${escapeHtml(room.description || '暂无简介')}</div>
+                        <div class="room-meta">
+                            <span><i class="fas fa-user"></i> ${room.online_count || 0} 人在线</span>
+                            <span><span class="studying-dot"></span> ${room.studying_count || 0} 专注中</span>
+                        </div>
+                        ${room.room_type === 'personal' ? `<div class="room-creator">
+                            ${room.creator_avatar ? `<img src="${escapeHtml(room.creator_avatar)}" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
+                            ${escapeHtml(room.creator_nickname || '')}
+                        </div>` : ''}
+                    </div>`;
+                }).join('');
+
+                // 卡片点击进入
+                document.querySelectorAll('.room-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const id = card.dataset.id;
+                        const type = card.dataset.type;
+                        enterRoom(id);
+                    });
+                });
+            } catch (err) {
+                console.error(err);
+                grid.innerHTML = '<div class="error">加载失败，请重试</div>';
+            }
+        }
+
+        // 进入自习室
+        async function enterRoom(roomId) {
+            if (!token) {
+                alert('请先登录');
+                return;
+            }
+            // 先加入房间
+            try {
+                const joinRes = await fetch(`${window.API_BASE}/study-rooms/${roomId}/join`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const joinData = await joinRes.json();
+                if (!joinRes.ok) {
+                    alert(joinData.error || '加入失败');
+                    return;
+                }
+            } catch (err) {
+                alert('加入失败');
+                return;
+            }
+
+            currentRoomId = roomId;
+            document.getElementById('studyLobby').style.display = 'none';
+            document.getElementById('studyRoom').style.display = 'block';
+
+            // 加载房间详情
+            await refreshRoomDetail();
+
+            // 启动轮询
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(refreshRoomDetail, 8000);
+
+            // 重置番茄钟
+            resetPomodoro();
+        }
+
+        // 轮询刷新房间成员状态
+        async function refreshRoomDetail() {
+            if (!currentRoomId) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/study-rooms/${currentRoomId}`);
+                const data = await res.json();
+                const room = data.room;
+                const members = data.members || [];
+                document.getElementById('currentRoomName').innerText = room.name;
+                document.getElementById('currentRoomDesc').innerText = room.description || '';
+                document.getElementById('memberCount').innerText = members.length;
+
+                // 渲染座位
+                const seatsGrid = document.getElementById('seatsGrid');
+                seatsGrid.innerHTML = members.map(m => {
+                    const statusClass = `status-${m.status}`;
+                    const statusLabel = { idle: '空闲', studying: '学习中', resting: '休息中' }[m.status] || '空闲';
+                    return `
+                    <div class="seat-card">
+                        <div class="seat-status ${statusClass}" title="${statusLabel}"></div>
+                        <div class="seat-avatar">
+                            ${m.avatar_url ? `<img src="${escapeHtml(m.avatar_url)}" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
+                        </div>
+                        <div class="seat-name" title="${escapeHtml(m.nickname)}">${escapeHtml(m.nickname)}</div>
+                    </div>`;
+                }).join('');
+
+                // 如果没有成员，显示提示
+                if (members.length === 0) {
+                    seatsGrid.innerHTML = '<p style="color:#8a9aa8;">暂时还没有成员，快邀请朋友吧~</p>';
+                }
+            } catch (err) {
+                console.error('刷新房间失败:', err);
+            }
+        }
+
+        // 退出自习室
+        document.getElementById('leaveRoomBtn').addEventListener('click', async () => {
+            if (!currentRoomId) return;
+            try {
+                await fetch(`${window.API_BASE}/study-rooms/${currentRoomId}/leave`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch (e) { }
+            // 清理
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = null;
+            stopPomodoro();
+            currentRoomId = null;
+
+            document.getElementById('studyRoom').style.display = 'none';
+            document.getElementById('studyLobby').style.display = 'block';
+            loadRooms(currentTab); // 刷新广场列表
+        });
+
+        // ---------- 番茄钟逻辑 ----------
+        const FOCUS_TIME = 25 * 60;   // 25分钟
+        const REST_TIME = 5 * 60;     // 5分钟
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(pomodoroSeconds / 60);
+            const secs = pomodoroSeconds % 60;
+            document.getElementById('timerDisplay').textContent =
+                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function stopPomodoro() {
+            if (pomodoroTimer) {
+                clearInterval(pomodoroTimer);
+                pomodoroTimer = null;
+            }
+            pomodoroSeconds = 0;
+            pomodoroStatus = 'idle';
+            updateTimerDisplay();
+            updatePomodoroStatusText();
+            updatePomodoroButtons();
+        }
+
+        function resetPomodoro() {
+            stopPomodoro();
+        }
+
+        async function setStatusOnServer(status, sessionStart = null) {
+            if (!currentRoomId) return;
+            try {
+                await fetch(`${window.API_BASE}/study-rooms/${currentRoomId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status, session_start: sessionStart ? sessionStart.toISOString() : null })
+                });
+            } catch (e) { }
+        }
+
+        function updatePomodoroStatusText() {
+            const textEl = document.getElementById('statusText');
+            textEl.textContent = { idle: '空闲中', studying: '专注中', resting: '休息中' }[pomodoroStatus] || '空闲中';
+        }
+
+        function updatePomodoroButtons() {
+            const startF = document.getElementById('startFocusBtn');
+            const startR = document.getElementById('startRestBtn');
+            const stop = document.getElementById('stopTimerBtn');
+            if (pomodoroStatus === 'idle') {
+                startF.disabled = false;
+                startR.disabled = true;
+                stop.disabled = true;
+            } else if (pomodoroStatus === 'studying') {
+                startF.disabled = true;
+                startR.disabled = true;
+                stop.disabled = false;
+            } else if (pomodoroStatus === 'resting') {
+                startF.disabled = true;
+                startR.disabled = true;
+                stop.disabled = false;
+            }
+        }
+
+        function startFocus() {
+            if (pomodoroTimer) clearInterval(pomodoroTimer);
+            pomodoroStatus = 'studying';
+            pomodoroSeconds = FOCUS_TIME;
+            updateTimerDisplay();
+            updatePomodoroStatusText();
+            updatePomodoroButtons();
+            setStatusOnServer('studying', new Date());
+
+            pomodoroTimer = setInterval(() => {
+                pomodoroSeconds--;
+                updateTimerDisplay();
+                if (pomodoroSeconds <= 0) {
+                    clearInterval(pomodoroTimer);
+                    // 自动转休息
+                    startRest();
+                }
+            }, 1000);
+        }
+
+        function startRest() {
+            if (pomodoroTimer) clearInterval(pomodoroTimer);
+            pomodoroStatus = 'resting';
+            pomodoroSeconds = REST_TIME;
+            updateTimerDisplay();
+            updatePomodoroStatusText();
+            updatePomodoroButtons();
+            setStatusOnServer('resting', new Date());
+
+            pomodoroTimer = setInterval(() => {
+                pomodoroSeconds--;
+                updateTimerDisplay();
+                if (pomodoroSeconds <= 0) {
+                    clearInterval(pomodoroTimer);
+                    stopPomodoro();
+                    setStatusOnServer('idle');
+                }
+            }, 1000);
+        }
+
+        document.getElementById('startFocusBtn').addEventListener('click', startFocus);
+        document.getElementById('startRestBtn').addEventListener('click', startRest);
+        document.getElementById('stopTimerBtn').addEventListener('click', async () => {
+            stopPomodoro();
+            await setStatusOnServer('idle');
+        });
+
+        // 初始加载
+        if (token) {
+            document.getElementById('createRoomBtn').style.display = 'none'; // 由 tab 控制
+        }
+        loadRooms('district');
+
+        // 小工具
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        }
+    </script>
+</body>
+
+</html>

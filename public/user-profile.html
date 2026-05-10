@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>用户主页 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- 移动端适配 -->
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ========== 全局样式（与 index 一致） ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA;
+            color: #1f2d3d;
+            line-height: 1.5;
+            padding-top: 60px;
+            margin-left: 260px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body.sidebar-collapsed {
+            margin-left: 70px;
+        }
+
+        /* 背景装饰 */
+        .bg-decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-decorations .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .bg-decorations .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(30, 136, 229, 0.05);
+        }
+
+        .bg-decorations .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .bg-decorations .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .bg-decorations .circle3 {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: 10%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* 关注按钮的基础状态 */
+        #followBtn {
+            background: #1E88E5;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 12px;
+            transition: all 0.2s;
+        }
+
+        #followBtn:hover {
+            background: #0b5e8a;
+        }
+
+        /* 已关注状态 */
+        #followBtn.following {
+            background: #f0f2f5 !important;
+            color: #4a5568 !important;
+        }
+
+        #followBtn.following:hover {
+            background: #e2e6ea !important;
+        }
+
+        /* ========== 顶部栏 ========== */
+        .top-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-right: 20px;
+            color: #4a5568;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1E88E5;
+            text-decoration: none;
+            margin-right: auto;
+        }
+
+        .search-area {
+            display: flex;
+            align-items: center;
+            background: #f1f3f5;
+            border-radius: 24px;
+            padding: 4px 12px;
+            width: 260px;
+        }
+
+        .search-area input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .search-area button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        /* 关于链接 */
+        .about-link {
+            margin-left: 16px;
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .about-link:hover {
+            color: #1E88E5;
+        }
+
+        .about-link i {
+            margin-right: 4px;
+        }
+
+        /* 顶部铃铛链接 */
+        .notifications-icon {
+            position: relative;
+            margin-left: 16px;
+            font-size: 1.4rem;
+            color: #6c757d;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== 侧边栏 ========== */
+        #sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: white;
+            border-right: 1px solid #eef2f6;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            z-index: 99;
+            overflow-x: hidden;
+        }
+
+        #sidebar.collapsed {
+            width: 70px;
+        }
+
+        #sidebar.collapsed .sidebar-user-info,
+        #sidebar.collapsed .sidebar-link span {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-logout {
+            font-size: 0;
+            padding: 8px;
+        }
+
+        #sidebar.collapsed .sidebar-logout::before {
+            content: "🚪";
+            font-size: 1.2rem;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            padding: 20px 16px;
+            border-bottom: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .sidebar-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-avatar i {
+            font-size: 48px;
+            color: #1E88E5;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-nickname {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .sidebar-email {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 0;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a5568;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar-link i {
+            width: 28px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            margin-left: 12px;
+        }
+
+        .sidebar-link:hover {
+            background: #f0f2f5;
+        }
+
+        .sidebar-link.active {
+            background: #e9f0fe;
+            color: #1E88E5;
+        }
+
+        .notif-dot {
+            color: #e53e3e;
+            font-size: 0.7rem;
+            margin-left: 4px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #eef2f6;
+        }
+
+        .sidebar-logout {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: #e53e3e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .sidebar-logout:hover {
+            background: #ffe5e5;
+        }
+
+        /* ========== 个人主页布局 ========== */
+        .profile-container {
+            max-width: 1200px;
+            margin: 32px auto;
+        }
+
+        .profile-grid {
+            display: flex;
+            gap: 32px;
+        }
+
+        .profile-sidebar {
+            flex: 1;
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid #eef2f6;
+            height: fit-content;
+        }
+
+        .profile-main {
+            flex: 2.5;
+        }
+
+        .user-avatar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .user-avatar img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #1E88E5;
+        }
+
+        .user-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+            margin: 12px 0 4px;
+        }
+
+        .user-email {
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f2f5;
+            font-size: 0.9rem;
+        }
+
+        .info-item i {
+            width: 24px;
+            color: #1E88E5;
+        }
+
+        .activity-section {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border: 1px solid #eef2f6;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .calendar {
+            overflow-x: auto;
+        }
+
+        .day-cell {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .day-cell.level-0 {
+            background-color: #ebedf0;
+        }
+
+        .day-cell.level-1 {
+            background-color: #c6e48b;
+        }
+
+        .day-cell.level-2 {
+            background-color: #7bc96f;
+        }
+
+        .day-cell.level-3 {
+            background-color: #239a3b;
+        }
+
+        .day-cell.level-4 {
+            background-color: #196127;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eef2f6;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 8px 20px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6c757d;
+            cursor: pointer;
+            transition: 0.2s;
+            border-radius: 30px;
+        }
+
+        .tab-btn.active {
+            color: #1E88E5;
+            background: #e9f0fe;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .posts-list,
+        .replies-list,
+        .favorites-list {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid #eef2f6;
+        }
+
+        .post-item,
+        .reply-item,
+        .favorite-item {
+            padding: 16px 0;
+            border-bottom: 1px solid #f0f2f5;
+        }
+
+        .post-title a,
+        .favorite-title a {
+            text-decoration: none;
+            color: #1f2d3d;
+            font-weight: 500;
+        }
+
+        .post-title a:hover,
+        .favorite-title a:hover {
+            color: #1E88E5;
+        }
+
+        .post-meta,
+        .reply-meta,
+        .favorite-meta {
+            font-size: 0.75rem;
+            color: #6c757d;
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .reply-content {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            color: #4a5568;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            background: #f0f2f5;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .pagination button.active {
+            background: #1E88E5;
+            color: white;
+        }
+
+        .hidden-module {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #eef2f6;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 20px;
+        }
+
+        /* 举报模态框 */
+        .report-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .report-modal-content {
+            background: white;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 500px;
+            padding: 24px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .report-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .report-close {
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .report-modal-body .form-group {
+            margin-bottom: 16px;
+        }
+
+        .report-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .footer {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin-left: 0;
+            }
+
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+
+            #sidebar.open-mobile {
+                transform: translateX(0);
+            }
+
+            .profile-grid {
+                flex-direction: column;
+            }
+
+            .search-area {
+                width: 180px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .search-area {
+                width: 150px;
+            }
+        }
+    </style>
+</head>
+
+<body id="appBody">
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <!-- 顶部栏 -->
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <!-- 新增：关于按钮 -->
+            <a href="/about.html" class="about-link" id="aboutLink">
+                <i class="fas fa-info-circle"></i> 关于
+            </a>
+            <!-- 顶部铃铛：改为链接跳转通知页面 -->
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i
+                    class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子">
+                <i class="fas fa-users"></i><span>圈子</span>
+            </a>
+            <a href="/study.html" class="sidebar-link" title="自习室">
+                <i class="fas fa-clock"></i><span>自习室</span>
+            </a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="#" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="#" class="sidebar-link" title="社团"><i class="fas fa-users"></i><span>社团</span></a>
+            <a href="#" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i
+                    class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
+                <i class="fas fa-comment-dots"></i><span>反馈</span>
+            </a>
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <!-- 举报模态框 -->
+    <div id="reportModal" class="report-modal">
+        <div class="report-modal-content">
+            <div class="report-modal-header">
+                <h3>举报</h3>
+                <span class="report-close">&times;</span>
+            </div>
+            <div class="report-modal-body">
+                <p>举报主体：<span id="reportTargetInfo"></span></p>
+                <div class="form-group">
+                    <label>举报类型</label>
+                    <select id="reportType">
+                        <option value="spam">垃圾广告</option>
+                        <option value="abuse">辱骂/人身攻击</option>
+                        <option value="harassment">骚扰/网暴</option>
+                        <option value="misinformation">不实信息</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>补充说明（选填）</label>
+                    <textarea id="reportReason" rows="3" placeholder="请详细描述..."></textarea>
+                </div>
+            </div>
+            <div class="report-modal-footer">
+                <button id="submitReportBtn">提交举报</button>
+                <button id="cancelReportBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container profile-container">
+        <div class="profile-grid" id="profileGrid">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
+        </div>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+        const token = localStorage.getItem('token');
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('uid');
+        if (!userId) {
+            document.getElementById('profileGrid').innerHTML = '<div class="error">缺少用户ID</div>';
+        } else {
+            loadUserProfile(parseInt(userId));
+        }
+
+        // ---------- 侧边栏展开/收起 ----------
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) {
+            sidebar.classList.add('collapsed');
+            body.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            body.classList.remove('sidebar-collapsed');
+        }
+        toggleBtn.addEventListener('click', () => {
+            const currentlyExpanded = !sidebar.classList.contains('collapsed');
+            if (currentlyExpanded) {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'false');
+            } else {
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'true');
+            }
+        });
+
+        // ---------- 用户信息 ----------
+        const avatarDiv = document.getElementById('sidebarAvatar');
+        const nicknameSpan = document.getElementById('sidebarNickname');
+        const emailSpan = document.getElementById('sidebarEmail');
+        async function updateSidebarUser() {
+            if (!token) {
+                nicknameSpan.innerText = '未登录';
+                emailSpan.innerText = '';
+                avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                return;
+            }
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    nicknameSpan.innerText = user.nickname || '用户';
+                    emailSpan.innerText = user.email || '';
+                    if (user.avatar_url) {
+                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
+                    } else {
+                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                    }
+                }
+            } catch (e) { console.warn(e); }
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
+            if (!token) {
+                window.location.href = '/login.html';
+            } else {
+                window.location.href = '/profile.html';
+            }
+        });
+
+        // ---------- 未读小红点 ----------
+        async function updateNotifDot() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const unreadCount = data.unreadCount || 0;
+                const topBadge = document.getElementById('notifBadge');
+                const sidebarDot = document.getElementById('sidebarNotifDot');
+                if (topBadge) {
+                    if (unreadCount > 0) {
+                        topBadge.style.display = 'flex';
+                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                    } else {
+                        topBadge.style.display = 'none';
+                    }
+                }
+                if (sidebarDot) {
+                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) { }
+        }
+        updateNotifDot();
+        if (token) setInterval(updateNotifDot, 30000);
+
+        // ---------- 退出登录 ----------
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        });
+
+        // ---------- 搜索 ----------
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        searchBtn?.addEventListener('click', () => {
+            const keyword = searchInput.value.trim();
+            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
+            else alert('请输入搜索关键词');
+        });
+        searchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBtn.click();
+        });
+
+        // ---------- 用户主页功能 ----------
+        let currentUserInfo = null;
+        let currentLoggedInUserId = null;
+        let currentUserIsAdmin = false;
+        let privacy = { show_activity: true, show_replies: true, show_favorites: true };
+        let postsPage = 1, repliesPage = 1, favoritesPage = 1;
+        let postsTotalPages = 1, repliesTotalPages = 1, favoritesTotalPages = 1;
+
+        // 举报功能
+        let currentReportTarget = { type: null, id: null, info: '' };
+        function openReportModal(targetType, targetId, targetInfo) {
+            currentReportTarget = { type: targetType, id: targetId, info: targetInfo };
+            document.getElementById('reportTargetInfo').innerText = targetInfo;
+            document.getElementById('reportModal').style.display = 'flex';
+        }
+        function closeReportModal() {
+            document.getElementById('reportModal').style.display = 'none';
+            document.getElementById('reportType').value = 'spam';
+            document.getElementById('reportReason').value = '';
+        }
+        async function submitReport() {
+            if (!token) {
+                alert('请先登录');
+                return;
+            }
+            const reasonType = document.getElementById('reportType').value;
+            const reason = document.getElementById('reportReason').value.trim();
+            const data = {
+                target_type: currentReportTarget.type,
+                target_id: currentReportTarget.id,
+                reason_type: reasonType,
+                reason: reason
+            };
+            try {
+                const res = await fetch(`${window.API_BASE}/reports`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    alert('举报已提交，感谢您的反馈');
+                    closeReportModal();
+                    window.location.href = '/feedback.html';
+                } else {
+                    alert(result.error || '提交失败');
+                }
+            } catch (err) {
+                alert('网络错误');
+            }
+        }
+        document.getElementById('submitReportBtn')?.addEventListener('click', submitReport);
+        document.getElementById('cancelReportBtn')?.addEventListener('click', closeReportModal);
+        document.querySelector('.report-close')?.addEventListener('click', closeReportModal);
+        document.body.addEventListener('click', (e) => {
+            const btn = e.target.closest('.report-btn');
+            if (!btn) return;
+            e.preventDefault();
+            const targetType = btn.dataset.targetType;
+            const targetId = parseInt(btn.dataset.targetId);
+            const targetInfo = btn.dataset.targetInfo;
+            openReportModal(targetType, targetId, targetInfo);
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        }
+        function formatDate(iso) {
+            const d = new Date(iso);
+            return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
+        }
+        function formatShortDate(iso) {
+            const d = new Date(iso);
+            return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+        }
+
+        async function fetchCurrentUser() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
+                    const user = await res.json();
+                    currentLoggedInUserId = user.id;
+                    currentUserIsAdmin = user.is_admin || false;
+                }
+            } catch (e) { console.warn(e); }
+        }
+
+        function renderCalendar(activityData) {
+            activityData = activityData.map(item => ({ ...item, date: new Date(item.date) }));
+            const container = document.getElementById('calendarContainer');
+            if (!container) return;
+            const weeks = [];
+            let currentWeek = [];
+            for (let i = 0; i < activityData.length; i++) {
+                const day = activityData[i];
+                const dayOfWeek = day.date.getDay();
+                if (dayOfWeek === 0 && currentWeek.length > 0) {
+                    weeks.push(currentWeek);
+                    currentWeek = [];
+                }
+                currentWeek.push(day);
+                if (i === activityData.length - 1 && currentWeek.length) weeks.push(currentWeek);
+            }
+            for (let w = 0; w < weeks.length; w++) {
+                while (weeks[w].length < 7) weeks[w].push(null);
+            }
+            const monthPositions = [];
+            for (let col = 0; col < weeks.length; col++) {
+                const firstDay = weeks[col][0];
+                if (firstDay) {
+                    const month = firstDay.date.getMonth();
+                    if (monthPositions.length === 0 || monthPositions[monthPositions.length - 1].month !== month) {
+                        monthPositions.push({ month, startCol: col, endCol: col });
+                    } else {
+                        monthPositions[monthPositions.length - 1].endCol = col;
+                    }
+                }
+            }
+            const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+            const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+            let html = '<div style="overflow-x: auto;">';
+            html += '<div style="display: flex; gap: 8px;">';
+            html += '<div style="display: flex; flex-direction: column; justify-content: space-around; gap: 3px; padding-top: 20px;">';
+            for (let i = 0; i < weekdays.length; i++) html += `<div style="height:12px; line-height:12px; font-size:10px; color:#6c757d;">${weekdays[i]}</div>`;
+            html += '</div>';
+            html += '<div style="display: flex; flex-direction: column;">';
+            html += '<div style="display: flex; margin-bottom: 8px;">';
+            for (let col = 0; col < weeks.length; col++) {
+                const pos = monthPositions.find(p => col >= p.startCol && col <= p.endCol);
+                if (pos && col === pos.startCol) {
+                    const colSpan = pos.endCol - pos.startCol + 1;
+                    html += `<div style="flex: ${colSpan}; text-align: center; font-size: 10px; color: #1f2d3d;">${monthNames[pos.month]}</div>`;
+                }
+            }
+            html += '</div>';
+            for (let row = 0; row < 7; row++) {
+                html += '<div style="display: flex; gap: 3px; margin-bottom: 3px;">';
+                for (let col = 0; col < weeks.length; col++) {
+                    const day = weeks[col][row];
+                    if (day) {
+                        const level = day.level;
+                        const title = day.date.toISOString().slice(0, 10);
+                        const colors = ['#ebedf0', '#c6e48b', '#7bc96f', '#239a3b', '#196127'];
+                        html += `<div class="day-cell level-${level}" title="${title}" style="width:12px; height:12px; background-color:${colors[level]}; border-radius:2px;"></div>`;
+                    } else {
+                        html += `<div style="width:12px; height:12px;"></div>`;
+                    }
+                }
+                html += '</div>';
+            }
+            html += '</div></div>';
+            html += '<div style="margin-top:12px; font-size:0.7rem; color:#6c757d; text-align:right;">';
+            html += '<span>少</span> <span class="day-cell level-0" style="display:inline-block; width:12px; height:12px; background:#ebedf0; margin:0 2px;"></span>';
+            html += '<span class="day-cell level-1" style="display:inline-block; width:12px; height:12px; background:#c6e48b; margin:0 2px;"></span>';
+            html += '<span class="day-cell level-2" style="display:inline-block; width:12px; height:12px; background:#7bc96f; margin:0 2px;"></span>';
+            html += '<span class="day-cell level-3" style="display:inline-block; width:12px; height:12px; background:#239a3b; margin:0 2px;"></span>';
+            html += '<span class="day-cell level-4" style="display:inline-block; width:12px; height:12px; background:#196127; margin:0 2px;"></span><span>多</span>';
+            html += '</div></div>';
+            container.innerHTML = html;
+        }
+
+        async function loadUserInfo(uid) {
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            const res = await fetch(`${window.API_BASE}/users/${uid}`, { headers });
+            if (!res.ok) throw new Error('用户不存在');
+            const user = await res.json();
+            currentUserInfo = user;
+            privacy.show_activity = user.show_activity !== false;
+            privacy.show_replies = user.show_replies !== false;
+            privacy.show_favorites = user.show_favorites !== false;
+            return user;
+        }
+
+        async function loadActivity(uid) {
+            if (!privacy.show_activity) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/users/${uid}/activity`);
+                const data = await res.json();
+                if (!data.hidden && data.activity) renderCalendar(data.activity);
+                else document.getElementById('activitySection').innerHTML = '<div class="hidden-module">该用户已隐藏活跃度日历</div>';
+            } catch (e) { console.warn(e); }
+        }
+
+        async function loadPosts(uid, page = 1) {
+            const container = document.getElementById('userPostsList');
+            const paginationDiv = document.getElementById('postsPagination');
+            if (!container) return;
+            container.innerHTML = '<div class="loading">加载中...</div>';
+            try {
+                const res = await fetch(`${window.API_BASE}/users/${uid}/posts?page=${page}&limit=10`);
+                const data = await res.json();
+                const posts = data.posts || [];
+                postsTotalPages = data.totalPages || 1;
+                postsPage = data.page || page;
+                if (!posts.length) {
+                    container.innerHTML = '<div class="hidden-module">暂无帖子</div>';
+                    paginationDiv.innerHTML = '';
+                    return;
+                }
+                container.innerHTML = posts.map(post => `
+                    <div class="post-item">
+                        <div class="post-title"><a href="/post-detail.html?id=${post.id}">${escapeHtml(post.title)}</a></div>
+                        <div class="post-meta">
+                            <span><i class="far fa-clock"></i> ${formatShortDate(post.created_at)}</span>
+                            <span><i class="far fa-comment"></i> ${post.reply_count || 0} 回复</span>
+                            <span><i class="far fa-eye"></i> ${post.view_count || 0} 阅读</span>
+                        </div>
+                    </div>
+                `).join('');
+                renderPagination(paginationDiv, postsPage, postsTotalPages, (newPage) => loadPosts(uid, newPage));
+            } catch (err) {
+                container.innerHTML = '<div class="error">加载失败</div>';
+            }
+        }
+
+        async function loadReplies(uid, page = 1) {
+            const container = document.getElementById('userRepliesList');
+            const paginationDiv = document.getElementById('repliesPagination');
+            if (!container) return;
+            if (!privacy.show_replies) {
+                container.innerHTML = '<div class="hidden-module">该用户已隐藏回复列表</div>';
+                paginationDiv.innerHTML = '';
+                return;
+            }
+            container.innerHTML = '<div class="loading">加载中...</div>';
+            try {
+                const res = await fetch(`${window.API_BASE}/users/${uid}/replies?page=${page}&limit=10`);
+                const data = await res.json();
+                if (data.hidden) {
+                    container.innerHTML = '<div class="hidden-module">该用户已隐藏回复列表</div>';
+                    paginationDiv.innerHTML = '';
+                    return;
+                }
+                const replies = data.replies || [];
+                repliesTotalPages = data.totalPages || 1;
+                repliesPage = data.page || page;
+                if (!replies.length) {
+                    container.innerHTML = '<div class="hidden-module">暂无回复</div>';
+                    paginationDiv.innerHTML = '';
+                    return;
+                }
+                container.innerHTML = replies.map(reply => `
+                    <div class="reply-item">
+                        <div class="reply-content">${escapeHtml(reply.content)}</div>
+                        <div class="reply-meta">
+                            <span><i class="far fa-clock"></i> ${formatDate(reply.created_at)}</span>
+                            <span>回复于：<a href="/post-detail.html?id=${reply.post_id}">${escapeHtml(reply.post_title)}</a></span>
+                        </div>
+                    </div>
+                `).join('');
+                renderPagination(paginationDiv, repliesPage, repliesTotalPages, (newPage) => loadReplies(uid, newPage));
+            } catch (err) {
+                container.innerHTML = '<div class="error">加载失败</div>';
+            }
+        }
+
+        async function loadFavorites(uid, page = 1) {
+            const container = document.getElementById('userFavoritesList');
+            const paginationDiv = document.getElementById('favoritesPagination');
+            if (!container) return;
+            if (!privacy.show_favorites) {
+                container.innerHTML = '<div class="hidden-module">该用户已隐藏收藏列表</div>';
+                paginationDiv.innerHTML = '';
+                return;
+            }
+            container.innerHTML = '<div class="loading">加载中...</div>';
+            try {
+                const res = await fetch(`${window.API_BASE}/users/${uid}/favorites?page=${page}&limit=10`);
+                const data = await res.json();
+                if (data.hidden) {
+                    container.innerHTML = '<div class="hidden-module">该用户已隐藏收藏列表</div>';
+                    paginationDiv.innerHTML = '';
+                    return;
+                }
+                const posts = data.posts || [];
+                favoritesTotalPages = data.totalPages || 1;
+                favoritesPage = data.page || page;
+                if (!posts.length) {
+                    container.innerHTML = '<div class="hidden-module">暂无收藏</div>';
+                    paginationDiv.innerHTML = '';
+                    return;
+                }
+                container.innerHTML = posts.map(post => `
+                    <div class="favorite-item">
+                        <div class="favorite-title"><a href="/post-detail.html?id=${post.id}">${escapeHtml(post.title)}</a></div>
+                        <div class="favorite-meta">
+                            <span><i class="fas fa-user"></i> ${escapeHtml(post.nickname)}</span>
+                            <span><i class="far fa-clock"></i> ${formatShortDate(post.created_at)}</span>
+                            <span><i class="far fa-comment"></i> ${post.reply_count || 0} 回复</span>
+                            <span><i class="far fa-eye"></i> ${post.view_count || 0} 阅读</span>
+                        </div>
+                    </div>
+                `).join('');
+                renderPagination(paginationDiv, favoritesPage, favoritesTotalPages, (newPage) => loadFavorites(uid, newPage));
+            } catch (err) {
+                container.innerHTML = '<div class="error">加载失败</div>';
+            }
+        }
+
+        function renderPagination(container, current, total, onPageChange) {
+            if (total <= 1) { container.innerHTML = ''; return; }
+            let html = '';
+            for (let i = 1; i <= total; i++) {
+                html += `<button class="${i === current ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            container.innerHTML = html;
+            container.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const page = parseInt(btn.dataset.page);
+                    if (page && page !== current) onPageChange(page);
+                });
+            });
+        }
+
+        async function loadUserProfile(uid) {
+            await fetchCurrentUser();
+            const grid = document.getElementById('profileGrid');
+            try {
+                const user = await loadUserInfo(uid);
+                const canReportUser = (currentLoggedInUserId !== user.id);
+                const reportUserButton = canReportUser ? `
+            <button class="report-btn" 
+                    data-target-type="user" 
+                    data-target-id="${user.id}" 
+                    data-target-info="用户：${escapeHtml(user.nickname)}"
+                    style="width:100%; margin-top:16px; background:#f0f2f5; border:none; padding:8px; border-radius:20px; cursor:pointer;">
+                举报用户
+            </button>
+        ` : '';
+                const sidebarHtml = `
+            <aside class="profile-sidebar">
+                <div class="user-avatar">
+                    <img src="${user.avatar_url || '/uploads/default-avatar.png'}" alt="头像">
+                </div>
+                <div class="user-name">${escapeHtml(user.nickname)}</div>
+                <div class="user-email">${escapeHtml(user.email)}</div>
+                <div class="info-item"><i class="fas fa-school"></i> ${escapeHtml(user.school || '未填写')}</div>
+                <div class="info-item"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(user.district || '未填写')}</div>
+                <div class="info-item"><i class="fas fa-heart"></i> ${escapeHtml(user.hobby || '未填写')}</div>
+                <div class="info-item"><i class="fas fa-calendar-alt"></i> 加入于 ${formatShortDate(user.created_at)}</div>
+                ${reportUserButton}
+                <div class="info-item" style="justify-content: space-around; border-bottom: none;">
+                    <a href="/follow-list.html?type=following&uid=${user.id}" style="text-decoration: none; color: inherit; text-align: center; pointer-events: auto;">
+                        <div style="font-weight: 600;"><span id="followingCount">${user.following_count || 0}</span></div>
+                        <div style="font-size: 0.75rem; color: #6c757d;">关注</div>
+                    </a>
+                    <a href="/follow-list.html?type=followers&uid=${user.id}" style="text-decoration: none; color: inherit; text-align: center; pointer-events: auto;">
+                        <div style="font-weight: 600;"><span id="followerCount">${user.follower_count || 0}</span></div>
+                        <div style="font-size: 0.75rem; color: #6c757d;">粉丝</div>
+                    </a>
+                </div>
+                <!-- 关注按钮（不能关注自己） -->
+                ${currentLoggedInUserId && currentLoggedInUserId !== user.id ? `
+                    <button id="followBtn" class="edit-profile-btn ${user.is_following ? 'following' : ''}" style="margin-top: 12px;">
+                        ${user.is_following ? '已关注' : '关注'}
+                    </button>
+                ` : ''}
+            </aside>
+        `;
+                const mainHtml = `
+            <div class="profile-main">
+                <div class="activity-section" id="activitySection">
+                    <div class="section-title"><i class="fas fa-calendar-alt"></i> 活跃度日历</div>
+                    <div class="calendar" id="calendarContainer">加载中...</div>
+                </div>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="posts">帖子</button>
+                    <button class="tab-btn" data-tab="replies">回复</button>
+                    <button class="tab-btn" data-tab="favorites">收藏</button>
+                </div>
+                <div id="postsTab" class="tab-content active">
+                    <div class="posts-list">
+                        <div id="userPostsList">加载中...</div>
+                        <div id="postsPagination" class="pagination"></div>
+                    </div>
+                </div>
+                <div id="repliesTab" class="tab-content">
+                    <div class="replies-list">
+                        <div id="userRepliesList">加载中...</div>
+                        <div id="repliesPagination" class="pagination"></div>
+                    </div>
+                </div>
+                <div id="favoritesTab" class="tab-content">
+                    <div class="favorites-list">
+                        <div id="userFavoritesList">加载中...</div>
+                        <div id="favoritesPagination" class="pagination"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+                grid.innerHTML = `<div class="profile-grid">${sidebarHtml}${mainHtml}</div>`;
+
+                // ---------- 设置关注按钮初始状态 ----------
+                const followBtn = document.getElementById('followBtn');
+                if (followBtn) {
+                    followBtn.addEventListener('click', async () => {
+                        if (!token) {
+                            alert('请先登录');
+                            window.location.href = '/login.html';
+                            return;
+                        }
+                        const res = await fetch(`${window.API_BASE}/users/${user.id}/follow`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            const followerCountSpan = document.getElementById('followerCount');
+                            if (data.following) {
+                                followBtn.innerText = '已关注';
+                                followBtn.classList.add('following');
+                                if (followerCountSpan) {
+                                    followerCountSpan.innerText = parseInt(followerCountSpan.innerText) + 1;
+                                }
+                            } else {
+                                followBtn.innerText = '关注';
+                                followBtn.classList.remove('following');
+                                if (followerCountSpan) {
+                                    followerCountSpan.innerText = Math.max(0, parseInt(followerCountSpan.innerText) - 1);
+                                }
+                            }
+                        } else {
+                            alert(data.error || '操作失败');
+                        }
+                    });
+                }
+
+                await loadActivity(uid);
+                await loadPosts(uid);
+                if (privacy.show_replies) await loadReplies(uid);
+                else document.getElementById('userRepliesList').innerHTML = '<div class="hidden-module">该用户已隐藏回复列表</div>';
+                if (privacy.show_favorites) await loadFavorites(uid);
+                else document.getElementById('userFavoritesList').innerHTML = '<div class="hidden-module">该用户已隐藏收藏列表</div>';
+
+                const tabs = document.querySelectorAll('.tab-btn');
+                const contents = {
+                    posts: document.getElementById('postsTab'),
+                    replies: document.getElementById('repliesTab'),
+                    favorites: document.getElementById('favoritesTab')
+                };
+                tabs.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const tab = btn.dataset.tab;
+                        tabs.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        Object.values(contents).forEach(c => c.classList.remove('active'));
+                        contents[tab].classList.add('active');
+                    });
+                });
+            } catch (err) {
+                grid.innerHTML = `<div class="error">${err.message}</div>`;
+            }
+        }
+    </script>
+</body>
+
+</html>

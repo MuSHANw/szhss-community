@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>设置 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- 移动端适配 -->
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- 引入学校与行政区数据 -->
+    <script src="/js/schools.js"></script>
+    <script src="/js/districts.js"></script>
+    <style>
+        /* ========== 全局样式（完全复制自 index.html） ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA;
+            color: #1f2d3d;
+            line-height: 1.5;
+            padding-top: 60px;
+            margin-left: 260px;
+            transition: margin-left 0.3s ease;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        body.sidebar-collapsed {
+            margin-left: 70px;
+        }
+
+        /* 背景装饰 */
+        .bg-decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-decorations .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .bg-decorations .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(30, 136, 229, 0.05);
+        }
+
+        .bg-decorations .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .bg-decorations .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .bg-decorations .circle3 {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: 10%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ========== 顶部栏（与 index.html 完全一致） ========== */
+        .top-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-right: 20px;
+            color: #4a5568;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1E88E5;
+            text-decoration: none;
+            margin-right: auto;
+        }
+
+        .search-area {
+            display: flex;
+            align-items: center;
+            background: #f1f3f5;
+            border-radius: 24px;
+            padding: 4px 12px;
+            width: 260px;
+        }
+
+        .search-area input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .search-area button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        /* 关于链接 */
+        .about-link {
+            margin-left: 16px;
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .about-link:hover {
+            color: #1E88E5;
+        }
+
+        .about-link i {
+            margin-right: 4px;
+        }
+
+        /* 顶部铃铛链接 */
+        .notifications-icon {
+            position: relative;
+            margin-left: 16px;
+            font-size: 1.4rem;
+            color: #6c757d;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== 侧边栏（与 index.html 完全一致） ========== */
+        #sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: white;
+            border-right: 1px solid #eef2f6;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            z-index: 99;
+            overflow-x: hidden;
+        }
+
+        #sidebar.collapsed {
+            width: 70px;
+        }
+
+        #sidebar.collapsed .sidebar-user-info,
+        #sidebar.collapsed .sidebar-link span {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-logout {
+            font-size: 0;
+            padding: 8px;
+        }
+
+        #sidebar.collapsed .sidebar-logout::before {
+            content: "🚪";
+            font-size: 1.2rem;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            padding: 20px 16px;
+            border-bottom: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .sidebar-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-avatar i {
+            font-size: 48px;
+            color: #1E88E5;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-nickname {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .sidebar-email {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 0;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a5568;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar-link i {
+            width: 28px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            margin-left: 12px;
+        }
+
+        .sidebar-link:hover {
+            background: #f0f2f5;
+        }
+
+        .sidebar-link.active {
+            background: #e9f0fe;
+            color: #1E88E5;
+        }
+
+        .notif-dot {
+            color: #e53e3e;
+            font-size: 0.7rem;
+            margin-left: 4px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #eef2f6;
+        }
+
+        .sidebar-logout {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: #e53e3e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .sidebar-logout:hover {
+            background: #ffe5e5;
+        }
+
+        /* ========== 设置页面特有样式 ========== */
+        .settings-wrapper {
+            max-width: 1000px;
+            margin: 32px auto;
+            background: white;
+            border-radius: 24px;
+            border: 1px solid #eef2f6;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 768px) {
+            .settings-wrapper {
+                flex-direction: row;
+                min-height: 500px;
+            }
+        }
+
+        .settings-sidebar {
+            background: #fafbfc;
+            border-right: 1px solid #eef2f6;
+            padding: 24px 0;
+            width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .settings-sidebar {
+                width: 240px;
+                flex-shrink: 0;
+            }
+        }
+
+        .nav-item {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #4a5568;
+            cursor: pointer;
+            transition: 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #e9f0fe;
+            color: #1E88E5;
+            border-left-color: #1E88E5;
+        }
+
+        .settings-content {
+            flex: 1;
+            padding: 32px;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            background: #fafbfc;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #1E88E5;
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+        }
+
+        input:disabled {
+            background: #f1f3f5;
+            color: #6c757d;
+        }
+
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 12px;
+            border: 3px solid #eef2f6;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .checkbox-group input {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+        }
+
+        button {
+            background: #1E88E5;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0b5e8a;
+        }
+
+        .error-msg {
+            color: #e53e3e;
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        .success-msg {
+            color: #10b981;
+        }
+
+        .hint {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        /* 学校选择模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #eef2f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #eef2f6;
+            text-align: right;
+        }
+
+        .school-search-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 40px;
+            margin-bottom: 12px;
+        }
+
+        .district-filter {
+            margin-bottom: 16px;
+        }
+
+        .district-filter select {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 40px;
+        }
+
+        .school-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .school-item {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f2f5;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .school-item:hover {
+            background: #e9f0fe;
+        }
+
+        .feedback-link {
+            margin-top: 12px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .feedback-link a {
+            color: #1E88E5;
+            text-decoration: none;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .footer {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin-left: 0;
+            }
+
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+
+            #sidebar.open-mobile {
+                transform: translateX(0);
+            }
+
+            .search-area {
+                width: 180px;
+            }
+
+            .settings-wrapper {
+                margin: 20px;
+            }
+
+            .settings-content {
+                padding: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .search-area {
+                width: 150px;
+            }
+        }
+    </style>
+</head>
+
+<body id="appBody">
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <!-- 顶部栏 -->
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <!-- 新增：关于按钮 -->
+            <a href="/about.html" class="about-link" id="aboutLink">
+                <i class="fas fa-info-circle"></i> 关于
+            </a>
+            <!-- 顶部铃铛：改为链接跳转通知页面 -->
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i
+                    class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子">
+                <i class="fas fa-users"></i><span>圈子</span>
+            </a>
+            <a href="/study.html" class="sidebar-link" title="自习室">
+                <i class="fas fa-clock"></i><span>自习室</span>
+            </a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="#" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="#" class="sidebar-link" title="社团"><i class="fas fa-users"></i><span>社团</span></a>
+            <a href="#" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link active" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i
+                    class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
+                <i class="fas fa-comment-dots"></i><span>反馈</span>
+            </a>
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <!-- 学校选择模态框 -->
+    <div id="schoolModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>选择学校</h3>
+                <button class="close-modal" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    <button type="button" id="showHighSchoolBtn" class="school-type-btn active"
+                        style="flex:1; background:#1E88E5; color:white;">🏫 普通高中</button>
+                    <button type="button" id="showVocationalBtn" class="school-type-btn"
+                        style="flex:1; background:#f0f2f5; color:#333;">🔧 中等职业学校</button>
+                </div>
+                <input type="text" id="schoolSearch" class="school-search-input" placeholder="搜索学校名称...">
+                <div class="district-filter">
+                    <select id="districtFilter">
+                        <option value="all">所有行政区</option>
+                    </select>
+                </div>
+                <div id="schoolList" class="school-list">
+                    <!-- 动态生成 -->
+                </div>
+                <div class="feedback-link">
+                    <a href="feedback.html" id="feedbackLink">没找到你的学校？去反馈 →</a>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelSchoolBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="settings-wrapper">
+            <div class="settings-sidebar">
+                <div class="nav-item active" data-tab="profile">个人资料</div>
+                <div class="nav-item" data-tab="privacy">隐私设置</div>
+            </div>
+            <div class="settings-content">
+                <div id="profile-tab" class="tab-pane active">
+                    <h2>个人资料</h2>
+                    <div class="form-group">
+                        <label>头像</label>
+                        <div><img id="avatarPreview" class="avatar-preview" src="/uploads/default-avatar.png" alt="头像">
+                        </div>
+                        <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif">
+                        <div class="hint">支持 JPG、PNG、GIF，大小不超过2MB</div>
+                    </div>
+                    <div class="form-group">
+                        <label>昵称</label>
+                        <input type="text" id="nickname" placeholder="请输入昵称">
+                        <div id="nicknameHint" class="hint"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>学校</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="schoolDisplay" readonly placeholder="点击选择学校"
+                                style="flex:1; background:#fafbfc; cursor:pointer;">
+                            <button type="button" id="chooseSchoolBtn" style="padding:0 16px;">选择</button>
+                        </div>
+                        <input type="hidden" id="school" name="school">
+                    </div>
+                    <div class="form-group">
+                        <label>行政区</label>
+                        <select id="district"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>爱好 / 个人简介</label>
+                        <textarea id="hobby" rows="3" placeholder="说说你的兴趣爱好..."></textarea>
+                    </div>
+                    <button id="saveProfileBtn">保存修改</button>
+                    <div id="profileMsg" class="error-msg" style="margin-top: 12px;"></div>
+                </div>
+                <div id="privacy-tab" class="tab-pane">
+                    <h2>隐私设置</h2>
+                    <div class="checkbox-group"><input type="checkbox" id="show_activity"> 公开我的活跃度日历</div>
+                    <div class="checkbox-group"><input type="checkbox" id="show_replies"> 公开我的回复列表</div>
+                    <div class="checkbox-group"><input type="checkbox" id="show_favorites"> 公开我的收藏列表</div>
+                    <button id="savePrivacyBtn">保存隐私设置</button>
+                    <div id="privacyMsg" class="error-msg" style="margin-top: 12px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
+        </div>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+
+        // ---------- 侧边栏展开/收起（与 index.html 一致） ----------
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) {
+            sidebar.classList.add('collapsed');
+            body.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            body.classList.remove('sidebar-collapsed');
+        }
+        toggleBtn.addEventListener('click', () => {
+            const currentlyExpanded = !sidebar.classList.contains('collapsed');
+            if (currentlyExpanded) {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'false');
+            } else {
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'true');
+            }
+        });
+
+        // ---------- 用户信息 ----------
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+        const avatarDiv = document.getElementById('sidebarAvatar');
+        const nicknameSpan = document.getElementById('sidebarNickname');
+        const emailSpan = document.getElementById('sidebarEmail');
+        async function updateSidebarUser() {
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    nicknameSpan.innerText = user.nickname || '用户';
+                    emailSpan.innerText = user.email || '';
+                    if (user.avatar_url) {
+                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
+                    } else {
+                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                    }
+                }
+            } catch (e) { console.warn(e); }
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
+            window.location.href = '/profile.html';
+        });
+
+        // ---------- 未读小红点 ----------
+        async function updateNotifDot() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const unreadCount = data.unreadCount || 0;
+                const topBadge = document.getElementById('notifBadge');
+                const sidebarDot = document.getElementById('sidebarNotifDot');
+                if (topBadge) {
+                    if (unreadCount > 0) {
+                        topBadge.style.display = 'flex';
+                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                    } else {
+                        topBadge.style.display = 'none';
+                    }
+                }
+                if (sidebarDot) {
+                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) { }
+        }
+        updateNotifDot();
+        if (token) setInterval(updateNotifDot, 30000);
+
+        // ---------- 退出登录 ----------
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        });
+
+        // ---------- 搜索 ----------
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        searchBtn?.addEventListener('click', () => {
+            const keyword = searchInput.value.trim();
+            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
+            else alert('请输入搜索关键词');
+        });
+        searchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBtn.click();
+        });
+
+        // ---------- 设置页面逻辑 ----------
+        let currentUser = null;
+        let currentSchoolType = 'high';
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        }
+
+        function formatDate(iso) {
+            const d = new Date(iso);
+            return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+        }
+
+        function updateAvatarPreview(url) {
+            const preview = document.getElementById('avatarPreview');
+            if (preview && url) preview.src = url;
+        }
+
+        function initDistrictSelect() {
+            const select = document.getElementById('district');
+            select.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = '请选择行政区';
+            select.appendChild(defaultOption);
+            DISTRICTS.forEach(district => {
+                const option = document.createElement('option');
+                option.value = district;
+                option.textContent = district;
+                select.appendChild(option);
+            });
+        }
+
+        function initDistrictFilter() {
+            const select = document.getElementById('districtFilter');
+            select.innerHTML = '<option value="all">所有行政区</option>';
+            DISTRICTS.forEach(district => {
+                const option = document.createElement('option');
+                option.value = district;
+                option.textContent = district;
+                select.appendChild(option);
+            });
+        }
+
+        function renderSchoolList(schools) {
+            const container = document.getElementById('schoolList');
+            if (!schools.length) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center;">暂无学校</div>';
+                return;
+            }
+            container.innerHTML = schools.map(school => `<div class="school-item" data-school="${escapeHtml(school)}">${escapeHtml(school)}</div>`).join('');
+            document.querySelectorAll('.school-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const schoolName = item.dataset.school;
+                    document.getElementById('schoolDisplay').value = schoolName;
+                    document.getElementById('school').value = schoolName;
+                    closeModal();
+                });
+            });
+        }
+
+        function filterSchools() {
+            const searchTerm = document.getElementById('schoolSearch').value.trim().toLowerCase();
+            const district = document.getElementById('districtFilter').value;
+            let sourceData = currentSchoolType === 'high' ? HIGH_SCHOOLS_DATA : VOCATIONAL_SCHOOLS_DATA;
+            let filtered = [];
+            if (district === 'all') {
+                for (const schools of Object.values(sourceData)) {
+                    filtered.push(...schools);
+                }
+            } else {
+                filtered = sourceData[district] || [];
+            }
+            if (searchTerm) {
+                filtered = filtered.filter(school => school.toLowerCase().includes(searchTerm));
+            }
+            renderSchoolList(filtered);
+        }
+
+        function openModal() {
+            const modal = document.getElementById('schoolModal');
+            modal.style.display = 'flex';
+            document.getElementById('schoolSearch').value = '';
+            document.getElementById('districtFilter').value = 'all';
+            filterSchools();
+        }
+
+        function closeModal() {
+            document.getElementById('schoolModal').style.display = 'none';
+        }
+
+        function switchSchoolType(type) {
+            currentSchoolType = type;
+            const highBtn = document.getElementById('showHighSchoolBtn');
+            const vocBtn = document.getElementById('showVocationalBtn');
+            if (type === 'high') {
+                highBtn.style.background = '#1E88E5';
+                highBtn.style.color = 'white';
+                vocBtn.style.background = '#f0f2f5';
+                vocBtn.style.color = '#333';
+            } else {
+                vocBtn.style.background = '#1E88E5';
+                vocBtn.style.color = 'white';
+                highBtn.style.background = '#f0f2f5';
+                highBtn.style.color = '#333';
+            }
+            filterSchools();
+        }
+
+        async function loadUserInfo() {
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!res.ok) throw new Error();
+                currentUser = await res.json();
+                document.getElementById('nickname').value = currentUser.nickname || '';
+                document.getElementById('school').value = currentUser.school || '';
+                if (currentUser.school) {
+                    document.getElementById('schoolDisplay').value = currentUser.school;
+                } else {
+                    document.getElementById('schoolDisplay').value = '';
+                }
+                document.getElementById('district').value = currentUser.district || '';
+                document.getElementById('hobby').value = currentUser.hobby || '';
+                document.getElementById('show_activity').checked = currentUser.show_activity !== false;
+                document.getElementById('show_replies').checked = currentUser.show_replies !== false;
+                document.getElementById('show_favorites').checked = currentUser.show_favorites !== false;
+                if (currentUser.avatar_url) {
+                    updateAvatarPreview(currentUser.avatar_url);
+                } else {
+                    updateAvatarPreview('/uploads/default-avatar.png');
+                }
+
+                if (currentUser.nickname_last_updated) {
+                    const lastUpdated = new Date(currentUser.nickname_last_updated);
+                    const diffDays = (new Date() - lastUpdated) / (1000 * 60 * 60 * 24);
+                    if (diffDays < 7) {
+                        document.getElementById('nickname').disabled = true;
+                        const remain = Math.ceil(7 - diffDays);
+                        document.getElementById('nicknameHint').innerHTML = `昵称上次修改于 ${formatDate(currentUser.nickname_last_updated)}，${remain}天后可再次修改`;
+                    } else {
+                        document.getElementById('nickname').disabled = false;
+                        document.getElementById('nicknameHint').innerHTML = '昵称7天内只能修改一次';
+                    }
+                } else {
+                    document.getElementById('nickname').disabled = false;
+                    document.getElementById('nicknameHint').innerHTML = '昵称7天内只能修改一次';
+                }
+            } catch (err) {
+                console.error(err);
+                alert('加载用户信息失败，请刷新重试');
+            }
+        }
+
+        async function uploadAvatar(file) {
+            const formData = new FormData();
+            formData.append('avatar', file);
+            try {
+                const res = await fetch(`${window.API_BASE}/me/avatar`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    updateAvatarPreview(data.avatar_url);
+                    if (currentUser) currentUser.avatar_url = data.avatar_url;
+                    if (avatarDiv) {
+                        avatarDiv.innerHTML = `<img src="${data.avatar_url}" alt="头像">`;
+                    }
+                    return true;
+                } else {
+                    alert(data.error || '上传失败');
+                    return false;
+                }
+            } catch (err) {
+                console.error(err);
+                alert('网络错误');
+                return false;
+            }
+        }
+
+        async function saveProfile() {
+            const nickname = document.getElementById('nickname').value.trim();
+            const school = document.getElementById('school').value;
+            const district = document.getElementById('district').value;
+            const hobby = document.getElementById('hobby').value.trim();
+            if (!nickname) {
+                document.getElementById('profileMsg').innerText = '昵称不能为空';
+                return;
+            }
+            try {
+                const res = await fetch(`${window.API_BASE}/me/profile`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ nickname, school, district, hobby })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('profileMsg').innerHTML = '<span class="success-msg">保存成功！即将跳转首页...</span>';
+                    nicknameSpan.innerText = nickname;
+                    setTimeout(() => window.location.href = '/', 1500);
+                } else {
+                    document.getElementById('profileMsg').innerText = data.error || '保存失败';
+                }
+            } catch (err) {
+                document.getElementById('profileMsg').innerText = '网络错误';
+            }
+        }
+
+        async function savePrivacy() {
+            const show_activity = document.getElementById('show_activity').checked;
+            const show_replies = document.getElementById('show_replies').checked;
+            const show_favorites = document.getElementById('show_favorites').checked;
+            try {
+                const res = await fetch(`${window.API_BASE}/me/profile`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ show_activity, show_replies, show_favorites })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('privacyMsg').innerHTML = '<span class="success-msg">保存成功！即将跳转首页...</span>';
+                    setTimeout(() => window.location.href = '/', 1500);
+                } else {
+                    document.getElementById('privacyMsg').innerText = data.error || '保存失败';
+                }
+            } catch (err) {
+                document.getElementById('privacyMsg').innerText = '网络错误';
+            }
+        }
+
+        initDistrictFilter();
+        initDistrictSelect();
+        loadUserInfo();
+
+        document.getElementById('chooseSchoolBtn').addEventListener('click', openModal);
+        document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+        document.getElementById('cancelSchoolBtn').addEventListener('click', closeModal);
+        document.getElementById('schoolSearch').addEventListener('input', filterSchools);
+        document.getElementById('districtFilter').addEventListener('change', filterSchools);
+        document.getElementById('feedbackLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = '/feedback.html';
+        });
+        document.getElementById('showHighSchoolBtn').addEventListener('click', () => switchSchoolType('high'));
+        document.getElementById('showVocationalBtn').addEventListener('click', () => switchSchoolType('vocational'));
+
+        document.getElementById('avatarInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                alert('图片不能超过2MB');
+                return;
+            }
+            await uploadAvatar(file);
+        });
+        document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
+        document.getElementById('savePrivacyBtn').addEventListener('click', savePrivacy);
+
+        const navItems = document.querySelectorAll('.nav-item');
+        const tabs = {
+            profile: document.getElementById('profile-tab'),
+            privacy: document.getElementById('privacy-tab')
+        };
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const tab = item.dataset.tab;
+                navItems.forEach(n => n.classList.remove('active'));
+                item.classList.add('active');
+                Object.values(tabs).forEach(t => t.classList.remove('active'));
+                tabs[tab].classList.add('active');
+            });
+        });
+    </script>
+</body>
+
+</html>

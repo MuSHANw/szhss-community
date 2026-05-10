@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>社区公约 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- 移动端适配 -->
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ========== 全局样式（与 index 一致） ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA;
+            color: #1f2d3d;
+            line-height: 1.5;
+            padding-top: 60px;
+            margin-left: 260px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body.sidebar-collapsed {
+            margin-left: 70px;
+        }
+
+        /* 背景装饰 */
+        .bg-decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-decorations .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .bg-decorations .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(30, 136, 229, 0.05);
+        }
+
+        .bg-decorations .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .bg-decorations .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .bg-decorations .circle3 {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: 10%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* 顶部铃铛链接 */
+        .notifications-icon {
+            position: relative;
+            margin-left: 16px;
+            font-size: 1.4rem;
+            color: #6c757d;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== 顶部栏 ========== */
+        .top-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-right: 20px;
+            color: #4a5568;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1E88E5;
+            text-decoration: none;
+            margin-right: auto;
+        }
+
+        .search-area {
+            display: flex;
+            align-items: center;
+            background: #f1f3f5;
+            border-radius: 24px;
+            padding: 4px 12px;
+            width: 260px;
+        }
+
+        .search-area input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .search-area button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        /* 关于链接 */
+        .about-link {
+            margin-left: 16px;
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .about-link:hover {
+            color: #1E88E5;
+        }
+
+        .about-link i {
+            margin-right: 4px;
+        }
+
+        /* ========== 侧边栏（与 index 完全一致） ========== */
+        #sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: white;
+            border-right: 1px solid #eef2f6;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            z-index: 99;
+            overflow-x: hidden;
+        }
+
+        #sidebar.collapsed {
+            width: 70px;
+        }
+
+        #sidebar.collapsed .sidebar-user-info,
+        #sidebar.collapsed .sidebar-link span {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-logout {
+            font-size: 0;
+            padding: 8px;
+        }
+
+        #sidebar.collapsed .sidebar-logout::before {
+            content: "🚪";
+            font-size: 1.2rem;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            padding: 20px 16px;
+            border-bottom: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .sidebar-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-avatar i {
+            font-size: 48px;
+            color: #1E88E5;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-nickname {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .sidebar-email {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 0;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a5568;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar-link i {
+            width: 28px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            margin-left: 12px;
+        }
+
+        .sidebar-link:hover {
+            background: #f0f2f5;
+        }
+
+        .sidebar-link.active {
+            background: #e9f0fe;
+            color: #1E88E5;
+        }
+
+        .notif-dot {
+            color: #e53e3e;
+            font-size: 0.7rem;
+            margin-left: 4px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #eef2f6;
+        }
+
+        .sidebar-logout {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: #e53e3e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .sidebar-logout:hover {
+            background: #ffe5e5;
+        }
+
+        /* ========== 公约内容容器 ========== */
+        .rules-wrapper {
+            max-width: 900px;
+            margin: 40px auto;
+        }
+
+        .rules-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            border: 1px solid #eef2f6;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        .rules-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #1f2d3d;
+        }
+
+        .rules-subtitle {
+            color: #6c757d;
+            border-bottom: 1px solid #eef2f6;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+
+        .rules-section {
+            margin-bottom: 32px;
+        }
+
+        .rules-section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            border-left: 4px solid #1E88E5;
+            padding-left: 12px;
+        }
+
+        .rules-section h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 16px 0 8px;
+            color: #1f2d3d;
+        }
+
+        .rules-section p,
+        .rules-section li {
+            line-height: 1.6;
+            color: #4a5568;
+        }
+
+        .rules-section ul {
+            margin-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .rules-section li {
+            margin-bottom: 8px;
+        }
+
+        .highlight {
+            background: #e9f0fe;
+            padding: 2px 6px;
+            border-radius: 12px;
+            color: #1E88E5;
+            font-weight: 500;
+        }
+
+        .footer-note {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eef2f6;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        /* ========== 页脚 ========== */
+        .footer {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin-left: 0;
+            }
+
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+
+            #sidebar.open-mobile {
+                transform: translateX(0);
+            }
+
+            .rules-card {
+                padding: 24px;
+                margin: 20px;
+            }
+
+            .rules-title {
+                font-size: 1.6rem;
+            }
+
+            .search-area {
+                width: 180px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .search-area {
+                width: 150px;
+            }
+        }
+    </style>
+</head>
+
+<body id="appBody">
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <!-- 顶部栏 -->
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <!-- 新增：关于按钮 -->
+            <a href="/about.html" class="about-link" id="aboutLink">
+                <i class="fas fa-info-circle"></i> 关于
+            </a>
+            <!-- 顶部铃铛：改为链接跳转通知页面 -->
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 侧边栏（与 index 完全一致） -->
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i
+                    class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子">
+                <i class="fas fa-users"></i><span>圈子</span>
+            </a>
+            <a href="/study.html" class="sidebar-link" title="自习室">
+                <i class="fas fa-clock"></i><span>自习室</span>
+            </a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="#" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="#" class="sidebar-link" title="社团"><i class="fas fa-users"></i><span>社团</span></a>
+            <a href="#" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i
+                    class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
+                <i class="fas fa-comment-dots"></i><span>反馈</span>
+            </a>
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <!-- 公约内容 -->
+    <div class="container">
+        <div class="rules-wrapper">
+            <div class="rules-card">
+                <h1 class="rules-title">📜 深圳高中生社区 · 社区公约</h1>
+                <div class="rules-subtitle">试行版 v1.0 · 最后更新：2026年4月5日</div>
+
+                <div class="rules-section">
+                    <h2>一、总则</h2>
+                    <p>深圳高中生社区（以下简称“本社区”）是一个为深圳地区高中生提供学习交流、生活分享、社团互动的在线平台。为了维护良好的社区氛围，保护每一位成员的合法权益，防止网络暴力、校园欺凌、线下约架等不良行为，特制定本公约。凡注册并使用本社区的用户，均视为同意并承诺遵守本公约。
+                    </p>
+                </div>
+
+                <div class="rules-section">
+                    <h2>二、用户行为规范</h2>
+                    <ul>
+                        <li><strong>尊重他人</strong>：不得发布辱骂、诽谤、人身攻击、地域歧视、性别歧视等言论。</li>
+                        <li><strong>拒绝暴力</strong>：严禁任何形式的暴力言论、威胁、恐吓，禁止煽动线下冲突或约架。</li>
+                        <li><strong>保护隐私</strong>：未经他人同意，不得公开其真实姓名、学校、班级、照片、联系方式等隐私信息。</li>
+                        <li><strong>文明交流</strong>：鼓励理性讨论，反对阴阳怪气、引战、刷屏、恶意举报等行为。</li>
+                        <li><strong>遵守法律</strong>：不得发布任何违法信息，包括但不限于色情、赌博、毒品、违禁品交易、危害国家安全等内容。</li>
+                        <li><strong>拒绝广告</strong>：未经许可，不得发布商业广告、引流、传销等内容。学习资料分享请注明来源。</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>三、特别禁止事项（红线）</h2>
+                    <ul>
+                        <li><span class="highlight">❌ 校园欺凌</span>：任何形式的嘲笑、孤立、造谣、网暴他人，一经发现严肃处理。</li>
+                        <li><span class="highlight">❌ 线下约架</span>：禁止组织、参与、煽动任何形式的线下肢体冲突或非法集会。</li>
+                        <li><span class="highlight">❌ 不当交友</span>：禁止以“扩列”“处对象”等名义发布诱导线下见面的信息。本社区不设立任何交友板块。</li>
+                        <li><span class="highlight">❌ 侵犯未成年人</span>：严禁任何针对未成年人的性暗示、骚扰、诱骗行为，违者将永久封号并可能移交公安机关。</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>四、举报与监督机制</h2>
+                    <ul>
+                        <li>每篇帖子、每条回复旁边均设有<span class="highlight">“举报”按钮</span>，用户可一键举报违规内容。</li>
+                        <li>用户也可通过邮箱 <strong>MuSHANwyc@outlook.com</strong> 或 <strong>yingming988@qq.com</strong> 联系管理员进行举报。</li>
+                        <li>管理员将在24小时内对举报内容进行核查，并作出处理。</li>
+                        <li>鼓励用户文明监督，严禁恶意举报，否则将受到反制处罚。</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>五、违规处理措施</h2>
+                    <p>根据违规情节严重程度，本社区保留采取以下一项或多项措施的权利：</p>
+                    <ul>
+                        <li><strong>警告</strong>：对轻微违规行为进行私信提醒。</li>
+                        <li><strong>内容屏蔽</strong>：违规帖子/回复将被隐藏或删除。</li>
+                        <li><strong>禁言</strong>：1天、7天、30天不等，期间无法发帖/回复。</li>
+                        <li><strong>永久封号</strong>：对于严重违规（如网暴、约架、侵犯隐私、违法信息）直接封禁账号，并保留证据备查。</li>
+                        <li><strong>上报机关</strong>：涉及违法犯罪的，将配合公安机关提供用户信息及日志记录。</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>六、未成年人特别保护</h2>
+                    <ul>
+                        <li>本社区主要用户为高中生（大部分未满18岁），运营方将严格遵守《未成年人保护法》及《未成年人网络保护条例》。</li>
+                        <li>不建议用户私下见面或交换过于私密的个人信息。如确需交流，请务必在家长或老师知情下进行。</li>
+                        <li>若发现针对未成年人的网络欺凌、性诱导等行为，管理员将立即报警并保留所有证据。</li>
+                        <li>家长或老师如有发现孩子在本社区受到侵害，可通过公示邮箱联系管理员，我们将全力协助。</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>七、免责声明与用户承诺</h2>
+                    <ul>
+                        <li>用户在本社区发表的观点仅代表其个人，不代表本社区立场。</li>
+                        <li>用户应自行承担因违反本公约而导致的一切法律责任。</li>
+                        <li>本社区保留根据法律法规和社区发展需要，适时修订公约的权利。修订后的公约将在页面公示，继续使用即视为接受。</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>八、附则</h2>
+                    <p>本公约自公布之日起试行。如有疑问或建议，请联系管理员邮箱：<strong>MuSHANwyc@outlook.com</strong> 或 <strong>yingming988@qq.com</strong></p>
+                    <p style="margin-top: 16px;">让我们一起努力，营造一个友善、阳光、互助的深圳高中生网络家园！🌞</p>
+                </div>
+
+                <div class="footer-note">
+                    <i class="fas fa-shield-alt"></i> 深圳高中生社区 · 守护你的每一次交流
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
+        </div>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+
+        // ---------- 侧边栏展开/收起 ----------
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) {
+            sidebar.classList.add('collapsed');
+            body.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            body.classList.remove('sidebar-collapsed');
+        }
+        toggleBtn.addEventListener('click', () => {
+            const currentlyExpanded = !sidebar.classList.contains('collapsed');
+            if (currentlyExpanded) {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'false');
+            } else {
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'true');
+            }
+        });
+
+        // ---------- 用户信息 ----------
+        const token = localStorage.getItem('token');
+        const avatarDiv = document.getElementById('sidebarAvatar');
+        const nicknameSpan = document.getElementById('sidebarNickname');
+        const emailSpan = document.getElementById('sidebarEmail');
+        async function updateSidebarUser() {
+            if (!token) {
+                nicknameSpan.innerText = '未登录';
+                emailSpan.innerText = '';
+                avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                return;
+            }
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    nicknameSpan.innerText = user.nickname || '用户';
+                    emailSpan.innerText = user.email || '';
+                    if (user.avatar_url) {
+                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
+                    } else {
+                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                    }
+                }
+            } catch (e) { console.warn(e); }
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
+            window.location.href = '/profile.html';
+        });
+
+        // ---------- 未读小红点 ----------
+        async function updateNotifDot() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const unreadCount = data.unreadCount || 0;
+                const topBadge = document.getElementById('notifBadge');
+                const sidebarDot = document.getElementById('sidebarNotifDot');
+                if (topBadge) {
+                    if (unreadCount > 0) {
+                        topBadge.style.display = 'flex';
+                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                    } else {
+                        topBadge.style.display = 'none';
+                    }
+                }
+                if (sidebarDot) {
+                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) { }
+        }
+        updateNotifDot();
+        if (token) setInterval(updateNotifDot, 30000);
+
+        // ---------- 退出登录 ----------
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        });
+
+        // ---------- 搜索 ----------
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        searchBtn?.addEventListener('click', () => {
+            const keyword = searchInput.value.trim();
+            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
+            else alert('请输入搜索关键词');
+        });
+        searchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBtn.click();
+        });
+    </script>
+</body>
+
+</html>
