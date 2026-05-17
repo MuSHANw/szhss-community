@@ -1314,31 +1314,13 @@
                         </div>
                     </div>
                     <div class="post-sidebar">
-                        <div class="sidebar-card">
-                            <h3><i class="fas fa-gem"></i> 精华帖子</h3>
-                            <div class="essence-post-item">
-                                <div class="essence-post-title"><a href="#">如何高效学习数学？</a></div>
-                                <div class="hot-post-meta">23 回复 · 156 浏览</div>
-                            </div>
-                            <div class="essence-post-item">
-                                <div class="essence-post-title"><a href="#">深圳高中排名参考</a></div>
-                                <div class="hot-post-meta">45 回复 · 320 浏览</div>
-                            </div>
+                        <div class="sidebar-card" id="recentPostsCard">
+                            <h3><i class="fas fa-clock"></i> 最新帖子</h3>
+                            <div id="recentPostsList"><div style="color:#6c757d;font-size:0.8rem;">加载中...</div></div>
                         </div>
-                        <div class="sidebar-card">
+                        <div class="sidebar-card" id="hotPostsCard">
                             <h3><i class="fas fa-fire"></i> 热门帖子</h3>
-                            <div class="hot-post-item">
-                                <div class="hot-post-title"><a href="#">今天月考成绩出来了</a></div>
-                                <div class="hot-post-meta">67 回复 · 890 浏览</div>
-                            </div>
-                            <div class="hot-post-item">
-                                <div class="hot-post-title"><a href="#">社团招新啦！</a></div>
-                                <div class="hot-post-meta">34 回复 · 456 浏览</div>
-                            </div>
-                            <div class="hot-post-item">
-                                <div class="hot-post-title"><a href="#">有没有一起自习的？</a></div>
-                                <div class="hot-post-meta">12 回复 · 234 浏览</div>
-                            </div>
+                            <div id="hotPostsList"><div style="color:#6c757d;font-size:0.8rem;">加载中...</div></div>
                         </div>
                     </div>
                 `;
@@ -1453,6 +1435,9 @@
                     }
                 });
 
+                // 侧边栏加载热门和最新帖子（不阻塞主流程）
+                loadSidebarPosts();
+
             } catch (err) {
                 wrapper.innerHTML = `<div class="error">${err.message}</div>`;
             }
@@ -1482,6 +1467,44 @@
                     </div>
                 </div>
             `;
+        }
+
+        // 侧边栏加载最新和热门帖子
+        async function loadSidebarPosts() {
+            try {
+                const [hotRes, recentRes] = await Promise.all([
+                    fetch(`${window.API_BASE}/posts?sort=hot&limit=5&page=1`),
+                    fetch(`${window.API_BASE}/posts?sort=latest&limit=5&page=1`)
+                ]);
+                if (hotRes.ok) {
+                    const hotData = await hotRes.json();
+                    const hotList = document.getElementById('hotPostsList');
+                    if (hotList && hotData.posts.length) {
+                        hotList.innerHTML = hotData.posts.map(p => `
+                            <div class="hot-post-item">
+                                <div class="hot-post-title"><a href="/post-detail.html?id=${p.id}">${escapeHtml(p.title)}</a></div>
+                                <div class="hot-post-meta">${p.reply_count || 0} 回复 · ${p.view_count || 0} 浏览</div>
+                            </div>
+                        `).join('');
+                    } else if (hotList) {
+                        hotList.innerHTML = '<div style="color:#6c757d;font-size:0.8rem;">暂无热门帖子</div>';
+                    }
+                }
+                if (recentRes.ok) {
+                    const recentData = await recentRes.json();
+                    const recentList = document.getElementById('recentPostsList');
+                    if (recentList && recentData.posts.length) {
+                        recentList.innerHTML = recentData.posts.map(p => `
+                            <div class="hot-post-item">
+                                <div class="hot-post-title"><a href="/post-detail.html?id=${p.id}">${escapeHtml(p.title)}</a></div>
+                                <div class="hot-post-meta">${p.reply_count || 0} 回复 · ${p.view_count || 0} 浏览</div>
+                            </div>
+                        `).join('');
+                    } else if (recentList) {
+                        recentList.innerHTML = '<div style="color:#6c757d;font-size:0.8rem;">暂无帖子</div>';
+                    }
+                }
+            } catch (e) { console.warn('加载侧边栏帖子失败', e); }
         }
     </script>
 </body>

@@ -573,6 +573,105 @@
             color: #f5b042;
         }
 
+        /* 分类标签导航 */
+        .category-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .category-tab {
+            background: #f0f2f5;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            color: #4a5568;
+        }
+
+        .category-tab:hover {
+            background: #e2e6ea;
+        }
+
+        .category-tab.active {
+            background: #1E88E5;
+            color: white;
+        }
+
+        /* 排序栏 */
+        .sort-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .sort-btn {
+            background: #f0f2f5;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .sort-btn.active {
+            background: #1E88E5;
+            color: white;
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 32px 0;
+        }
+
+        .pagination button {
+            background: #f0f2f5;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .pagination button:hover {
+            background: #e2e6ea;
+        }
+
+        .pagination button.active {
+            background: #1E88E5;
+            color: white;
+        }
+
+        /* 帖子标签 */
+        .post-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .post-tags .tag {
+            background: #f0f2f5;
+            color: #1f2d3d;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .post-tags .tag:hover {
+            background: #e2e6ea;
+        }
+
         .footer {
             background: white;
             border-top: 1px solid #e9ecef;
@@ -916,10 +1015,27 @@
                         <span id="mobilePoem">加载中...</span>
                     </div>
                 </div>
+                <!-- 分类标签 -->
+                <div class="category-tabs">
+                    <button class="category-tab active" data-category="">全部</button>
+                    <button class="category-tab" data-category="学习">学习</button>
+                    <button class="category-tab" data-category="生活">生活</button>
+                    <button class="category-tab" data-category="社团">社团</button>
+                    <button class="category-tab" data-category="升学">升学</button>
+                    <button class="category-tab" data-category="综合">综合</button>
+                </div>
+                <!-- 排序栏 -->
+                <div class="sort-bar">
+                    <button class="sort-btn active" data-sort="hot">🔥 最热</button>
+                    <button class="sort-btn" data-sort="latest">🕒 最新发布</button>
+                    <button class="sort-btn" data-sort="replied">💬 最新回复</button>
+                </div>
                 <!-- 帖子列表 -->
                 <div id="postsList">
                     <div class="loading">加载中...</div>
                 </div>
+                <!-- 分页 -->
+                <div id="pagination" class="pagination"></div>
             </div>
 
             <aside class="right-sidebar">
@@ -1136,6 +1252,10 @@
 
         // ---------- 帖子加载 ----------
         let likeStatus = {}, favStatus = {};
+        let currentCategory = '';
+        let currentSort = 'hot';
+        let currentPage = 1;
+        let totalPages = 1;
 
         function escapeHtml(str) {
             if (!str) return '';
@@ -1187,11 +1307,16 @@
         async function loadPosts() {
             const container = document.getElementById('postsList');
             try {
-                const res = await fetch(`${window.API_BASE}/posts?page=1&limit=10`);
+                const params = new URLSearchParams({ page: currentPage, limit: 10, sort: currentSort });
+                if (currentCategory) params.set('category', currentCategory);
+                const res = await fetch(`${window.API_BASE}/posts?${params}`);
                 const data = await res.json();
                 const posts = data.posts;
+                totalPages = data.totalPages || 1;
+
                 if (!posts.length) {
                     container.innerHTML = '<div class="no-posts">暂无帖子，快来发布第一条吧~</div>';
+                    document.getElementById('pagination').innerHTML = '';
                     return;
                 }
                 if (token && posts.length) {
@@ -1209,6 +1334,9 @@
                     const avatarHtml = post.avatar_url
                         ? `<img src="${post.avatar_url}" alt="头像">`
                         : `<i class="fas fa-user-circle"></i>`;
+                    const tagsHtml = (post.tags && post.tags.length)
+                        ? `<div class="post-tags">${post.tags.map(t => `<span class="tag" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>`
+                        : '';
                     return `
                         <div class="post-card" data-post-id="${post.id}">
                             <div class="post-header">
@@ -1217,6 +1345,7 @@
                             </div>
                             <h3 class="post-title">${escapeHtml(post.title)}</h3>
                             <div class="post-content">${escapeHtml(post.content.substring(0, 150))}${post.content.length > 150 ? '...' : ''}</div>
+                            ${tagsHtml}
                             <div class="post-footer">
                                 <div class="post-author">
                                     ${avatarHtml}
@@ -1243,6 +1372,15 @@
                     });
                 });
 
+                // 标签二次搜索
+                document.querySelectorAll('.post-tags .tag').forEach(tagEl => {
+                    tagEl.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const tag = tagEl.getAttribute('data-tag');
+                        if (tag) window.location.href = `/search.html?q=${encodeURIComponent(tag)}`;
+                    });
+                });
+
                 // 点赞按钮事件
                 document.querySelectorAll('.like-btn').forEach(btn => {
                     const id = parseInt(btn.dataset.id);
@@ -1254,12 +1392,66 @@
                     const id = parseInt(btn.dataset.id);
                     btn.addEventListener('click', (e) => toggleFavorite(e, id, btn));
                 });
+
+                renderPagination();
             } catch (err) {
                 console.error(err);
                 container.innerHTML = '<div class="error">加载失败，请刷新重试</div>';
             }
         }
 
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+            let html = '';
+            for (let i = 1; i <= totalPages; i++) {
+                html += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            container.innerHTML = html;
+            container.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const page = parseInt(btn.dataset.page);
+                    if (page && page !== currentPage) {
+                        currentPage = page;
+                        loadPosts();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                });
+            });
+        }
+
+        function initCategoryTabs() {
+            const tabs = document.querySelectorAll('.category-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const cat = tab.dataset.category;
+                    if (cat === currentCategory) return;
+                    currentCategory = cat;
+                    currentPage = 1;
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    loadPosts();
+                });
+            });
+        }
+
+        function initSortButtons() {
+            const btns = document.querySelectorAll('.sort-btn');
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sort = btn.dataset.sort;
+                    if (sort === currentSort) return;
+                    currentSort = sort;
+                    currentPage = 1;
+                    btns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    loadPosts();
+                });
+            });
+        }
+
+        initCategoryTabs();
+        initSortButtons();
         loadPosts();
 
         // ---------- 内测公告弹窗逻辑 ----------
