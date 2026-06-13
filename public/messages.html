@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>私信 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA;
+            color: #1f2d3d;
+            line-height: 1.5;
+            padding-top: 60px;
+            margin-left: 260px;
+            transition: margin-left 0.3s ease;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        body.sidebar-collapsed { margin-left: 70px; }
+
+        .bg-decorations {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; overflow: hidden; pointer-events: none;
+        }
+        .bg-decorations .wave {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover; opacity: 0.5;
+        }
+        .bg-decorations .circle {
+            position: absolute; border-radius: 50%; background: rgba(30, 136, 229, 0.05);
+        }
+        .bg-decorations .circle1 { width: 300px; height: 300px; top: -100px; left: -100px; }
+        .bg-decorations .circle2 { width: 200px; height: 200px; bottom: -50px; right: -50px; }
+        .bg-decorations .circle3 { width: 150px; height: 150px; top: 30%; right: 10%; }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 0 20px; }
+
+        /* 顶部栏 */
+        .top-bar-container {
+            position: fixed; top: 0; left: 0; right: 0; height: 60px;
+            background: white; border-bottom: 1px solid #e9ecef; z-index: 100;
+            display: flex; align-items: center; padding: 0 20px;
+        }
+        .top-bar { display: flex; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto; }
+        .menu-toggle { background: none; border: none; font-size: 1.5rem; cursor: pointer; margin-right: 20px; color: #4a5568; }
+        .logo { font-size: 1.5rem; font-weight: 700; color: #1E88E5; text-decoration: none; margin-right: auto; }
+        .search-area {
+            display: flex; align-items: center; background: #f1f3f5;
+            border-radius: 24px; padding: 4px 12px; width: 260px;
+        }
+        .search-area input { border: none; background: transparent; outline: none; width: 100%; padding: 8px 0; }
+        .search-area button { background: transparent; border: none; cursor: pointer; color: #6c757d; }
+        .about-link {
+            margin-left: 16px; color: #4a5568; text-decoration: none;
+            font-size: 0.95rem; font-weight: 500; transition: color 0.2s; white-space: nowrap;
+        }
+        .about-link:hover { color: #1E88E5; }
+        .about-link i { margin-right: 4px; }
+        .notifications-icon {
+            position: relative; margin-left: 16px; font-size: 1.4rem;
+            color: #6c757d; text-decoration: none; display: inline-flex; align-items: center;
+        }
+        .notif-badge {
+            position: absolute; top: -8px; right: -8px; background: #e53e3e; color: white;
+            font-size: 0.7rem; border-radius: 50%; width: 18px; height: 18px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* 侧边栏 */
+        #sidebar {
+            position: fixed; top: 60px; left: 0; bottom: 0; width: 260px;
+            background: white; border-right: 1px solid #eef2f6;
+            display: flex; flex-direction: column; transition: width 0.3s ease;
+            z-index: 99; overflow-x: hidden;
+        }
+        #sidebar.collapsed { width: 70px; }
+        #sidebar.collapsed .sidebar-user-info,
+        #sidebar.collapsed .sidebar-link span { display: none; }
+        #sidebar.collapsed .sidebar-logout { font-size: 0; padding: 8px; }
+        #sidebar.collapsed .sidebar-logout::before { content: "🚪"; font-size: 1.2rem; }
+        .sidebar-user {
+            display: flex; align-items: center; padding: 20px 16px;
+            border-bottom: 1px solid #eef2f6; cursor: pointer;
+        }
+        .sidebar-avatar { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex-shrink: 0; margin-right: 12px; }
+        .sidebar-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .sidebar-avatar i { font-size: 48px; color: #1E88E5; }
+        .sidebar-user-info { flex: 1; overflow: hidden; white-space: nowrap; }
+        .sidebar-nickname { font-weight: 600; font-size: 1rem; }
+        .sidebar-email { font-size: 0.7rem; color: #6c757d; }
+        .sidebar-nav { flex: 1; display: flex; flex-direction: column; padding: 16px 0; }
+        .sidebar-link {
+            display: flex; align-items: center; padding: 12px 16px;
+            text-decoration: none; color: #4a5568; transition: background 0.2s; white-space: nowrap;
+        }
+        .sidebar-link i { width: 28px; font-size: 1.2rem; text-align: center; }
+        .sidebar-link span { margin-left: 12px; }
+        .sidebar-link:hover { background: #f0f2f5; }
+        .sidebar-link.active { background: #e9f0fe; color: #1E88E5; }
+        .notif-dot { color: #e53e3e; font-size: 0.7rem; margin-left: 4px; }
+        .sidebar-footer { padding: 16px; border-top: 1px solid #eef2f6; }
+        .sidebar-logout { width: 100%; background: none; border: none; padding: 8px; cursor: pointer; color: #e53e3e; border-radius: 8px; text-align: center; }
+        .sidebar-logout:hover { background: #ffe5e5; }
+
+        /* 私信列表样式 */
+        .messages-page {
+            max-width: 800px;
+            margin: 32px auto;
+            background: white;
+            border-radius: 24px;
+            border: 1px solid #eef2f6;
+            overflow: hidden;
+            min-height: 500px;
+        }
+
+        .messages-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #eef2f6;
+        }
+
+        .messages-header h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1f2d3d;
+        }
+
+        .conversation-list {
+            padding: 0;
+        }
+
+        .conversation-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f5f6f8;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .conversation-item:hover {
+            background: #f8f9fb;
+        }
+
+        .conversation-item:last-child {
+            border-bottom: none;
+        }
+
+        .conv-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-right: 14px;
+            background: #e9f0fe;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .conv-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .conv-avatar i {
+            font-size: 52px;
+            color: #1E88E5;
+        }
+
+        .conv-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .conv-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .conv-nickname {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #1f2d3d;
+        }
+
+        .conv-time {
+            font-size: 0.75rem;
+            color: #8a9aa8;
+            white-space: nowrap;
+            margin-left: 8px;
+        }
+
+        .conv-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .conv-preview {
+            font-size: 0.88rem;
+            color: #6c757d;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .unread-badge {
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+        .no-messages {
+            text-align: center;
+            padding: 80px 20px;
+            color: #6c757d;
+        }
+
+        .no-messages i {
+            font-size: 3rem;
+            color: #d0d7de;
+            margin-bottom: 16px;
+        }
+
+        .no-messages p {
+            font-size: 1rem;
+        }
+
+        .footer {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 40px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            body { margin-left: 0; }
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+            #sidebar.open-mobile { transform: translateX(0); }
+            .search-area { width: 180px; }
+            .messages-page { margin: 16px; border-radius: 16px; }
+            .conversation-item { padding: 14px 16px; }
+            .messages-header { padding: 16px; }
+        }
+    </style>
+</head>
+
+<body id="appBody">
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <a href="/about.html" class="about-link" id="aboutLink"><i class="fas fa-info-circle"></i> 关于</a>
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar"><i class="fas fa-user-circle"></i></div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子"><i class="fas fa-users"></i><span>圈子</span></a>
+            <a href="/study.html" class="sidebar-link" title="自习室"><i class="fas fa-clock"></i><span>自习室</span></a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="#" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="#" class="sidebar-link" title="社团"><i class="fas fa-users"></i><span>社团</span></a>
+            <a href="#" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="messages.html" class="sidebar-link active" id="sidebarMessagesLink" title="私信"><i class="fas fa-envelope"></i><span>私信</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈"><i class="fas fa-comment-dots"></i><span>反馈</span></a>
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="messages-page">
+            <div class="messages-header">
+                <h2>私信</h2>
+            </div>
+            <div id="conversationList" class="conversation-list">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
+        </div>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+
+        // ---------- 侧边栏展开/收起 ----------
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) {
+            sidebar.classList.add('collapsed');
+            body.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            body.classList.remove('sidebar-collapsed');
+        }
+        toggleBtn.addEventListener('click', () => {
+            const currentlyExpanded = !sidebar.classList.contains('collapsed');
+            if (currentlyExpanded) {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'false');
+            } else {
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'true');
+            }
+        });
+
+        // ---------- 用户信息 ----------
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+        const avatarDiv = document.getElementById('sidebarAvatar');
+        const nicknameSpan = document.getElementById('sidebarNickname');
+        const emailSpan = document.getElementById('sidebarEmail');
+        async function updateSidebarUser() {
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.status === 401) { localStorage.removeItem('token'); window.location.href = '/login.html'; return; }
+                if (res.ok) {
+                    const user = await res.json();
+                    nicknameSpan.innerText = user.nickname || '用户';
+                    emailSpan.innerText = user.email || '';
+                    if (user.avatar_url) {
+                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
+                    } else {
+                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                    }
+                }
+            } catch (e) { console.warn(e); }
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
+            window.location.href = '/profile.html';
+        });
+
+        // ---------- 未读小红点 ----------
+        async function updateNotifDot() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const unreadCount = data.unreadCount || 0;
+                const topBadge = document.getElementById('notifBadge');
+                const sidebarDot = document.getElementById('sidebarNotifDot');
+                if (topBadge) {
+                    if (unreadCount > 0) {
+                        topBadge.style.display = 'flex';
+                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                    } else {
+                        topBadge.style.display = 'none';
+                    }
+                }
+                if (sidebarDot) {
+                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) { }
+        }
+        updateNotifDot();
+        if (token) setInterval(updateNotifDot, 30000);
+
+        // ---------- 退出登录 ----------
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        });
+
+        // ---------- 搜索 ----------
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        searchBtn?.addEventListener('click', () => {
+            const keyword = searchInput.value.trim();
+            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
+            else alert('请输入搜索关键词');
+        });
+        searchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBtn.click();
+        });
+
+        // ---------- 私信对话列表 ----------
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        }
+
+        function formatConvTime(isoString) {
+            if (!isoString) return '';
+            const date = new Date(isoString);
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+            if (isToday) {
+                return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            }
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (date.toDateString() === yesterday.toDateString()) {
+                return '昨天';
+            }
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+
+        async function loadConversations() {
+            const container = document.getElementById('conversationList');
+            try {
+                const res = await fetch(`${window.API_BASE}/messages/conversations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.status === 401) { localStorage.removeItem('token'); window.location.href = '/login.html'; return; }
+                if (!res.ok) throw new Error('加载失败');
+                const data = await res.json();
+                const conversations = data.conversations;
+
+                if (!conversations || conversations.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-messages">
+                            <i class="fas fa-envelope-open-text"></i>
+                            <p>暂无私信</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = conversations.map(conv => {
+                    const avatarHtml = conv.other_avatar
+                        ? `<img src="${conv.other_avatar}" alt="头像">`
+                        : `<i class="fas fa-user-circle"></i>`;
+                    const unreadHtml = conv.unread_count > 0
+                        ? `<span class="unread-badge">${conv.unread_count > 99 ? '99+' : conv.unread_count}</span>`
+                        : '';
+                    return `
+                        <a href="/chat.html?uid=${conv.other_user_id}" class="conversation-item">
+                            <div class="conv-avatar">${avatarHtml}</div>
+                            <div class="conv-info">
+                                <div class="conv-top">
+                                    <span class="conv-nickname">${escapeHtml(conv.other_nickname || '未知用户')}</span>
+                                    <span class="conv-time">${formatConvTime(conv.last_msg_time)}</span>
+                                </div>
+                                <div class="conv-bottom">
+                                    <span class="conv-preview">${escapeHtml(conv.last_msg_content || '')}</span>
+                                    ${unreadHtml}
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<div class="no-messages" style="color:#e53e3e;">加载失败，请刷新重试</div>';
+            }
+        }
+
+        loadConversations();
+    </script>
+</body>
+
+</html>

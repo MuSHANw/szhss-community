@@ -9,6 +9,7 @@
     <!-- 移动端适配 -->
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
     <script src="/js/mobile.js" defer></script>
+    <script src="/js/level-utils.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* ========== 全局样式（与 index 一致） ========== */
@@ -526,6 +527,18 @@
         }
 
         @media (max-width: 768px) {
+
+        /* 等级徽章 */
+        .level-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 600; white-space: nowrap;
+        }
+        .level-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .level-progress { width: 100%; height: 6px; background: #eef2f6; border-radius: 3px; overflow: hidden; }
+        .level-progress-bar { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+
+        @media (max-width: 768px) {
             body {
                 margin-left: 0;
             }
@@ -601,6 +614,9 @@
             <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
             <a href="admin.html" class="sidebar-link" title="管理后台"><i
                     class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信">
+                <i class="fas fa-envelope"></i><span>私信</span>
+            </a>
             <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
                 <i class="fas fa-comment-dots"></i><span>反馈</span>
             </a>
@@ -622,6 +638,8 @@
                     <img src="https://picsum.photos/100" alt="头像" id="avatarImg">
                 </div>
                 <div class="user-name" id="nickname">加载中...</div>
+                <div id="levelBadgeArea" style="text-align:center;margin:6px 0;"></div>
+                <div id="expBarArea" style="margin:0 0 12px 0;"></div>
                 <div class="user-email" id="email">-</div>
                 <div class="info-item"><i class="fas fa-school"></i> <span id="school">未填写</span></div>
                 <div class="info-item"><i class="fas fa-map-marker-alt"></i> <span id="district">未填写</span></div>
@@ -1089,6 +1107,11 @@
             try {
                 currentUser = await fetchMe();
                 document.getElementById('nickname').innerText = currentUser.nickname || '未设置昵称';
+                // 渲染等级徽章和经验条
+                if (typeof renderLevelBadge === 'function') {
+                    document.getElementById('levelBadgeArea').innerHTML = renderLevelBadge(currentUser.exp, currentUser.has_passed_quiz);
+                    document.getElementById('expBarArea').innerHTML = renderExpBar(currentUser.exp, currentUser.has_passed_quiz);
+                }
                 document.getElementById('email').innerText = currentUser.email;
                 document.getElementById('school').innerText = currentUser.school || '未填写';
                 document.getElementById('district').innerText = currentUser.district || '未填写';

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>入站答题 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA; color: #1f2d3d; line-height: 1.5;
+            padding-top: 60px; margin-left: 260px; transition: margin-left 0.3s ease;
+            position: relative; min-height: 100vh;
+        }
+        body.sidebar-collapsed { margin-left: 70px; }
+        .bg-decorations {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; overflow: hidden; pointer-events: none;
+        }
+        .bg-decorations .wave {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover; opacity: 0.5;
+        }
+        .bg-decorations .circle { position: absolute; border-radius: 50%; background: rgba(30, 136, 229, 0.05); }
+        .bg-decorations .circle1 { width: 300px; height: 300px; top: -100px; left: -100px; }
+        .bg-decorations .circle2 { width: 200px; height: 200px; bottom: -50px; right: -50px; }
+        .bg-decorations .circle3 { width: 150px; height: 150px; top: 30%; right: 10%; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+        .top-bar-container {
+            position: fixed; top: 0; left: 0; right: 0; height: 60px;
+            background: white; border-bottom: 1px solid #e9ecef; z-index: 100;
+            display: flex; align-items: center; padding: 0 20px;
+        }
+        .top-bar { display: flex; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto; }
+        .menu-toggle { background: none; border: none; font-size: 1.5rem; cursor: pointer; margin-right: 20px; color: #4a5568; }
+        .logo { font-size: 1.5rem; font-weight: 700; color: #1E88E5; text-decoration: none; margin-right: auto; }
+        .search-area { display: flex; align-items: center; background: #f1f3f5; border-radius: 24px; padding: 4px 12px; width: 260px; }
+        .search-area input { border: none; background: transparent; outline: none; width: 100%; padding: 8px 0; }
+        .search-area button { background: transparent; border: none; cursor: pointer; color: #6c757d; }
+        .about-link { margin-left: 16px; color: #4a5568; text-decoration: none; font-size: 0.95rem; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
+        .about-link:hover { color: #1E88E5; }
+        .about-link i { margin-right: 4px; }
+        .notifications-icon { position: relative; margin-left: 16px; font-size: 1.4rem; color: #6c757d; text-decoration: none; display: inline-flex; align-items: center; }
+        .notif-badge { position: absolute; top: -8px; right: -8px; background: #e53e3e; color: white; font-size: 0.7rem; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+
+        #sidebar {
+            position: fixed; top: 60px; left: 0; bottom: 0; width: 260px;
+            background: white; border-right: 1px solid #eef2f6;
+            display: flex; flex-direction: column; transition: width 0.3s ease; z-index: 99; overflow-x: hidden;
+        }
+        #sidebar.collapsed { width: 70px; }
+        #sidebar.collapsed .sidebar-user-info, #sidebar.collapsed .sidebar-link span { display: none; }
+        #sidebar.collapsed .sidebar-logout { font-size: 0; padding: 8px; }
+        #sidebar.collapsed .sidebar-logout::before { content: "🚪"; font-size: 1.2rem; }
+        .sidebar-user { display: flex; align-items: center; padding: 20px 16px; border-bottom: 1px solid #eef2f6; cursor: pointer; }
+        .sidebar-avatar { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex-shrink: 0; margin-right: 12px; }
+        .sidebar-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .sidebar-avatar i { font-size: 48px; color: #1E88E5; }
+        .sidebar-user-info { flex: 1; overflow: hidden; white-space: nowrap; }
+        .sidebar-nickname { font-weight: 600; font-size: 1rem; }
+        .sidebar-email { font-size: 0.7rem; color: #6c757d; }
+        .sidebar-nav { flex: 1; display: flex; flex-direction: column; padding: 16px 0; }
+        .sidebar-link { display: flex; align-items: center; padding: 12px 16px; text-decoration: none; color: #4a5568; transition: background 0.2s; white-space: nowrap; }
+        .sidebar-link i { width: 28px; font-size: 1.2rem; text-align: center; }
+        .sidebar-link span { margin-left: 12px; }
+        .sidebar-link:hover { background: #f0f2f5; }
+        .sidebar-link.active { background: #e9f0fe; color: #1E88E5; }
+        .notif-dot { color: #e53e3e; font-size: 0.7rem; margin-left: 4px; }
+        .sidebar-footer { padding: 16px; border-top: 1px solid #eef2f6; }
+        .sidebar-logout { width: 100%; background: none; border: none; padding: 8px; cursor: pointer; color: #e53e3e; border-radius: 8px; text-align: center; }
+        .sidebar-logout:hover { background: #ffe5e5; }
+
+        /* 答题页面样式 */
+        .quiz-wrapper { max-width: 600px; margin: 32px auto; }
+        .quiz-card {
+            background: white; border-radius: 24px; padding: 36px 32px;
+            border: 1px solid #eef2f6; box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+            min-height: 400px;
+        }
+
+        /* 介绍页 */
+        .intro-title { font-size: 1.8rem; font-weight: 700; text-align: center; margin-bottom: 8px; }
+        .intro-sub { text-align: center; color: #6c757d; font-size: 0.9rem; margin-bottom: 28px; }
+        .intro-rules {
+            background: #f8f9fa; border-radius: 16px; padding: 20px;
+            margin-bottom: 28px; font-size: 0.9rem; line-height: 1.8;
+        }
+        .intro-rules li { margin-bottom: 6px; color: #4a5568; }
+        .start-btn {
+            display: block; width: 100%; max-width: 240px; margin: 0 auto;
+            background: #1E88E5; color: white; border: none;
+            padding: 14px; border-radius: 40px; font-size: 1.1rem; font-weight: 600;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .start-btn:hover { background: #1565C0; }
+
+        /* 答题页 */
+        .progress-section { margin-bottom: 24px; }
+        .progress-text { font-size: 0.85rem; color: #6c757d; margin-bottom: 8px; text-align: center; }
+        .progress-bar { height: 6px; background: #eef2f6; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #1E88E5; border-radius: 3px; transition: width 0.3s ease; }
+        .question-text {
+            font-size: 1.15rem; font-weight: 600; margin-bottom: 24px;
+            line-height: 1.6; min-height: 60px;
+        }
+        .options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+        .option-btn {
+            width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0;
+            border-radius: 14px; background: white; cursor: pointer;
+            font-size: 0.95rem; text-align: left; transition: all 0.2s;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .option-btn:hover { border-color: #90caf9; background: #f8fbff; }
+        .option-btn.selected { border-color: #1E88E5; background: #e9f0fe; color: #1E88E5; font-weight: 500; }
+        .option-letter {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: #f0f2f5; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+        }
+        .option-btn.selected .option-letter { background: #1E88E5; color: white; }
+
+        .nav-buttons { display: flex; justify-content: space-between; gap: 12px; }
+        .nav-btn {
+            padding: 10px 28px; border-radius: 40px; font-size: 0.95rem;
+            font-weight: 600; cursor: pointer; transition: all 0.2s; border: none;
+        }
+        .nav-btn.prev { background: #f0f2f5; color: #4a5568; }
+        .nav-btn.prev:hover { background: #e2e6ea; }
+        .nav-btn.next { background: #1E88E5; color: white; margin-left: auto; }
+        .nav-btn.next:hover { background: #1565C0; }
+        .nav-btn.submit { background: #10B981; color: white; }
+        .nav-btn.submit:hover { background: #059669; }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 结果页 */
+        .result-icon { font-size: 4rem; text-align: center; margin-bottom: 16px; }
+        .result-score { font-size: 3rem; font-weight: 800; text-align: center; margin-bottom: 8px; }
+        .result-label { text-align: center; font-size: 0.9rem; color: #6c757d; margin-bottom: 20px; }
+        .result-msg { text-align: center; font-size: 1.1rem; margin-bottom: 28px; font-weight: 600; }
+        .result-msg.pass { color: #10B981; }
+        .result-msg.fail { color: #e53e3e; }
+        .retry-btn {
+            display: block; width: 100%; max-width: 200px; margin: 0 auto;
+            background: #1E88E5; color: white; border: none;
+            padding: 12px; border-radius: 40px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .retry-btn:hover { background: #1565C0; }
+        .loading { text-align: center; padding: 60px 20px; color: #6c757d; }
+
+        .footer {
+            background: white; border-top: 1px solid #e9ecef;
+            padding: 20px 0; text-align: center; font-size: 0.75rem; color: #6c757d; margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            body { margin-left: 0; }
+            #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; width: 260px !important; }
+            #sidebar.open-mobile { transform: translateX(0); }
+            .search-area { width: 180px; }
+            .quiz-wrapper { margin: 16px; }
+            .quiz-card { padding: 24px 20px; }
+            .intro-title { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body id="appBody">
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <a href="/about.html" class="about-link" id="aboutLink"><i class="fas fa-info-circle"></i> 关于</a>
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar"><i class="fas fa-user-circle"></i></div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子"><i class="fas fa-users"></i><span>圈子</span></a>
+            <a href="/study.html" class="sidebar-link" title="自习室"><i class="fas fa-clock"></i><span>自习室</span></a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="#" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="#" class="sidebar-link" title="社团"><i class="fas fa-users"></i><span>社团</span></a>
+            <a href="#" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信"><i class="fas fa-envelope"></i><span>私信</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈"><i class="fas fa-comment-dots"></i><span>反馈</span></a>
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <div class="container quiz-wrapper">
+        <div class="quiz-card" id="quizCard">
+            <!-- 由 JS 动态渲染三个阶段 -->
+            <div class="loading" id="quizLoading">加载中...</div>
+            <div id="quizIntro" style="display:none;">
+                <div class="intro-title">📝 入站答题</div>
+                <div class="intro-sub">成为深圳高中生社区正式成员的第一步</div>
+                <div class="intro-rules">
+                    <ul>
+                        <li>📌 共 <strong>10</strong> 道题目，满分 <strong>100</strong> 分</li>
+                        <li>🎯 <strong>60</strong> 分及以上即为通过，自动升级为 <strong>LV1</strong></li>
+                        <li>📖 题目涵盖社区公约、深圳常识和互联网礼仪</li>
+                        <li>🔄 可无限次重考，直到通过为止</li>
+                    </ul>
+                </div>
+                <button class="start-btn" id="startQuizBtn">开始答题</button>
+            </div>
+            <div id="quizQuestions" style="display:none;">
+                <div class="progress-section">
+                    <div class="progress-text" id="progressText">1 / 10</div>
+                    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:10%"></div></div>
+                </div>
+                <div class="question-text" id="questionText"></div>
+                <div class="options" id="optionsContainer"></div>
+                <div class="nav-buttons">
+                    <button class="nav-btn prev" id="prevBtn" style="visibility:hidden;">上一题</button>
+                    <button class="nav-btn next" id="nextBtn">下一题</button>
+                </div>
+            </div>
+            <div id="quizResult" style="display:none;">
+                <div class="result-icon" id="resultIcon"></div>
+                <div class="result-score" id="resultScore"></div>
+                <div class="result-label">/ 100 分</div>
+                <div class="result-msg" id="resultMsg"></div>
+                <button class="retry-btn" id="retryBtn" style="display:none;">再来一次</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
+        </div>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+        const token = localStorage.getItem('token');
+        if (!token) { window.location.href = '/login.html'; }
+
+        // ---------- 侧边栏 ----------
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); }
+        else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); }
+        toggleBtn.addEventListener('click', () => {
+            const e = !sidebar.classList.contains('collapsed');
+            if (e) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); localStorage.setItem('sidebarExpanded', 'false'); }
+            else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); localStorage.setItem('sidebarExpanded', 'true'); }
+        });
+
+        // ---------- 用户信息 ----------
+        const avatarDiv = document.getElementById('sidebarAvatar');
+        const nicknameSpan = document.getElementById('sidebarNickname');
+        const emailSpan = document.getElementById('sidebarEmail');
+        async function updateSidebarUser() {
+            try {
+                const res = await fetch(window.API_BASE + '/me', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) {
+                    const user = await res.json();
+                    nicknameSpan.innerText = user.nickname || '用户';
+                    emailSpan.innerText = user.email || '';
+                    avatarDiv.innerHTML = user.avatar_url ? '<img src="' + user.avatar_url + '" alt="头像">' : '<i class="fas fa-user-circle"></i>';
+                }
+            } catch (e) { console.warn(e); }
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn').addEventListener('click', function() { window.location.href = '/profile.html'; });
+
+        // ---------- 退出/搜索 ----------
+        document.getElementById('sidebarLogoutBtn').addEventListener('click', function() { localStorage.removeItem('token'); window.location.href = '/login.html'; });
+        document.getElementById('searchBtn').addEventListener('click', function() {
+            var q = document.getElementById('searchInput').value.trim();
+            if (q) window.location.href = '/search.html?q=' + encodeURIComponent(q); else alert('请输入搜索关键词');
+        });
+        document.getElementById('searchInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('searchBtn').click(); });
+
+        // ---------- 答题逻辑 ----------
+        var questions = [];
+        var currentIndex = 0;
+        var answers = {};
+        var isSubmitting = false;
+
+        function showSection(id) {
+            document.getElementById('quizIntro').style.display = id === 'intro' ? 'block' : 'none';
+            document.getElementById('quizQuestions').style.display = id === 'quiz' ? 'block' : 'none';
+            document.getElementById('quizResult').style.display = id === 'result' ? 'block' : 'none';
+            document.getElementById('quizLoading').style.display = 'none';
+        }
+
+        // 加载题目
+        async function loadQuestions() {
+            try {
+                var res = await fetch(window.API_BASE + '/quiz/questions', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.status === 401) { localStorage.removeItem('token'); window.location.href = '/login.html'; return; }
+                var data = await res.json();
+                if (!data.questions || data.questions.length === 0) throw new Error('无题目');
+                questions = data.questions;
+                showSection('intro');
+            } catch (err) {
+                console.error(err);
+                document.getElementById('quizLoading').innerHTML = '<div style="color:#e53e3e;">加载题目失败，请刷新重试</div>';
+            }
+        }
+
+        function renderQuestion() {
+            if (questions.length === 0) return;
+            var q = questions[currentIndex];
+            document.getElementById('questionText').innerText = q.question;
+            document.getElementById('progressText').innerText = (currentIndex + 1) + ' / ' + questions.length;
+            document.getElementById('progressFill').style.width = ((currentIndex + 1) / questions.length * 100) + '%';
+
+            var letters = ['A', 'B', 'C', 'D'];
+            var html = '';
+            for (var i = 0; i < 4; i++) {
+                var optKey = 'option_' + letters[i].toLowerCase();
+                var selected = answers[q.id] === letters[i] ? ' selected' : '';
+                html += '<button class="option-btn' + selected + '" data-option="' + letters[i] + '">' +
+                    '<span class="option-letter">' + letters[i] + '</span>' +
+                    q[optKey] + '</button>';
+            }
+            document.getElementById('optionsContainer').innerHTML = html;
+            document.querySelectorAll('.option-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.option-btn').forEach(function(b) { b.classList.remove('selected'); });
+                    btn.classList.add('selected');
+                    answers[q.id] = btn.dataset.option;
+                });
+                // 键盘快捷键：选中匹配的选项
+            });
+            updateNavButtons();
+        }
+
+        function updateNavButtons() {
+            document.getElementById('prevBtn').style.visibility = (currentIndex === 0) ? 'hidden' : 'visible';
+            var nextBtn = document.getElementById('nextBtn');
+            if (currentIndex === questions.length - 1) {
+                nextBtn.innerText = '交卷！';
+                nextBtn.className = 'nav-btn submit';
+            } else {
+                nextBtn.innerText = '下一题';
+                nextBtn.className = 'nav-btn next';
+            }
+        }
+
+        function goToPrev() {
+            if (currentIndex > 0) { currentIndex--; renderQuestion(); }
+        }
+
+        function goToNext() {
+            if (currentIndex < questions.length - 1) {
+                currentIndex++;
+                renderQuestion();
+            } else if (currentIndex === questions.length - 1) {
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (isSubmitting) return;
+            // 检查是否所有题目都已作答
+            for (var i = 0; i < questions.length; i++) {
+                if (!answers[questions[i].id]) {
+                    alert('请回答第 ' + (i + 1) + ' 题');
+                    currentIndex = i;
+                    renderQuestion();
+                    return;
+                }
+            }
+            isSubmitting = true;
+            var nextBtn = document.getElementById('nextBtn');
+            nextBtn.disabled = true;
+            nextBtn.innerText = '提交中...';
+
+            try {
+                var ansList = [];
+                for (var i = 0; i < questions.length; i++) {
+                    ansList.push({ question_id: questions[i].id, answer: answers[questions[i].id] });
+                }
+                var res = await fetch(window.API_BASE + '/quiz/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ answers: ansList })
+                });
+                var data = await res.json();
+                showResult(data);
+            } catch (err) {
+                console.error(err);
+                alert('提交失败，请重试');
+                isSubmitting = false;
+                nextBtn.disabled = false;
+                nextBtn.innerText = '交卷！';
+            }
+        }
+
+        function showResult(data) {
+            showSection('result');
+            if (data.passed) {
+                document.getElementById('resultIcon').innerHTML = '✅';
+                document.getElementById('resultScore').innerHTML = data.score;
+                document.getElementById('resultScore').style.color = '#10B981';
+                document.getElementById('resultMsg').className = 'result-msg pass';
+                document.getElementById('resultMsg').innerHTML = '🎉 恭喜成为正式成员！LV1 新生报到';
+                document.getElementById('retryBtn').style.display = 'none';
+                // 3秒后跳转首页
+                setTimeout(function() { window.location.href = '/'; }, 3000);
+            } else {
+                document.getElementById('resultIcon').innerHTML = '❌';
+                document.getElementById('resultScore').innerHTML = data.score;
+                document.getElementById('resultScore').style.color = '#e53e3e';
+                document.getElementById('resultMsg').className = 'result-msg fail';
+                document.getElementById('resultMsg').innerHTML = '继续加油！60分即可通过';
+                document.getElementById('retryBtn').style.display = 'block';
+            }
+        }
+
+        // 键盘快捷键
+        document.addEventListener('keydown', function(e) {
+            var quizSection = document.getElementById('quizQuestions');
+            if (quizSection.style.display !== 'block') return;
+            var key = e.key.toUpperCase();
+            if (['A', 'B', 'C', 'D'].indexOf(key) !== -1) {
+                var btns = document.querySelectorAll('.option-btn');
+                for (var i = 0; i < btns.length; i++) {
+                    if (btns[i].dataset.option === key) { btns[i].click(); break; }
+                }
+            }
+            if (e.key === 'Enter' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                goToNext();
+            }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); goToPrev(); }
+        });
+
+        // 事件绑定
+        document.getElementById('startQuizBtn').addEventListener('click', function() {
+            showSection('quiz');
+            currentIndex = 0;
+            answers = {};
+            renderQuestion();
+        });
+        document.getElementById('prevBtn').addEventListener('click', goToPrev);
+        document.getElementById('nextBtn').addEventListener('click', goToNext);
+        document.getElementById('retryBtn').addEventListener('click', function() {
+            showSection('intro');
+            currentIndex = 0;
+            answers = {};
+            isSubmitting = false;
+        });
+
+        // 初始化
+        loadQuestions();
+    </script>
+</body>
+</html>

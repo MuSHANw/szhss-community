@@ -702,6 +702,9 @@
             <a href="settings.html" class="sidebar-link active" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
             <a href="admin.html" class="sidebar-link" title="管理后台"><i
                     class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信">
+                <i class="fas fa-envelope"></i><span>私信</span>
+            </a>
             <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
                 <i class="fas fa-comment-dots"></i><span>反馈</span>
             </a>
@@ -794,6 +797,7 @@
                     <div class="checkbox-group"><input type="checkbox" id="show_activity"> 公开我的活跃度日历</div>
                     <div class="checkbox-group"><input type="checkbox" id="show_replies"> 公开我的回复列表</div>
                     <div class="checkbox-group"><input type="checkbox" id="show_favorites"> 公开我的收藏列表</div>
+                    <div class="checkbox-group"><input type="checkbox" id="allow_messages"> 允许他人给我发送私信</div>
                     <button id="savePrivacyBtn">保存隐私设置</button>
                     <div id="privacyMsg" class="error-msg" style="margin-top: 12px;"></div>
                 </div>
@@ -1037,6 +1041,7 @@
                 document.getElementById('show_activity').checked = currentUser.show_activity !== false;
                 document.getElementById('show_replies').checked = currentUser.show_replies !== false;
                 document.getElementById('show_favorites').checked = currentUser.show_favorites !== false;
+                document.getElementById('allow_messages').checked = currentUser.allow_messages === true;
                 if (currentUser.avatar_url) {
                     updateAvatarPreview(currentUser.avatar_url);
                 } else {
@@ -1124,11 +1129,12 @@
             const show_activity = document.getElementById('show_activity').checked;
             const show_replies = document.getElementById('show_replies').checked;
             const show_favorites = document.getElementById('show_favorites').checked;
+            const allow_messages = document.getElementById('allow_messages').checked;
             try {
                 const res = await fetch(`${window.API_BASE}/me/profile`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ show_activity, show_replies, show_favorites })
+                    body: JSON.stringify({ show_activity, show_replies, show_favorites, allow_messages })
                 });
                 const data = await res.json();
                 if (res.ok) {

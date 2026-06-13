@@ -235,6 +235,111 @@
             text-decoration: underline;
         }
 
+        /* 已保存账号区域 */
+        .saved-accounts {
+            margin: 16px 0;
+        }
+
+        .saved-accounts-title {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+
+        .saved-accounts-list {
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .saved-accounts-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .saved-accounts-list::-webkit-scrollbar-thumb {
+            background: #d0d7de;
+            border-radius: 2px;
+        }
+
+        .account-card {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 10px 14px;
+            background: white;
+            border: 1px solid #eef2f6;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            gap: 10px;
+        }
+
+        .account-card:hover {
+            background: #f0f7ff;
+        }
+
+        .account-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: #e9f0fe;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .account-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .account-avatar i {
+            font-size: 36px;
+            color: #1E88E5;
+        }
+
+        .account-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .account-nickname {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #1f2d3d;
+        }
+
+        .account-email {
+            font-size: 0.75rem;
+            color: #8a9aa8;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .account-del-btn {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .account-del-btn:hover {
+            color: #e53e3e;
+            background: #fff0f0;
+        }
+
         .login-btn {
             width: 100%;
             background: #1E88E5;
@@ -380,6 +485,12 @@
                     <input type="password" id="password" placeholder="请输入密码" autocomplete="current-password">
                 </div>
 
+                <!-- 已保存账号区域 -->
+                <div class="saved-accounts" id="savedAccountsSection" style="display:none;">
+                    <div class="saved-accounts-title">📋 已保存账号</div>
+                    <div class="saved-accounts-list" id="savedAccountsList"></div>
+                </div>
+
                 <div class="options">
                     <label class="checkbox-label">
                         <input type="checkbox" id="agreeTerms"> 我已阅读并同意 <span class="terms-link"
@@ -489,6 +600,22 @@
                 // 保存 token 和用户信息
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
+                // 保存账号到多账号切换列表
+                if (rememberCheckbox.checked) {
+                    try {
+                        const meRes = await fetch(`${window.API_BASE}/me`, {
+                            headers: { 'Authorization': `Bearer ${data.token}` }
+                        });
+                        if (meRes.ok) {
+                            const me = await meRes.json();
+                            saveAccount(email, password, me.nickname, me.avatar_url);
+                        } else {
+                            saveAccount(email, password, data.user.nickname, null);
+                        }
+                    } catch (e) {
+                        saveAccount(email, password, data.user.nickname, null);
+                    }
+                }
                 // 跳转至首页
                 window.location.href = '/';
             } catch (err) {
@@ -528,6 +655,89 @@
                 if (e.key === 'Enter') searchBtn.click();
             });
         }
+
+        // ---------- 多账号切换功能 ----------
+        function loadSavedAccounts() {
+            const section = document.getElementById('savedAccountsSection');
+            const list = document.getElementById('savedAccountsList');
+            const accounts = JSON.parse(localStorage.getItem('savedAccounts') || '[]');
+            if (accounts.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+            section.style.display = 'block';
+            list.innerHTML = accounts.map(acc => {
+                const avatarHtml = acc.avatar
+                    ? `<img src="${acc.avatar}" alt="头像">`
+                    : `<i class="fas fa-user-circle"></i>`;
+                const displayName = acc.nickname || acc.email.split('@')[0];
+                return `
+                    <div class="account-card" data-email="${escapeHtml(acc.email)}">
+                        <div class="account-avatar">${avatarHtml}</div>
+                        <div class="account-info">
+                            <div class="account-nickname">${escapeHtml(displayName)}</div>
+                            <div class="account-email">${escapeHtml(acc.email)}</div>
+                        </div>
+                        <button class="account-del-btn" title="删除此账号">&times;</button>
+                    </div>
+                `;
+            }).join('');
+            // 绑定点击事件
+            list.querySelectorAll('.account-card').forEach(card => {
+                const email = card.dataset.email;
+                const delBtn = card.querySelector('.account-del-btn');
+                // 点击卡片切换账号（×按钮除外）
+                card.addEventListener('click', (e) => {
+                    if (e.target === delBtn || delBtn.contains(e.target)) return;
+                    const accounts = JSON.parse(localStorage.getItem('savedAccounts') || '[]');
+                    const account = accounts.find(a => a.email === email);
+                    if (account) {
+                        fillAccount(account.email, account.password);
+                    }
+                });
+                // 删除按钮
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeAccount(email);
+                });
+            });
+        }
+
+        function saveAccount(email, password, nickname, avatar) {
+            const accounts = JSON.parse(localStorage.getItem('savedAccounts') || '[]');
+            const existing = accounts.findIndex(a => a.email === email);
+            const record = { email, password, nickname: nickname || null, avatar: avatar || null, savedAt: new Date().toISOString() };
+            if (existing !== -1) {
+                // 更新现有记录（保持位置不变）
+                accounts[existing] = { ...accounts[existing], ...record };
+            } else {
+                // 新账号加到开头
+                accounts.unshift(record);
+            }
+            localStorage.setItem('savedAccounts', JSON.stringify(accounts));
+            loadSavedAccounts();
+        }
+
+        function removeAccount(email) {
+            let accounts = JSON.parse(localStorage.getItem('savedAccounts') || '[]');
+            accounts = accounts.filter(a => a.email !== email);
+            localStorage.setItem('savedAccounts', JSON.stringify(accounts));
+            loadSavedAccounts();
+        }
+
+        function fillAccount(email, password) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+            document.getElementById('rememberMe').checked = true;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        }
+
+        // 页面加载时渲染已保存账号
+        loadSavedAccounts();
 
         // 菜单按钮点击（登录页无侧边栏，可忽略或提示）
         const menuToggle = document.getElementById('menuToggle');

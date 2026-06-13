@@ -9,6 +9,7 @@
     <!-- 移动端适配 -->
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
     <script src="/js/mobile.js" defer></script>
+    <script src="/js/level-utils.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* ========== 全局样式（与 index 一致） ========== */
@@ -813,6 +814,18 @@
         }
 
         @media (max-width: 768px) {
+
+        /* 等级徽章 */
+        .level-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 600; white-space: nowrap;
+        }
+        .level-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .level-progress { width: 100%; height: 6px; background: #eef2f6; border-radius: 3px; overflow: hidden; }
+        .level-progress-bar { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+
+        @media (max-width: 768px) {
             body {
                 margin-left: 0;
             }
@@ -899,6 +912,9 @@
             <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
             <a href="admin.html" class="sidebar-link" title="管理后台"><i
                     class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信">
+                <i class="fas fa-envelope"></i><span>私信</span>
+            </a>
             <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
                 <i class="fas fa-comment-dots"></i><span>反馈</span>
             </a>
@@ -1166,8 +1182,11 @@
             } catch (err) { alert('网络错误'); }
         }
 
-        async function deleteReply(replyId) {
-            if (!confirm('确定要删除这条回复吗？')) return;
+        async function deleteReply(replyId, replyAuthorId) {
+            const confirmMsg = (currentUserIsAdmin && currentUserId !== replyAuthorId)
+                ? '🛡️ [管理员操作] 你确定要删除这条回复吗？此操作不可撤销。'
+                : '确定要删除这条回复吗？';
+            if (!confirm(confirmMsg)) return;
             try {
                 const res = await fetch(`${window.API_BASE}/replies/${replyId}`, {
                     method: 'DELETE',
@@ -1275,11 +1294,13 @@
                                 <div class="post-author-info">
                                     <div class="post-author-name">
                                         <a href="/user-profile.html?uid=${post.user_id}">${escapeHtml(post.nickname)}</a>
+                                        ${typeof renderLevelBadge === 'function' ? renderLevelBadge(post.exp, post.has_passed_quiz) : ''}
                                     </div>
                                     <div class="post-author-meta">
                                         <i class="fas fa-user"></i> 作者
                                     </div>
                                 </div>
+                                ${!isAuthor && token ? '<a href="/chat.html?uid=' + post.user_id + '" class="action-btn" style="text-decoration:none;margin-left:auto;"><i class="fas fa-envelope"></i> 发私信</a>' : ''}
                             </div>
                         </div>
                         <div class="post-content">${escapeHtml(post.content)}</div>
@@ -1291,8 +1312,8 @@
                                 <i class="${isFav ? 'fas' : 'far'} fa-star"></i> 收藏
                             </button>
                             ${canEdit ? `
-                                <button id="editPostBtn" class="action-btn"><i class="fas fa-edit"></i> 编辑</button>
-                                <button id="deletePostBtn" class="action-btn delete-btn"><i class="fas fa-trash-alt"></i> 删除</button>
+                                <button id="editPostBtn" class="action-btn"><i class="fas fa-edit"></i>${currentUserIsAdmin && !isAuthor ? ' 🛡️' : ''} 编辑</button>
+                                <button id="deletePostBtn" class="action-btn delete-btn"><i class="fas fa-trash-alt"></i>${currentUserIsAdmin && !isAuthor ? ' 🛡️' : ''} 删除</button>
                             ` : ''}
                             ${canReportPost ? `
                                 <button class="action-btn report-btn" data-target-type="post" data-target-id="${post.id}" data-target-info="帖子：${escapeHtml(post.title)}">举报</button>
@@ -1355,7 +1376,10 @@
                 const deletePostBtn = document.getElementById('deletePostBtn');
                 if (deletePostBtn) {
                     deletePostBtn.addEventListener('click', async () => {
-                        if (!confirm('确定删除这篇帖子吗？')) return;
+                        const confirmMsg = (currentUserIsAdmin && currentUserId !== postData.user_id)
+                            ? '🛡️ [管理员操作] 你确定要删除这篇帖子吗？此操作不可撤销。'
+                            : '确定删除这篇帖子吗？';
+                        if (!confirm(confirmMsg)) return;
                         const res = await fetch(`${window.API_BASE}/posts/${currentPostId}`, {
                             method: 'DELETE',
                             headers: { 'Authorization': `Bearer ${token}` }
@@ -1380,7 +1404,7 @@
                             loadPostDetail(currentPostId);
                         } else {
                             const err = await res.json();
-                            document.getElementById('replyError').innerText = err.error || '回复失败';
+                            if (!handleQuizRequired(err)) document.getElementById('replyError').innerText = err.error || '回复失败';
                         }
                     });
                 }
@@ -1391,7 +1415,8 @@
                     if (!target) return;
                     if (target.classList.contains('reply-delete-btn')) {
                         const replyId = parseInt(target.dataset.replyId);
-                        deleteReply(replyId);
+                        const replyAuthorId = parseInt(target.dataset.authorId);
+                        deleteReply(replyId, replyAuthorId);
                     } else if (target.classList.contains('reply-report-btn')) {
                         // 已在全局处理
                     } else if (target.classList.contains('reply-reply-btn')) {
@@ -1455,14 +1480,14 @@
                             ${avatarHtml}
                         </div>
                         <div class="reply-author-info">
-                            <div class="reply-author">${escapeHtml(reply.nickname)}</div>
+                            <div class="reply-author">${escapeHtml(reply.nickname)} ${typeof renderLevelBadge === 'function' ? renderLevelBadge(reply.exp, reply.has_passed_quiz) : ''}</div>
                             <div class="reply-time">${formatDate(reply.created_at)}</div>
                         </div>
                     </div>
                     <div class="reply-content" data-full-text="${escapeHtml(reply.content).replace(/"/g, '&quot;')}">${escapeHtml(reply.content)}</div>
                     <div class="reply-footer">
                         <button class="reply-reply-btn" data-reply-id="${reply.id}" data-username="${escapeHtml(reply.nickname)}"><i class="fas fa-reply"></i> 回复</button>
-                        ${canDeleteReply ? `<button class="reply-delete-btn" data-reply-id="${reply.id}"><i class="fas fa-trash-alt"></i> 删除</button>` : ''}
+                        ${canDeleteReply ? `<button class="reply-delete-btn" data-reply-id="${reply.id}" data-author-id="${reply.user_id}"><i class="fas fa-trash-alt"></i>${currentUserIsAdmin && !isReplyAuthor ? ' 🛡️' : ''} 删除</button>` : ''}
                         ${canReportReply ? `<button class="reply-report-btn report-btn" data-target-type="reply" data-target-id="${reply.id}" data-target-info="回复 #${reply.id}"><i class="fas fa-flag"></i> 举报</button>` : ''}
                     </div>
                 </div>

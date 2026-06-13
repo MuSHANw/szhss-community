@@ -45,6 +45,61 @@ async function createNotification(userId, type, sourceId, sourceUserId = null, c
     }
 }
 
+// ---------- 经验值系统 ----------
+const EXP_RULES = {
+    post: { exp: 10, dailyMax: 50 },
+    reply: { exp: 3, dailyMax: 30 },
+    liked: { exp: 2, dailyMax: 40 },
+    favorited: { exp: 5, dailyMax: 50 },
+    replied: { exp: 1, dailyMax: 20 },
+    login: { exp: 5, dailyMax: 5 },
+    followed: { exp: 3, dailyMax: 30 },
+    report_accepted: { exp: 10, dailyMax: 0 }
+};
+
+async function addExp(userId, actionType) {
+    const rule = EXP_RULES[actionType];
+    if (!rule) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    try {
+        if (rule.dailyMax > 0) {
+            const limitCheck = await pool.query(
+                `SELECT count FROM daily_exp_limits
+                 WHERE user_id = $1 AND action_type = $2 AND date = $3`,
+                [userId, actionType, today]
+            );
+
+            const currentCount = limitCheck.rows.length > 0
+                ? parseInt(limitCheck.rows[0].count)
+                : 0;
+
+            if (currentCount >= rule.dailyMax) return;
+
+            if (limitCheck.rows.length > 0) {
+                await pool.query(
+                    `UPDATE daily_exp_limits SET count = count + 1
+                     WHERE user_id = $1 AND action_type = $2 AND date = $3`,
+                    [userId, actionType, today]
+                );
+            } else {
+                await pool.query(
+                    `INSERT INTO daily_exp_limits (user_id, action_type, date, count)
+                     VALUES ($1, $2, $3, 1)`,
+                    [userId, actionType, today]
+                );
+            }
+        }
+
+        await pool.query('UPDATE users SET exp = exp + $1 WHERE id = $2',
+            [rule.exp, userId]);
+
+    } catch (err) {
+        console.error('增加经验值失败:', err);
+    }
+}
+
 // ---------- 中间件 ----------
 const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -70,6 +125,23 @@ const adminMiddleware = async (req, res, next) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: '权限验证失败' });
+    }
+};
+
+// LV0 权限检查（未通过答题的用户不能进行互动操作）
+const quizRequired = async (req, res, next) => {
+    try {
+        const result = await pool.query('SELECT has_passed_quiz FROM users WHERE id = $1', [req.user.userId]);
+        if (result.rows.length === 0 || !result.rows[0].has_passed_quiz) {
+            return res.status(403).json({
+                error: '请先通过入站答题',
+                quiz_required: true,
+                quiz_url: '/quiz.html'
+            });
+        }
+        next();
+    } catch (err) {
+        next(err);
     }
 };
 
@@ -132,6 +204,7 @@ app.post('/api/login', async (req, res) => {
         const valid = await bcrypt.compare(password, user.password_hash);
         if (!valid) return res.status(401).json({ error: '邮箱或密码错误' });
         const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+        addExp(user.id, 'login');
         res.json({ token, user: { id: user.id, email: user.email, nickname: user.nickname } });
     } catch (err) {
         console.error(err);
@@ -170,7 +243,7 @@ app.get('/api/me', authMiddleware, async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT id, email, nickname, school, district, hobby, avatar_url, is_admin, nickname_last_updated,
-                    show_activity, show_replies, show_favorites,
+                    show_activity, show_replies, show_favorites, allow_messages, u.exp, u.has_passed_quiz,
                     (SELECT COUNT(*) FROM user_follows WHERE follower_id = u.id) as following_count,
                     (SELECT COUNT(*) FROM user_follows WHERE followee_id = u.id) as follower_count
              FROM users u WHERE u.id = $1`,
@@ -185,7 +258,7 @@ app.get('/api/me', authMiddleware, async (req, res) => {
 });
 
 app.put('/api/me/profile', authMiddleware, async (req, res) => {
-    const { nickname, school, district, hobby, show_activity, show_replies, show_favorites } = req.body;
+    const { nickname, school, district, hobby, show_activity, show_replies, show_favorites, allow_messages } = req.body;
     const userId = req.user.userId;
     const client = await pool.connect();
     try {
@@ -212,10 +285,12 @@ app.put('/api/me/profile', authMiddleware, async (req, res) => {
         if (school !== undefined) { updateFields.push(`school = $${updateValues.length + 1}`); updateValues.push(school); }
         if (district !== undefined) { updateFields.push(`district = $${updateValues.length + 1}`); updateValues.push(district); }
         if (hobby !== undefined) { updateFields.push(`hobby = $${updateValues.length + 1}`); updateValues.push(hobby); }
+        if (allow_messages !== undefined) { updateFields.push(`allow_messages = $${updateValues.length + 1}`); updateValues.push(allow_messages); }
         if (show_activity !== undefined) { updateFields.push(`show_activity = $${updateValues.length + 1}`); updateValues.push(show_activity); }
         if (show_replies !== undefined) { updateFields.push(`show_replies = $${updateValues.length + 1}`); updateValues.push(show_replies); }
         if (show_favorites !== undefined) { updateFields.push(`show_favorites = $${updateValues.length + 1}`); updateValues.push(show_favorites); }
         if (updateFields.length > 0) {
+            console.log('🔍 保存隐私设置:', { updateFields, updateValues });
             updateValues.push(userId);
             const query = `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${updateValues.length}`;
             await client.query(query, updateValues);
@@ -343,7 +418,7 @@ app.get('/api/my-favorites', authMiddleware, async (req, res) => {
 });
 
 // 关注或取消关注用户 (切换)
-app.post('/api/users/:id/follow', authMiddleware, async (req, res) => {
+app.post('/api/users/:id/follow', authMiddleware, quizRequired, async (req, res) => {
     const followerId = req.user.userId;
     const followeeId = parseInt(req.params.id);
 
@@ -393,6 +468,7 @@ app.post('/api/users/:id/follow', authMiddleware, async (req, res) => {
 
             // 发送关注通知
             await createNotification(followeeId, 'follow', followerId, followerId);
+            addExp(followeeId, 'followed');
         }
 
         await client.query('COMMIT');
@@ -508,7 +584,7 @@ app.get('/api/following-posts', authMiddleware, async (req, res) => {
     try {
         const query = `
             SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at, p.likes,
-                   u.nickname, u.id as user_id, u.avatar_url,
+                   u.nickname, u.id as user_id, u.avatar_url, u.exp, u.has_passed_quiz,
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM posts p
             JOIN users u ON p.user_id = u.id
@@ -559,7 +635,7 @@ app.get('/api/users/:id', async (req, res) => {
 
     try {
         const query = `
-            SELECT id, email, nickname, school, district, hobby, avatar_url, created_at,
+            SELECT id, email, nickname, school, district, hobby, avatar_url, allow_messages, exp, has_passed_quiz, created_at,
                    (SELECT COUNT(*) FROM user_follows WHERE follower_id = $1) as following_count,
                    (SELECT COUNT(*) FROM user_follows WHERE followee_id = $1) as follower_count,
                    EXISTS(SELECT 1 FROM user_follows WHERE follower_id = $2 AND followee_id = $1) as is_following
@@ -702,7 +778,7 @@ app.get('/api/users/:id/favorites', async (req, res) => {
 });
 
 // ---------- 帖子相关 API ----------
-app.post('/api/posts', authMiddleware, async (req, res) => {
+app.post('/api/posts', authMiddleware, quizRequired, async (req, res) => {
     const { title, content, category, tags, circle_id } = req.body;
     if (!title || !content) return res.status(400).json({ error: '标题和内容不能为空' });
     try {
@@ -713,6 +789,7 @@ app.post('/api/posts', authMiddleware, async (req, res) => {
         if (circle_id) {
             await pool.query('UPDATE circles SET post_count = post_count + 1 WHERE id = $1', [circle_id]);
         }
+        addExp(req.user.userId, 'post');
         res.json({ id: result.rows[0].id, message: '发布成功' });
     } catch (err) {
         console.error(err);
@@ -741,7 +818,7 @@ app.get('/api/posts', async (req, res) => {
 
         let listQuery = `
             SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at, p.likes,
-                   u.nickname, u.id as user_id, u.avatar_url,
+                   u.nickname, u.id as user_id, u.avatar_url, u.exp, u.has_passed_quiz,
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM posts p
             JOIN users u ON p.user_id = u.id
@@ -779,7 +856,7 @@ app.get('/api/posts/:id', async (req, res) => {
     if (isNaN(id)) return res.status(400).json({ error: '无效的帖子ID' });
     try {
         const postResult = await pool.query(
-            `SELECT p.*, u.nickname, u.avatar_url, u.id as user_id
+            `SELECT p.*, u.nickname, u.avatar_url, u.id as user_id, u.exp, u.has_passed_quiz
              FROM posts p
              JOIN users u ON p.user_id = u.id
              WHERE p.id = $1`,
@@ -788,7 +865,7 @@ app.get('/api/posts/:id', async (req, res) => {
         if (postResult.rows.length === 0) return res.status(404).json({ error: '帖子不存在' });
         const post = postResult.rows[0];
         const repliesResult = await pool.query(
-            `SELECT r.*, u.nickname, u.avatar_url
+            `SELECT r.*, u.nickname, u.avatar_url, u.exp, u.has_passed_quiz
              FROM replies r
              JOIN users u ON r.user_id = u.id
              WHERE r.post_id = $1
@@ -860,7 +937,7 @@ app.delete('/api/posts/:id', authMiddleware, async (req, res) => {
 });
 
 // ---------- 回复 API ----------
-app.post('/api/posts/:id/replies', authMiddleware, async (req, res) => {
+app.post('/api/posts/:id/replies', authMiddleware, quizRequired, async (req, res) => {
     const postId = parseInt(req.params.id);
     if (isNaN(postId)) return res.status(400).json({ error: '无效的帖子ID' });
     const { content, parent_id } = req.body;
@@ -876,7 +953,9 @@ app.post('/api/posts/:id/replies', authMiddleware, async (req, res) => {
         const ownerId = postOwner.rows[0].user_id;
         if (ownerId !== req.user.userId) {
             await createNotification(ownerId, 'reply', postId, req.user.userId);
+            addExp(ownerId, 'replied');
         }
+        addExp(req.user.userId, 'reply');
         res.json({ id: result.rows[0].id, message: '回复成功' });
     } catch (err) {
         console.error(err);
@@ -904,7 +983,7 @@ app.delete('/api/replies/:id', authMiddleware, async (req, res) => {
 });
 
 // ---------- 点赞系统 ----------
-app.post('/api/posts/:id/like', authMiddleware, async (req, res) => {
+app.post('/api/posts/:id/like', authMiddleware, quizRequired, async (req, res) => {
     const postId = parseInt(req.params.id);
     if (isNaN(postId)) return res.status(400).json({ error: '无效的帖子ID' });
     const userId = req.user.userId;
@@ -925,6 +1004,7 @@ app.post('/api/posts/:id/like', authMiddleware, async (req, res) => {
             if (ownerId !== userId) {
                 await createNotification(ownerId, 'like', postId, userId);
             }
+            addExp(ownerId, 'liked');
         }
     } catch (err) {
         console.error(err);
@@ -949,7 +1029,7 @@ app.get('/api/posts/likes/status', authMiddleware, async (req, res) => {
 });
 
 // ---------- 收藏系统 ----------
-app.post('/api/posts/:id/favorite', authMiddleware, async (req, res) => {
+app.post('/api/posts/:id/favorite', authMiddleware, quizRequired, async (req, res) => {
     const postId = parseInt(req.params.id);
     if (isNaN(postId)) return res.status(400).json({ error: '无效的帖子ID' });
     const userId = req.user.userId;
@@ -965,6 +1045,7 @@ app.post('/api/posts/:id/favorite', authMiddleware, async (req, res) => {
             const ownerId = postOwner.rows[0].user_id;
             if (ownerId !== userId) {
                 await createNotification(ownerId, 'favorite', postId, userId);
+                addExp(ownerId, 'favorited');
             }
         }
     } catch (err) {
@@ -1175,20 +1256,61 @@ app.put('/api/admin/reports/:id', authMiddleware, adminMiddleware, async (req, r
     if (isNaN(reportId)) return res.status(400).json({ error: '无效的举报ID' });
     const { action } = req.body;
     if (!['resolve', 'reject'].includes(action)) return res.status(400).json({ error: '无效的操作' });
-    const status = action === 'resolve' ? 'resolved' : 'rejected';
+
+    const client = await pool.connect();
     try {
-        await pool.query(
-            `UPDATE reports SET status = $1, resolved_at = NOW(), resolved_by = $2 WHERE id = $3`,
-            [status, req.user.userId, reportId]
+        await client.query('BEGIN');
+
+        // 先查询举报详情
+        const reportResult = await client.query(
+            'SELECT target_type, target_id, reporter_id FROM reports WHERE id = $1',
+            [reportId]
         );
-        const reportRes = await pool.query('SELECT reporter_id FROM reports WHERE id = $1', [reportId]);
-        const reporterId = reportRes.rows[0].reporter_id;
-        const content = action === 'resolve' ? '您的举报已通过处理，违规内容已被删除。' : '您的举报已被驳回。';
-        await createNotification(reporterId, 'report_resolved', reportId, null, content);
-        res.json({ message: '举报已处理' });
+        if (reportResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: '举报不存在' });
+        }
+        const report = reportResult.rows[0];
+
+        if (action === 'resolve') {
+            // 根据 target_type 自动删除违规内容
+            if (report.target_type === 'post') {
+                await client.query('DELETE FROM posts WHERE id = $1', [report.target_id]);
+            } else if (report.target_type === 'reply') {
+                await client.query('DELETE FROM replies WHERE id = $1', [report.target_id]);
+            }
+            // target_type === 'user' 暂不处理
+
+            // 更新举报状态
+            await client.query(
+                `UPDATE reports SET status = 'resolved', resolved_at = NOW(), resolved_by = $1 WHERE id = $2`,
+                [req.user.userId, reportId]
+            );
+
+            const content = `您的举报已通过处理，违规${report.target_type === 'post' ? '帖子' : report.target_type === 'reply' ? '回复' : '内容'}已被删除。`;
+            await createNotification(report.reporter_id, 'report_resolved', reportId, null, content);
+
+            await client.query('COMMIT');
+            res.json({ message: content });
+        } else {
+            // reject：仅更新状态，不删除内容
+            await client.query(
+                `UPDATE reports SET status = 'rejected', resolved_at = NOW(), resolved_by = $1 WHERE id = $2`,
+                [req.user.userId, reportId]
+            );
+
+            const content = '您的举报已被驳回。';
+            await createNotification(report.reporter_id, 'report_resolved', reportId, null, content);
+
+            await client.query('COMMIT');
+            res.json({ message: '举报已驳回' });
+        }
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error(err);
         res.status(500).json({ error: '处理失败' });
+    } finally {
+        client.release();
     }
 });
 
@@ -1290,7 +1412,7 @@ app.get('/api/search', async (req, res) => {
     try {
         const query = `
             SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at,
-                   u.nickname, u.id as user_id, u.avatar_url,
+                   u.nickname, u.id as user_id, u.avatar_url, u.exp, u.has_passed_quiz,
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM posts p
             JOIN users u ON p.user_id = u.id
@@ -1413,7 +1535,7 @@ app.get('/api/study-rooms', async (req, res) => {
 });
 
 // 创建个人自习室
-app.post('/api/study-rooms', authMiddleware, async (req, res) => {
+app.post('/api/study-rooms', authMiddleware, quizRequired, async (req, res) => {
     const { name, description, max_members } = req.body;
     const userId = req.user.userId;
 
@@ -1501,7 +1623,7 @@ app.get('/api/study-rooms/:id', async (req, res) => {
 });
 
 // 加入自习室
-app.post('/api/study-rooms/:id/join', authMiddleware, async (req, res) => {
+app.post('/api/study-rooms/:id/join', authMiddleware, quizRequired, async (req, res) => {
     const roomId = parseInt(req.params.id);
     const userId = req.user.userId;
     if (isNaN(roomId)) return res.status(400).json({ error: '无效的自习室ID' });
@@ -1653,6 +1775,259 @@ app.delete('/api/study-rooms/:id', authMiddleware, async (req, res) => {
 
 // ---------- 自习室 API 结束 ----------
 
+// ---------- 题库 API ----------
+
+// 获取随机10道题目（不返回正确答案）
+app.get('/api/quiz/questions', authMiddleware, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT id, question, option_a, option_b, option_c, option_d, category FROM quiz_questions ORDER BY RANDOM() LIMIT 10'
+        );
+        res.json({ questions: result.rows });
+    } catch (err) {
+        console.error('获取题目失败:', err);
+        res.status(500).json({ error: '获取题目失败' });
+    }
+});
+
+// 提交答案
+app.post('/api/quiz/submit', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const { answers } = req.body; // [{question_id: 1, answer: 'A'}, ...]
+
+    if (!answers || !Array.isArray(answers) || answers.length !== 10) {
+        return res.status(400).json({ error: '请回答全部10道题目' });
+    }
+
+    try {
+        // 获取正确答案
+        const questionIds = answers.map(a => a.question_id);
+        const correctResult = await pool.query(
+            'SELECT id, correct_answer FROM quiz_questions WHERE id = ANY($1)',
+            [questionIds]
+        );
+        const correctMap = {};
+        correctResult.rows.forEach(row => {
+            correctMap[row.id] = row.correct_answer;
+        });
+
+        // 计算分数
+        let score = 0;
+        answers.forEach(a => {
+            if (correctMap[a.question_id] === a.answer) {
+                score += 10;
+            }
+        });
+
+        const passed = score >= 60;
+
+        // 记录答题结果
+        await pool.query(
+            'INSERT INTO quiz_attempts (user_id, score, passed) VALUES ($1, $2, $3)',
+            [userId, score, passed]
+        );
+
+        // 如果通过，升级为 LV1
+        if (passed) {
+            await pool.query('UPDATE users SET has_passed_quiz = true WHERE id = $1', [userId]);
+        }
+
+        res.json({ score, passed, message: passed ? '恭喜通过入站答题！' : '很遗憾，未达到60分，请继续努力！' });
+    } catch (err) {
+        console.error('提交答题失败:', err);
+        res.status(500).json({ error: '提交答题失败' });
+    }
+});
+
+// 获取用户答题状态
+app.get('/api/quiz/status', authMiddleware, async (req, res) => {
+    try {
+        const userResult = await pool.query('SELECT has_passed_quiz, exp FROM users WHERE id = $1', [req.user.userId]);
+        const attemptsResult = await pool.query(
+            'SELECT score, passed, created_at FROM quiz_attempts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5',
+            [req.user.userId]
+        );
+        res.json({
+            has_passed_quiz: userResult.rows[0].has_passed_quiz,
+            exp: userResult.rows[0].exp,
+            attempts: attemptsResult.rows
+        });
+    } catch (err) {
+        console.error('获取答题状态失败:', err);
+        res.status(500).json({ error: '获取答题状态失败' });
+    }
+});
+
+// ---------- 题库 API 结束 ----------
+
+// ---------- 私信 API ----------
+
+// 获取私信对话列表
+app.get('/api/messages/conversations', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    try {
+        const query = `
+            SELECT
+                other_user_id,
+                u.nickname as other_nickname,
+                u.avatar_url as other_avatar,
+                last_msg_content,
+                last_msg_time,
+                unread_count
+            FROM (
+                SELECT DISTINCT ON (
+                    CASE
+                        WHEN sender_id = $1 THEN receiver_id
+                        ELSE sender_id
+                    END
+                )
+                    CASE
+                        WHEN sender_id = $1 THEN receiver_id
+                        ELSE sender_id
+                    END AS other_user_id,
+                    content AS last_msg_content,
+                    created_at AS last_msg_time,
+                    (SELECT COUNT(*) FROM messages m2
+                     WHERE m2.receiver_id = $1
+                       AND m2.sender_id = (
+                           CASE
+                               WHEN messages.sender_id = $1 THEN messages.receiver_id
+                               ELSE messages.sender_id
+                           END
+                       )
+                       AND m2.read_at IS NULL) AS unread_count
+                FROM messages
+                WHERE sender_id = $1 OR receiver_id = $1
+                ORDER BY
+                    CASE
+                        WHEN sender_id = $1 THEN receiver_id
+                        ELSE sender_id
+                    END,
+                    created_at DESC
+            ) sub
+            JOIN users u ON sub.other_user_id = u.id
+            ORDER BY sub.last_msg_time DESC
+        `;
+        const result = await pool.query(query, [userId]);
+        res.json({ conversations: result.rows });
+    } catch (err) {
+        console.error('获取对话列表失败:', err);
+        res.status(500).json({ error: '获取对话列表失败' });
+    }
+});
+
+// 获取与指定用户的聊天记录
+app.get('/api/messages/:userId', authMiddleware, async (req, res) => {
+    const myId = req.user.userId;
+    const otherId = parseInt(req.params.userId);
+    if (isNaN(otherId)) return res.status(400).json({ error: '无效的用户ID' });
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+
+    try {
+        const query = `
+            SELECT m.*,
+                   u.nickname as sender_nickname,
+                   u.avatar_url as sender_avatar
+            FROM messages m
+            JOIN users u ON m.sender_id = u.id
+            WHERE (m.sender_id = $1 AND m.receiver_id = $2)
+               OR (m.sender_id = $2 AND m.receiver_id = $1)
+            ORDER BY m.created_at ASC
+            LIMIT $3 OFFSET $4
+        `;
+        const result = await pool.query(query, [myId, otherId, limit, offset]);
+        res.json({ messages: result.rows });
+    } catch (err) {
+        console.error('获取聊天记录失败:', err);
+        res.status(500).json({ error: '获取聊天记录失败' });
+    }
+});
+
+// 发送私信
+app.post('/api/messages', authMiddleware, quizRequired, async (req, res) => {
+    const senderId = req.user.userId;
+    const { receiver_id, content } = req.body;
+
+    if (!receiver_id || !content || content.trim().length === 0) {
+        return res.status(400).json({ error: '接收者ID和消息内容不能为空' });
+    }
+
+    try {
+        // 检查接收者是否存在且开启了私信
+        const userCheck = await pool.query(
+            'SELECT id, nickname, allow_messages FROM users WHERE id = $1',
+            [receiver_id]
+        );
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ error: '用户不存在' });
+        }
+        console.log('🔍 allow_messages 调试:', { receiver_id, allow_messages: userCheck.rows[0].allow_messages, type: typeof userCheck.rows[0].allow_messages });
+        if (!userCheck.rows[0].allow_messages) {
+            return res.status(403).json({ error: '对方未开启私信功能' });
+        }
+
+        // 防骚扰：检查对方是否曾回复过我
+        const hasReplied = await pool.query(
+            `SELECT 1 FROM messages
+             WHERE sender_id = $1 AND receiver_id = $2 LIMIT 1`,
+            [receiver_id, senderId]
+        );
+
+        if (hasReplied.rows.length === 0) {
+            // 对方从未回复，检查我是否已经发过
+            const alreadySent = await pool.query(
+                `SELECT 1 FROM messages
+                 WHERE sender_id = $1 AND receiver_id = $2 LIMIT 1`,
+                [senderId, receiver_id]
+            );
+            if (alreadySent.rows.length > 0) {
+                return res.status(403).json({
+                    error: '对方尚未回复，你只能发送一条消息，请耐心等待。'
+                });
+            }
+        }
+
+        // 插入消息
+        const result = await pool.query(
+            'INSERT INTO messages (sender_id, receiver_id, content) VALUES ($1, $2, $3) RETURNING id, created_at',
+            [senderId, receiver_id, content.trim()]
+        );
+
+        res.json({
+            id: result.rows[0].id,
+            created_at: result.rows[0].created_at,
+            message: '发送成功'
+        });
+    } catch (err) {
+        console.error('发送私信失败:', err);
+        res.status(500).json({ error: '发送私信失败' });
+    }
+});
+
+// 标记已读
+app.put('/api/messages/read/:userId', authMiddleware, async (req, res) => {
+    const myId = req.user.userId;
+    const otherId = parseInt(req.params.userId);
+    if (isNaN(otherId)) return res.status(400).json({ error: '无效的用户ID' });
+
+    try {
+        await pool.query(
+            `UPDATE messages SET read_at = NOW()
+             WHERE sender_id = $1 AND receiver_id = $2 AND read_at IS NULL`,
+            [otherId, myId]
+        );
+        res.json({ message: '已标记为已读' });
+    } catch (err) {
+        console.error('标记已读失败:', err);
+        res.status(500).json({ error: '标记已读失败' });
+    }
+});
+
+// ---------- 私信 API 结束 ----------
+
 // ---------- 圈子相关 API ----------
 
 // 获取所有圈子（支持分页、搜索、排序）
@@ -1770,7 +2145,7 @@ app.get('/api/circles/:id/posts', async (req, res) => {
 
         const query = `
             SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at, p.likes,
-                   u.nickname, u.id as user_id, u.avatar_url,
+                   u.nickname, u.id as user_id, u.avatar_url, u.exp, u.has_passed_quiz,
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM posts p
             JOIN users u ON p.user_id = u.id

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
     <script src="/js/mobile.js" defer></script>
+    <script src="/js/level-utils.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* ========== 全局样式（与 index 一致） ========== */
@@ -674,14 +675,15 @@
             <a href="index.html" class="sidebar-link"><i class="fas fa-home"></i><span>首页</span></a>
             <a href="learning.html" class="sidebar-link"><i class="fas fa-graduation-cap"></i><span>学习</span></a>
             <a href="circles.html" class="sidebar-link"><i class="fas fa-users"></i><span>圈子</span></a>
-            <a href="feed.html" class="sidebar-link"><i class="fas fa-bolt"></i><span>动态</span></a>
             <a href="study.html" class="sidebar-link active"><i class="fas fa-clock"></i><span>自习室</span></a>
+            <a href="feed.html" class="sidebar-link"><i class="fas fa-bolt"></i><span>动态</span></a>
             <a href="#" class="sidebar-link"><i class="fas fa-life-ring"></i><span>生活</span></a>
             <a href="#" class="sidebar-link"><i class="fas fa-users"></i><span>社团</span></a>
             <a href="#" class="sidebar-link"><i class="fas fa-chart-line"></i><span>升学</span></a>
             <a href="profile.html" class="sidebar-link"><i class="fas fa-user"></i><span>个人主页</span></a>
             <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i><span>设置</span></a>
             <a href="admin.html" class="sidebar-link"><i class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="messages.html" class="sidebar-link" title="私信"><i class="fas fa-envelope"></i><span>私信</span></a>
             <a href="feedback.html" class="sidebar-link"><i class="fas fa-comment-dots"></i><span>反馈</span></a>
             <a href="notifications.html" class="sidebar-link" id="sidebarNotifLink">
                 <i class="fas fa-bell"></i><span>通知</span>
@@ -925,7 +927,9 @@
                     document.getElementById('newRoomDesc').value = '';
                     loadRooms('personal');
                 } else {
-                    alert(data.error || '创建失败');
+                    if (typeof handleQuizRequired === 'function' && !handleQuizRequired(data)) {
+                        alert(data.error || '创建失败');
+                    }
                 }
             } catch (err) {
                 alert('网络错误');
@@ -996,7 +1000,9 @@
                 });
                 const joinData = await joinRes.json();
                 if (!joinRes.ok) {
-                    alert(joinData.error || '加入失败');
+                    if (typeof handleQuizRequired === 'function' && !handleQuizRequired(joinData)) {
+                        alert(joinData.error || '加入失败');
+                    }
                     return;
                 }
             } catch (err) {
