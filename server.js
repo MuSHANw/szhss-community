@@ -802,7 +802,7 @@ app.get('/api/posts', async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     const category = req.query.category;
-    const sort = req.query.sort || 'latest';
+    const sort = req.query.sort || 'recommended';
     const isLearning = (category === 'learning');
 
     try {
@@ -825,6 +825,12 @@ app.get('/api/posts', async (req, res) => {
             ${whereSql}
         `;
         switch (sort) {
+            case 'recommended':
+                listQuery += ` ORDER BY (
+                    (p.likes * 3 + (SELECT COUNT(*) FROM replies WHERE post_id = p.id) * 2 + p.view_count * 1)
+                    / POWER(EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 3600 + 2, 1.5)
+                ) DESC`;
+                break;
             case 'hot':
                 listQuery += ` ORDER BY (p.likes * 3 + p.view_count * 1 + (SELECT COUNT(*) FROM replies WHERE post_id = p.id) * 2) DESC`;
                 break;

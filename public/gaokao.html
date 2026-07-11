@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>升学 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <script src="/js/level-utils.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif; background-color: #F5F7FA; color: #1f2d3d; line-height: 1.5; padding-top: 60px; margin-left: 260px; transition: margin-left 0.3s ease; position: relative; min-height: 100vh; }
+        body.sidebar-collapsed { margin-left: 70px; }
+        .bg-decorations { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none; }
+        .bg-decorations .wave { position: absolute; bottom: 0; left: 0; width: 100%; height: 120px; background: url('data:image/svg+xml;utf8,...') repeat-x; background-size: cover; opacity: 0.5; }
+        .bg-decorations .circle { position: absolute; border-radius: 50%; background: rgba(30,136,229,0.05); }
+        .bg-decorations .circle1 { width: 300px; height: 300px; top: -100px; left: -100px; }
+        .bg-decorations .circle2 { width: 200px; height: 200px; bottom: -50px; right: -50px; }
+        .bg-decorations .circle3 { width: 150px; height: 150px; top: 30%; right: 10%; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .top-bar-container { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; border-bottom: 1px solid #e9ecef; z-index: 100; display: flex; align-items: center; padding: 0 20px; }
+        .top-bar { display: flex; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto; }
+        .menu-toggle { background: none; border: none; font-size: 1.5rem; cursor: pointer; margin-right: 20px; color: #4a5568; }
+        .logo { font-size: 1.5rem; font-weight: 700; color: #1E88E5; text-decoration: none; margin-right: auto; }
+        .search-area { display: flex; align-items: center; background: #f1f3f5; border-radius: 24px; padding: 4px 12px; width: 260px; }
+        .search-area input { border: none; background: transparent; outline: none; width: 100%; padding: 8px 0; }
+        .search-area button { background: transparent; border: none; cursor: pointer; color: #6c757d; }
+        .about-link { margin-left: 16px; color: #4a5568; text-decoration: none; font-size: 0.95rem; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
+        .about-link:hover { color: #1E88E5; }
+        .about-link i { margin-right: 4px; }
+        .notifications-icon { position: relative; margin-left: 16px; font-size: 1.4rem; color: #6c757d; text-decoration: none; display: inline-flex; align-items: center; }
+        .notif-badge { position: absolute; top: -8px; right: -8px; background: #e53e3e; color: white; font-size: 0.7rem; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+        #sidebar { position: fixed; top: 60px; left: 0; bottom: 0; width: 260px; background: white; border-right: 1px solid #eef2f6; display: flex; flex-direction: column; transition: width 0.3s ease; z-index: 99; overflow-x: hidden; }
+        #sidebar.collapsed { width: 70px; }
+        #sidebar.collapsed .sidebar-user-info, #sidebar.collapsed .sidebar-link span { display: none; }
+        #sidebar.collapsed .sidebar-logout { font-size: 0; padding: 8px; }
+        #sidebar.collapsed .sidebar-logout::before { content: "🚪"; font-size: 1.2rem; }
+        .sidebar-user { display: flex; align-items: center; padding: 20px 16px; border-bottom: 1px solid #eef2f6; cursor: pointer; }
+        .sidebar-avatar { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex-shrink: 0; margin-right: 12px; }
+        .sidebar-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .sidebar-avatar i { font-size: 48px; color: #1E88E5; }
+        .sidebar-user-info { flex: 1; overflow: hidden; white-space: nowrap; }
+        .sidebar-nickname { font-weight: 600; font-size: 1rem; }
+        .sidebar-email { font-size: 0.7rem; color: #6c757d; }
+        .sidebar-nav { flex: 1; display: flex; flex-direction: column; padding: 16px 0; }
+        .sidebar-link { display: flex; align-items: center; padding: 12px 16px; text-decoration: none; color: #4a5568; transition: background 0.2s; white-space: nowrap; }
+        .sidebar-link i { width: 28px; font-size: 1.2rem; text-align: center; }
+        .sidebar-link span { margin-left: 12px; }
+        .sidebar-link:hover { background: #f0f2f5; }
+        .sidebar-link.active { background: #e9f0fe; color: #1E88E5; }
+        .notif-dot { color: #e53e3e; font-size: 0.7rem; margin-left: 4px; }
+        .sidebar-footer { padding: 16px; border-top: 1px solid #eef2f6; }
+        .sidebar-logout { width: 100%; background: none; border: none; padding: 8px; cursor: pointer; color: #e53e3e; border-radius: 8px; text-align: center; }
+        .sidebar-logout:hover { background: #ffe5e5; }
+
+        .page-header { text-align: center; padding: 32px 0 16px; }
+        .page-header h1 { font-size: 2rem; font-weight: 700; }
+        .page-header p { color: #6c757d; margin-top: 6px; font-size: 0.95rem; }
+
+        /* 倒计时横幅 */
+        .countdown-banner { background: linear-gradient(135deg, #1E88E5, #0d47a1); border-radius: 20px; padding: 36px; text-align: center; margin-bottom: 32px; color: white; }
+        .countdown-banner .label { font-size: 1.1rem; opacity: 0.9; }
+        .countdown-banner .number { font-size: 4rem; font-weight: 800; line-height: 1.2; margin: 8px 0; }
+        .countdown-banner .unit { font-size: 1rem; opacity: 0.8; }
+
+        /* 快捷入口 */
+        .quick-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 32px; }
+        .quick-link-card { background: white; border-radius: 16px; padding: 20px; border: 1px solid #eef2f6; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s; text-decoration: none; color: inherit; }
+        .quick-link-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.06); transform: translateY(-2px); }
+        .quick-link-icon { font-size: 2rem; flex-shrink: 0; }
+        .quick-link-info { flex: 1; }
+        .quick-link-title { font-weight: 600; font-size: 1rem; margin-bottom: 2px; }
+        .quick-link-desc { font-size: 0.8rem; color: #8a9aa8; }
+        .quick-link-arrow { color: #d0d7de; font-size: 1.2rem; }
+
+        .section-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 16px; border-left: 4px solid #1E88E5; padding-left: 12px; margin-top: 32px; }
+
+        /* 排序 */
+        .sort-bar { display: flex; gap: 12px; margin-bottom: 24px; }
+        .sort-btn { background: #f0f2f5; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+        .sort-btn.active { background: #1E88E5; color: white; }
+
+        .post-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid #eef2f6; cursor: pointer; transition: box-shadow 0.2s; }
+        .post-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+        .post-header { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.8rem; }
+        .post-category { background: #e9f0fe; color: #1E88E5; padding: 2px 8px; border-radius: 12px; }
+        .post-time { color: #8a9aa8; }
+        .post-title { font-size: 1.2rem; margin-bottom: 10px; }
+        .post-title a { text-decoration: none; color: #1f2d3d; font-weight: 600; }
+        .post-title a:hover { color: #1E88E5; }
+        .post-content { color: #4a5568; margin-bottom: 16px; line-height: 1.5; word-break: break-word; }
+        .post-footer { display: flex; align-items: center; gap: 16px; font-size: 0.8rem; color: #6c757d; }
+
+        /* FAQ */
+        .faq-list { background: white; border-radius: 16px; border: 1px solid #eef2f6; overflow: hidden; margin-bottom: 32px; }
+        .faq-item { border-bottom: 1px solid #f0f2f5; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-question { padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 500; transition: background 0.2s; }
+        .faq-question:hover { background: #f8f9fb; }
+        .faq-question i { transition: transform 0.3s; color: #8a9aa8; }
+        .faq-question.open i { transform: rotate(180deg); }
+        .faq-answer { padding: 0 20px; max-height: 0; overflow: hidden; transition: all 0.3s ease; color: #4a5568; font-size: 0.9rem; line-height: 1.6; }
+        .faq-answer.open { padding: 0 20px 16px; max-height: 200px; }
+
+        /* 资源推荐 */
+        .resource-list { background: white; border-radius: 16px; border: 1px solid #eef2f6; overflow: hidden; margin-bottom: 32px; }
+        .resource-item { padding: 14px 20px; border-bottom: 1px solid #f0f2f5; display: flex; justify-content: space-between; align-items: center; }
+        .resource-item:last-child { border-bottom: none; }
+        .resource-info { flex: 1; }
+        .resource-name { font-weight: 600; font-size: 0.95rem; }
+        .resource-desc { font-size: 0.8rem; color: #6c757d; margin-top: 2px; }
+        .resource-link { color: #1E88E5; text-decoration: none; font-size: 0.85rem; white-space: nowrap; }
+        .resource-link:hover { text-decoration: underline; }
+
+        .loading, .no-posts { text-align: center; padding: 40px; background: white; border-radius: 16px; color: #6c757d; }
+        .footer { background: white; border-top: 1px solid #e9ecef; padding: 20px 0; text-align: center; font-size: 0.75rem; color: #6c757d; margin-top: 40px; }
+
+        @media (max-width: 768px) {
+            body { margin-left: 0; }
+            #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; width: 260px !important; }
+            #sidebar.open-mobile { transform: translateX(0); }
+            .search-area { width: 180px; }
+            .page-header h1 { font-size: 1.5rem; }
+            .countdown-banner .number { font-size: 2.8rem; }
+            .quick-links { grid-template-columns: 1fr; }
+            .sort-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        }
+    </style>
+</head>
+<body id="appBody">
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <a href="/about.html" class="about-link" id="aboutLink"><i class="fas fa-info-circle"></i> 关于</a>
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar"><i class="fas fa-user-circle"></i></div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子"><i class="fas fa-users"></i><span>圈子</span></a>
+            <a href="/study.html" class="sidebar-link" title="自习室"><i class="fas fa-clock"></i><span>自习室</span></a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="life.html" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="gaokao.html" class="sidebar-link active" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信"><i class="fas fa-envelope"></i><span>私信</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈"><i class="fas fa-comment-dots"></i><span>反馈</span></a>
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>升学</h1>
+            <p>备战高考 · 规划未来 · 圆梦大学</p>
+        </div>
+
+        <!-- 倒计时 -->
+        <div class="countdown-banner">
+            <div class="label">📅 距离 2027 年高考还有</div>
+            <div class="number" id="gaokaoCountdown">--</div>
+            <div class="unit">天</div>
+        </div>
+
+        <!-- 快捷入口 -->
+        <div class="quick-links">
+            <a class="quick-link-card" href="https://www.eesc.gov.cn/" target="_blank" rel="noopener">
+                <div class="quick-link-icon">📋</div>
+                <div class="quick-link-info"><div class="quick-link-title">历年分数线</div><div class="quick-link-desc">广东省教育考试院</div></div>
+                <div class="quick-link-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
+            <a class="quick-link-card" href="/search.html?q=深圳高校">
+                <div class="quick-link-icon">🏫</div>
+                <div class="quick-link-info"><div class="quick-link-title">深圳高校介绍</div><div class="quick-link-desc">了解本地大学</div></div>
+                <div class="quick-link-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
+            <a class="quick-link-card" href="/search.html?q=志愿填报">
+                <div class="quick-link-icon">📝</div>
+                <div class="quick-link-info"><div class="quick-link-title">志愿填报指南</div><div class="quick-link-desc">填报技巧与策略</div></div>
+                <div class="quick-link-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
+            <a class="quick-link-card" href="/search.html?q=经验分享">
+                <div class="quick-link-icon">💬</div>
+                <div class="quick-link-info"><div class="quick-link-title">学长学姐说</div><div class="quick-link-desc">经验分享与答疑</div></div>
+                <div class="quick-link-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
+        </div>
+
+        <!-- 最新升学资讯 -->
+        <h3 class="section-title">📰 最新升学资讯</h3>
+        <div class="sort-bar">
+            <button class="sort-btn active" data-sort="recommended">🔥 推荐</button>
+            <button class="sort-btn" data-sort="latest">🕒 最新</button>
+            <button class="sort-btn" data-sort="replied">💬 最新回复</button>
+        </div>
+        <div id="postsList"><div class="loading">加载中...</div></div>
+
+        <!-- FAQ -->
+        <h3 class="section-title">❓ 热门问题</h3>
+        <div class="faq-list" id="faqList">
+            <div class="faq-item">
+                <div class="faq-question" data-index="0">深圳有哪些好大学？<i class="fas fa-chevron-down"></i></div>
+                <div class="faq-answer">深圳共有深圳大学、南方科技大学、深圳技术大学、深圳职业技术大学、深圳信息职业技术学院等多所高校。此外还有香港中文大学（深圳）、深圳北理莫斯科大学等中外合作办学高校。深圳大学和南科大是综合实力最强的两所，分数线也相对较高。</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" data-index="1">艺考怎么准备？<i class="fas fa-chevron-down"></i></div>
+                <div class="faq-answer">艺考分为统考（省联考）和校考两个阶段。建议高二暑假开始系统集训，选择靠谱的培训机构。文化课也不能放松，近年艺考文化课分数线逐年提高。注意关注目标院校的招生简章，合理安排统考和校考的备考时间。</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" data-index="2">新高考选科怎么选？<i class="fas fa-chevron-down"></i></div>
+                <div class="faq-answer">广东新高考采用"3+1+2"模式。物理和历史二选一，政治、地理、化学、生物四选二。选科要考虑：①目标专业的选科要求（如医学通常要求物化生）；②自身学科优势；③未来职业规划。高一上学期可以充分体验各学科后再做决定。</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" data-index="3">自主招生还有吗？<i class="fas fa-chevron-down"></i></div>
+                <div class="faq-answer">教育部自2020年起取消了原自主招生，取而代之的是"强基计划"。强基计划主要面向数学、物理、化学、生物、历史、哲学等基础学科，高考成绩占85%以上。此外还有综合评价录取（631模式）等多元录取途径，具体请关注各高校招生简章。</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" data-index="4">高考前一个月怎么复习？<i class="fas fa-chevron-down"></i></div>
+                <div class="faq-answer">考前一个月建议：①回归基础，不再做偏题怪题；②整理错题本，查漏补缺；③按高考时间调整作息，适应考试节奏；④适当做真题保持手感；⑤调整心态，适度运动，保证睡眠质量。最后一周以放松心态为主，确保以最佳状态迎接考试。</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" data-index="5">大学专业怎么选？<i class="fas fa-chevron-down"></i></div>
+                <div class="faq-answer">选专业需要考虑：①个人兴趣和职业规划——选你真正热爱的方向；②就业前景和发展趋势——了解各专业的就业率和薪资水平；③学校优势学科——同一专业在不同学校差异很大；④性格匹配——有些专业适合研究型，有些适合应用型。建议多和学长学姐交流，参加高校开放日。</div>
+            </div>
+        </div>
+
+        <!-- 学习资源推荐 -->
+        <h3 class="section-title">📚 学习资源推荐</h3>
+        <div class="resource-list">
+            <div class="resource-item">
+                <div class="resource-info"><div class="resource-name">B站up主：一数</div><div class="resource-desc">高中数学系统讲解，通俗易懂</div></div>
+                <a class="resource-link" href="https://search.bilibili.com/all?keyword=一数" target="_blank" rel="noopener">去学习 <i class="fas fa-external-link-alt"></i></a>
+            </div>
+            <div class="resource-item">
+                <div class="resource-info"><div class="resource-name">国家中小学智慧教育平台</div><div class="resource-desc">官方免费课程资源，覆盖全学科</div></div>
+                <a class="resource-link" href="https://www.smartedu.cn/" target="_blank" rel="noopener">去学习 <i class="fas fa-external-link-alt"></i></a>
+            </div>
+            <div class="resource-item">
+                <div class="resource-info"><div class="resource-name">学习强国 · 中小学课堂</div><div class="resource-desc">精品微课 + 真题解析</div></div>
+                <a class="resource-link" href="https://www.xuexi.cn/" target="_blank" rel="noopener">去学习 <i class="fas fa-external-link-alt"></i></a>
+            </div>
+            <div class="resource-item">
+                <div class="resource-info"><div class="resource-name">高考真题汇编（历年真题）</div><div class="resource-desc">近10年全国卷 + 新高考卷真题</div></div>
+                <a class="resource-link" href="https://t.urongda.com/" target="_blank" rel="noopener">去练习 <i class="fas fa-external-link-alt"></i></a>
+            </div>
+            <div class="resource-item">
+                <div class="resource-info"><div class="resource-name">Anki 记忆卡片</div><div class="resource-desc">间隔重复记忆法，适合背单词/知识点</div></div>
+                <a class="resource-link" href="https://apps.ankiweb.net/" target="_blank" rel="noopener">去了解 <i class="fas fa-external-link-alt"></i></a>
+            </div>
+            <div class="resource-item">
+                <div class="resource-info"><div class="resource-name">Forest 专注森林</div><div class="resource-desc">番茄钟 + 种树，帮你放下手机专注学习</div></div>
+                <a class="resource-link" href="https://www.forestapp.cc/" target="_blank" rel="noopener">去了解 <i class="fas fa-external-link-alt"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
+        </div>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+        const token = localStorage.getItem('token');
+
+        // 侧边栏、用户信息、通知
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); }
+        else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); }
+        toggleBtn.addEventListener('click', function() {
+            var e = !sidebar.classList.contains('collapsed');
+            if (e) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); localStorage.setItem('sidebarExpanded','false'); }
+            else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); localStorage.setItem('sidebarExpanded','true'); }
+        });
+
+        const avatarDiv = document.getElementById('sidebarAvatar');
+        const nicknameSpan = document.getElementById('sidebarNickname');
+        const emailSpan = document.getElementById('sidebarEmail');
+        async function updateSidebarUser() {
+            try {
+                var res = await fetch(window.API_BASE + '/me', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.status === 401) { localStorage.removeItem('token'); window.location.href = '/login.html'; return; }
+                if (res.ok) { var u = await res.json(); nicknameSpan.innerText = u.nickname || '用户'; emailSpan.innerText = u.email || ''; avatarDiv.innerHTML = u.avatar_url ? '<img src="' + u.avatar_url + '" alt="头像">' : '<i class="fas fa-user-circle"></i>'; }
+            } catch(e) {}
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', function() { window.location.href = '/profile.html'; });
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', function() { localStorage.removeItem('token'); window.location.href = '/login.html'; });
+
+        async function updateNotifDot() {
+            if (!token) return;
+            try { var res = await fetch(window.API_BASE + '/notifications?page=1&limit=1', { headers: { 'Authorization': 'Bearer ' + token } }); var d = await res.json(); var cnt = d.unreadCount || 0; var badge = document.getElementById('notifBadge'); var dot = document.getElementById('sidebarNotifDot'); if (badge) { badge.style.display = cnt > 0 ? 'flex' : 'none'; badge.innerText = cnt > 99 ? '99+' : cnt; } if (dot) dot.style.display = cnt > 0 ? 'inline-block' : 'none'; } catch(e) {}
+        }
+        updateNotifDot();
+        if (token) setInterval(updateNotifDot, 30000);
+
+        document.getElementById('searchBtn')?.addEventListener('click', function() { var q = document.getElementById('searchInput').value.trim(); if (q) window.location.href = '/search.html?q=' + encodeURIComponent(q); else alert('请输入搜索关键词'); });
+        document.getElementById('searchInput')?.addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('searchBtn').click(); });
+
+        // ---------- 高考倒计时 ----------
+        (function() {
+            var now = new Date();
+            var year = now.getFullYear();
+            var target = new Date(year, 5, 7);
+            if (now > target) target = new Date(year + 1, 5, 7);
+            var diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+            document.getElementById('gaokaoCountdown').innerText = diff;
+        })();
+
+        // ---------- FAQ 折叠 ----------
+        document.querySelectorAll('.faq-question').forEach(function(q) {
+            q.addEventListener('click', function() {
+                var answer = q.nextElementSibling;
+                var isOpen = answer.classList.contains('open');
+                document.querySelectorAll('.faq-answer').forEach(function(a) { a.classList.remove('open'); });
+                document.querySelectorAll('.faq-question').forEach(function(q2) { q2.classList.remove('open'); });
+                if (!isOpen) { answer.classList.add('open'); q.classList.add('open'); }
+            });
+        });
+
+        // ---------- 帖子 ----------
+        function escapeHtml(s) { if (!s) return ''; return s.replace(/[&<>]/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]||m); }); }
+        function formatDate(iso) { var d = new Date(iso); return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'); }
+
+        var currentSort = 'recommended';
+        var currentPage = 1;
+        var totalPages = 1;
+
+        async function loadPosts() {
+            var container = document.getElementById('postsList');
+            try {
+                var params = new URLSearchParams({ page: currentPage, limit: 10, sort: currentSort, category: '升学' });
+                var res = await fetch(window.API_BASE + '/posts?' + params);
+                var data = await res.json();
+                var posts = data.posts || [];
+                totalPages = data.totalPages || 1;
+                if (!posts.length) { container.innerHTML = '<div class="no-posts">暂无升学类帖子</div>'; document.getElementById('pagination')?.remove(); return; }
+                container.innerHTML = posts.map(function(post) {
+                    var avatarHtml = post.avatar_url ? '<img src="' + post.avatar_url + '" style="width:22px;height:22px;border-radius:50%;object-fit:cover;">' : '<i class="fas fa-user-circle" style="font-size:22px;color:#1E88E5;"></i>';
+                    var badge = (typeof renderLevelBadge === 'function') ? renderLevelBadge(post.exp, post.has_passed_quiz) : '';
+                    return '<div class="post-card" data-id="' + post.id + '">' +
+                        '<div class="post-header"><span class="post-category">' + escapeHtml(post.category||'综合') + '</span><span class="post-time">' + formatDate(post.created_at) + '</span></div>' +
+                        '<h3 class="post-title"><a href="/post-detail.html?id=' + post.id + '">' + escapeHtml(post.title) + '</a></h3>' +
+                        '<div class="post-content">' + escapeHtml((post.content||'').substring(0,150)) + ((post.content||'').length>150?'...':'') + '</div>' +
+                        '<div class="post-footer"><span>' + avatarHtml + ' <a href="/user-profile.html?uid=' + post.user_id + '" style="color:inherit;text-decoration:none;">' + escapeHtml(post.nickname) + '</a>' + badge + '</span>' +
+                        '<span><i class="fas fa-eye"></i> ' + (post.view_count||0) + '</span>' +
+                        '<span><i class="fas fa-comment"></i> ' + (post.reply_count||0) + '</span></div></div>';
+                }).join('');
+                document.querySelectorAll('.post-card').forEach(function(c) { c.addEventListener('click', function() { window.location.href = '/post-detail.html?id=' + c.dataset.id; }); });
+                renderPagination();
+            } catch(e) { container.innerHTML = '<div class="error">加载失败</div>'; }
+        }
+
+        function renderPagination() {
+            var container = document.getElementById('pagination');
+            if (!container) { var d = document.createElement('div'); d.id = 'pagination'; d.className = 'pagination'; document.getElementById('postsList').after(d); container = d; }
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+            var html = '';
+            for (var i = 1; i <= totalPages; i++) html += '<button class="' + (i === currentPage ? 'active' : '') + '" data-page="' + i + '">' + i + '</button>';
+            container.innerHTML = html;
+            container.querySelectorAll('button').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var p = parseInt(btn.dataset.page);
+                    if (p && p !== currentPage) { currentPage = p; loadPosts(); window.scrollTo({top:0,behavior:'smooth'}); }
+                });
+            });
+        }
+
+        document.querySelectorAll('.sort-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var sort = btn.dataset.sort;
+                if (sort === currentSort) return;
+                currentSort = sort;
+                currentPage = 1;
+                document.querySelectorAll('.sort-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                loadPosts();
+            });
+        });
+
+        loadPosts();
+    </script>
+</body>
+</html>

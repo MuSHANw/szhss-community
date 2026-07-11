@@ -389,22 +389,28 @@
             font-size: 0.9rem;
         }
 
+        /* 帖子条目（与首页一致） */
+        .post-item { display: flex; align-items: flex-start; gap: 12px; padding: 16px 20px; cursor: pointer; transition: background 0.15s; background: white; }
+        .post-item:hover { background: #F9FAFB; }
+        .post-item-avatar-area { flex-shrink: 0; width: 32px; height: 32px; }
+        .post-item-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+        .post-item-avatar-icon { font-size: 32px; color: #1E88E5; }
+        .post-item-content { flex: 1; min-width: 0; }
+        .post-item-title { font-size: 1rem; font-weight: 600; color: #1F2937; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
+        .post-item-excerpt { font-size: 0.875rem; color: #6B7280; line-height: 1.5; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .post-item-meta { font-size: 0.75rem; color: #9CA3AF; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .post-item-dot { color: #D1D5DB; }
+        .post-item-author { font-weight: 500; color: #6B7280; }
+        .post-item-category { color: #1E88E5; }
+        .post-item-stats { margin-left: auto; display: flex; gap: 14px; align-items: center; }
+        .post-stat { cursor: default; display: inline-flex; align-items: center; gap: 2px; }
+        .post-divider { height: 1px; background: #F3F4F6; margin: 0 20px; }
+        .post-divider:last-child { display: none; }
+        .post-item-tags { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .post-tag { background: #F3F4F6; color: #6B7280; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; cursor: pointer; transition: background 0.15s; }
+        .post-tag:hover { background: #E5E7EB; }
+
         .post-card {
-            background: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-            transition: box-shadow 0.2s, transform 0.1s;
-            border: 1px solid #eef2f6;
-            cursor: pointer;
-        }
-
-        .post-card:hover {
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-        }
-
-        .post-header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 12px;
@@ -632,9 +638,8 @@
                 <i class="fas fa-clock"></i><span>自习室</span>
             </a>
             <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
-            <a href="#" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
-            <a href="#" class="sidebar-link" title="社团"><i class="fas fa-users"></i><span>社团</span></a>
-            <a href="#" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="life.html" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="gaokao.html" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
             <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
             <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
             <a href="admin.html" class="sidebar-link" title="管理后台"><i
@@ -837,42 +842,46 @@
                     <div class="results-count">找到 ${data.total} 条结果，第 ${page}/${totalPages} 页</div>
                     ${posts.map(post => {
                     const avatarHtml = post.avatar_url
-                        ? `<img src="${post.avatar_url}" alt="头像">`
-                        : `<i class="fas fa-user-circle"></i>`;
+                        ? `<img src="${post.avatar_url}" alt="头像" class="post-item-avatar">`
+                        : `<i class="fas fa-user-circle post-item-avatar-icon"></i>`;
                     return `
-                        <div class="post-card" data-post-id="${post.id}">
-                            <div class="post-header">
-                                <span class="post-category">${escapeHtml(post.category || '综合')}</span>
-                                <span class="post-time">${formatDate(post.created_at)}</span>
-                            </div>
-                            <h3 class="post-title">${escapeHtml(post.title)}</h3>
-                            <div class="post-content">${escapeHtml(post.content.substring(0, 150))}${post.content.length > 150 ? '...' : ''}</div>
-                            <div class="post-footer">
-                                <div class="post-author">
-                                    ${avatarHtml}
-                                    <a href="/user-profile.html?uid=${post.user_id}" style="color: inherit; text-decoration: none;" onclick="event.stopPropagation()">${escapeHtml(post.nickname)}</a>
+                        <div class="post-item" data-post-id="${post.id}">
+                            <div class="post-item-avatar-area">${avatarHtml}</div>
+                            <div class="post-item-content">
+                                <div class="post-item-title">${escapeHtml(post.title)}</div>
+                                <div class="post-item-excerpt">${escapeHtml(post.content.substring(0, 150))}${post.content.length > 150 ? '...' : ''}</div>
+                                <div class="post-item-meta">
+                                    <span class="post-item-author">${escapeHtml(post.nickname)}</span>
+                                    <span class="post-item-dot">·</span>
+                                    <span class="post-item-category">${escapeHtml(post.category || '综合')}</span>
+                                    <span class="post-item-dot">·</span>
+                                    <span class="post-item-time">${formatDate(post.created_at)}</span>
+                                    <span class="post-item-stats">
+                                        <span class="post-stat"><i class="far fa-heart"></i> ${post.likes || 0}</span>
+                                        <span class="post-stat"><i class="far fa-comment"></i> ${post.reply_count || 0}</span>
+                                        <span class="post-stat"><i class="far fa-eye"></i> ${post.view_count || 0}</span>
+                                    </span>
                                 </div>
-                                <span><i class="fas fa-eye"></i> ${post.view_count || 0}</span>
-                                <span><i class="fas fa-comment"></i> ${post.reply_count || 0}</span>
+                                ${post.tags && post.tags.length ? `<div class="post-item-tags">${post.tags.map(t => `<span class="post-tag" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
                             </div>
-                            ${post.tags && post.tags.length ? `<div class="post-tags">${post.tags.map(t => `<span class="tag" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
                         </div>
+                        <div class="post-divider"></div>
                     `;
                 }).join('')}
                 `;
                 resultsDiv.innerHTML = html;
                 renderPagination(page, totalPages);
 
-                // 卡片点击跳转
-                document.querySelectorAll('.post-card').forEach(card => {
-                    card.addEventListener('click', () => {
-                        const postId = card.dataset.postId;
+                // 条目点击跳转
+                document.querySelectorAll('.post-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const postId = item.dataset.postId;
                         window.location.href = `/post-detail.html?id=${postId}`;
                     });
                 });
 
-                // 绑定标签点击事件（二次搜索），阻止冒泡避免触发卡片跳转
-                document.querySelectorAll('.tag').forEach(tagEl => {
+                // 标签二次搜索
+                document.querySelectorAll('.post-tag').forEach(tagEl => {
                     tagEl.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const tag = tagEl.getAttribute('data-tag');

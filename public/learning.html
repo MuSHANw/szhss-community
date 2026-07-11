@@ -500,6 +500,34 @@
             color: white;
         }
 
+        /* 信息流标签栏 & 帖子条目（与首页一致） */
+        .feed-tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid #F3F4F6; background: white; border-radius: 16px 16px 0 0; padding: 0 20px; }
+        .feed-tab { padding: 12px 20px; font-size: 0.95rem; font-weight: 500; color: #6B7280; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.2s, border-color 0.2s; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+        .feed-tab:hover { color: #1F2937; }
+        .feed-tab.active { color: #1E88E5; border-bottom-color: #1E88E5; }
+        .post-item { display: flex; align-items: flex-start; gap: 12px; padding: 16px 20px; cursor: pointer; transition: background 0.15s; background: white; }
+        .post-item:hover { background: #F9FAFB; }
+        .post-item-avatar-area { flex-shrink: 0; width: 32px; height: 32px; }
+        .post-item-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+        .post-item-avatar-icon { font-size: 32px; color: #1E88E5; }
+        .post-item-content { flex: 1; min-width: 0; }
+        .post-item-title { font-size: 1rem; font-weight: 600; color: #1F2937; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
+        .post-item-excerpt { font-size: 0.875rem; color: #6B7280; line-height: 1.5; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .post-item-meta { font-size: 0.75rem; color: #9CA3AF; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .post-item-dot { color: #D1D5DB; }
+        .post-item-author { font-weight: 500; color: #6B7280; }
+        .post-item-category { color: #1E88E5; }
+        .post-item-stats { margin-left: auto; display: flex; gap: 14px; align-items: center; }
+        .post-stat { cursor: default; display: inline-flex; align-items: center; gap: 2px; }
+        .post-stat[data-action="like"], .post-stat[data-action="fav"] { cursor: pointer; transition: color 0.15s; }
+        .post-stat[data-action="like"]:hover { color: #EF4444; }
+        .post-stat[data-action="fav"]:hover { color: #F59E0B; }
+        .post-stat.liked { color: #EF4444; }
+        .post-stat.favorited { color: #F59E0B; }
+        .post-divider { height: 1px; background: #F3F4F6; margin: 0 20px; }
+        .post-divider:last-child { display: none; }
+        #postsList { background: white; border-radius: 0 0 16px 16px; padding-bottom: 8px; margin-bottom: 24px; }
+
         .posts-list {
             flex: 2.5;
         }
@@ -810,9 +838,8 @@
                 <i class="fas fa-clock"></i><span>自习室</span>
             </a>
             <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
-            <a href="#" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
-            <a href="#" class="sidebar-link" title="社团"><i class="fas fa-users"></i><span>社团</span></a>
-            <a href="#" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="life.html" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="gaokao.html" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
             <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
             <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
             <a href="admin.html" class="sidebar-link" title="管理后台"><i
@@ -860,10 +887,10 @@
                     </div>
                 </div>
 
-                <div class="sort-bar">
-                    <button class="sort-btn active" data-sort="hot">🔥 最热</button>
-                    <button class="sort-btn" data-sort="latest">🕒 最新发布</button>
-                    <button class="sort-btn" data-sort="replied">💬 最新回复</button>
+                <div class="feed-tabs">
+                    <button class="feed-tab active" data-sort="recommended">🔥 推荐</button>
+                    <button class="feed-tab" data-sort="latest">🕒 最新</button>
+                    <button class="feed-tab" data-sort="hot">🔥 最热</button>
                 </div>
 
                 <div id="postsList">加载中...</div>
@@ -1086,7 +1113,7 @@
         // ---------- 学习页面帖子加载 ----------
         let likeStatus = {}, favStatus = {};
         let currentPage = 1;
-        let currentSort = 'hot';
+        let currentSort = 'recommended';
         let totalPages = 1;
 
         function escapeHtml(str) {
@@ -1165,50 +1192,53 @@
                     const isLiked = likeStatus[post.id] || false;
                     const isFav = favStatus[post.id] || false;
                     const avatarHtml = post.avatar_url
-                        ? `<img src="${post.avatar_url}" alt="头像">`
-                        : `<i class="fas fa-user-circle"></i>`;
+                        ? `<img src="${post.avatar_url}" alt="头像" class="post-item-avatar">`
+                        : `<i class="fas fa-user-circle post-item-avatar-icon"></i>`;
                     return `
-                        <div class="post-card" data-post-id="${post.id}">
-                            <div class="post-header">
-                                <span class="post-category">${escapeHtml(post.category || '综合')}</span>
-                                <span class="post-time">${formatDate(post.created_at)}</span>
-                            </div>
-                            <h3 class="post-title">${escapeHtml(post.title)}</h3>
-                            <div class="post-content">${escapeHtml(post.content.substring(0, 150))}${post.content.length > 150 ? '...' : ''}</div>
-                            <div class="post-footer">
-                                <div class="post-author">
-                                    ${avatarHtml}
-                                    <a href="/user-profile.html?uid=${post.user_id}" style="color: inherit; text-decoration: none;" onclick="event.stopPropagation()">${escapeHtml(post.nickname)}</a>
+                        <div class="post-item" data-post-id="${post.id}">
+                            <div class="post-item-avatar-area">${avatarHtml}</div>
+                            <div class="post-item-content">
+                                <div class="post-item-title">${escapeHtml(post.title)}</div>
+                                <div class="post-item-excerpt">${escapeHtml(post.content.substring(0, 150))}${post.content.length > 150 ? '...' : ''}</div>
+                                <div class="post-item-meta">
+                                    <span class="post-item-author">${escapeHtml(post.nickname)}</span>
+                                    <span class="post-item-dot">·</span>
+                                    <span class="post-item-category">${escapeHtml(post.category || '综合')}</span>
+                                    <span class="post-item-dot">·</span>
+                                    <span class="post-item-time">${formatDate(post.created_at)}</span>
+                                    <span class="post-item-stats">
+                                        <span class="post-stat ${isLiked ? 'liked' : ''}" data-action="like" data-id="${post.id}">
+                                            <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> <span class="likes-count">${post.likes || 0}</span>
+                                        </span>
+                                        <span class="post-stat"><i class="far fa-comment"></i> ${post.reply_count || 0}</span>
+                                        <span class="post-stat"><i class="far fa-eye"></i> ${post.view_count || 0}</span>
+                                        <span class="post-stat ${isFav ? 'favorited' : ''}" data-action="fav" data-id="${post.id}">
+                                            <i class="${isFav ? 'fas' : 'far'} fa-star"></i>
+                                        </span>
+                                    </span>
                                 </div>
-                                <span><i class="fas fa-eye"></i> ${post.view_count || 0}</span>
-                                <span><i class="fas fa-comment"></i> ${post.reply_count || 0}</span>
-                                <button class="like-btn ${isLiked ? 'liked' : ''}" data-id="${post.id}">
-                                    <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> <span class="likes-count">${post.likes || 0}</span>
-                                </button>
-                                <button class="favorite-btn ${isFav ? 'favorited' : ''}" data-id="${post.id}">
-                                    <i class="${isFav ? 'fas' : 'far'} fa-star"></i>
-                                </button>
                             </div>
                         </div>
+                        <div class="post-divider"></div>
                     `;
                 }).join('');
 
-                // 卡片点击跳转
-                document.querySelectorAll('.post-card').forEach(card => {
-                    card.addEventListener('click', () => {
-                        const postId = card.dataset.postId;
+                // 条目点击跳转
+                document.querySelectorAll('.post-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const postId = item.dataset.postId;
                         window.location.href = `/post-detail.html?id=${postId}`;
                     });
                 });
 
-                document.querySelectorAll('.like-btn').forEach(btn => {
-                    const id = parseInt(btn.dataset.id);
-                    const countSpan = btn.querySelector('.likes-count');
-                    btn.addEventListener('click', (e) => toggleLike(e, id, btn, countSpan));
+                document.querySelectorAll('.post-stat[data-action="like"]').forEach(stat => {
+                    const id = parseInt(stat.dataset.id);
+                    const countSpan = stat.querySelector('.likes-count');
+                    stat.addEventListener('click', (e) => toggleLikeInline(e, id, stat, countSpan));
                 });
-                document.querySelectorAll('.favorite-btn').forEach(btn => {
-                    const id = parseInt(btn.dataset.id);
-                    btn.addEventListener('click', (e) => toggleFavorite(e, id, btn));
+                document.querySelectorAll('.post-stat[data-action="fav"]').forEach(stat => {
+                    const id = parseInt(stat.dataset.id);
+                    stat.addEventListener('click', (e) => toggleFavoriteInline(e, id, stat));
                 });
                 renderPagination();
             } catch (err) {
@@ -1236,8 +1266,37 @@
             });
         }
 
+        // 行内点赞/收藏（列表式）
+        async function toggleLikeInline(e, postId, stat, countSpan) {
+            e.stopPropagation();
+            if (!token) { alert('请先登录'); return; }
+            try {
+                const res = await fetch(`${window.API_BASE}/posts/${postId}/like`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (res.ok) {
+                    if (data.liked) stat.classList.add('liked'); else stat.classList.remove('liked');
+                    stat.querySelector('i').className = data.liked ? 'fas fa-heart' : 'far fa-heart';
+                    countSpan.innerText = data.likes;
+                    likeStatus[postId] = data.liked;
+                } else { if (!handleQuizRequired(data)) alert(data.error); }
+            } catch(err) { alert('网络错误'); }
+        }
+        async function toggleFavoriteInline(e, postId, stat) {
+            e.stopPropagation();
+            if (!token) { alert('请先登录'); return; }
+            try {
+                const res = await fetch(`${window.API_BASE}/posts/${postId}/favorite`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (res.ok) {
+                    if (data.favorited) stat.classList.add('favorited'); else stat.classList.remove('favorited');
+                    stat.querySelector('i').className = data.favorited ? 'fas fa-star' : 'far fa-star';
+                    favStatus[postId] = data.favorited;
+                } else { if (!handleQuizRequired(data)) alert(data.error); }
+            } catch(err) { alert('网络错误'); }
+        }
+
         function initSortButtons() {
-            const btns = document.querySelectorAll('.sort-btn');
+            const btns = document.querySelectorAll('.feed-tab');
             btns.forEach(btn => {
                 btn.addEventListener('click', () => {
                     const sort = btn.dataset.sort;
