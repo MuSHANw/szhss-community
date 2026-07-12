@@ -703,13 +703,14 @@ app.get('/api/users/:id/activity', async (req, res) => {
         if (!priv.rows[0]?.show_activity) return res.json({ hidden: true, activity: [] });
 
         // 查询最近365天的活跃数据
+        const refDate = getBeijingDate();
         const result = await pool.query(
             `SELECT date, SUM(count) as total_count
              FROM daily_exp_limits
-             WHERE user_id = $1 AND date >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date - INTERVAL '364 days'
+             WHERE user_id = $1 AND date >= $2::date - INTERVAL '364 days'
              GROUP BY date
              ORDER BY date`,
-            [userId]
+            [userId, refDate]
         );
 
         // 构建日期到次数的映射
@@ -1398,6 +1399,7 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
             d.setDate(d.getDate() - i);
             dates.push(d.toISOString().slice(0, 10));
         }
+        const todayStr = getBeijingDate();
         const dauQuery = `
             WITH daily_users AS (
                 SELECT DISTINCT user_id, created_at::date as date FROM posts
@@ -1406,31 +1408,31 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
             )
             SELECT date, COUNT(DISTINCT user_id) as dau
             FROM daily_users
-            WHERE date >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date - INTERVAL '29 days'
+            WHERE date >= $1::date - INTERVAL '29 days'
             GROUP BY date
             ORDER BY date
         `;
-        const dauResult = await pool.query(dauQuery);
+        const dauResult = await pool.query(dauQuery, [todayStr]);
         const dauMap = {};
         dauResult.rows.forEach(row => { dauMap[row.date.toISOString().slice(0, 10)] = parseInt(row.dau); });
         const postsQuery = `
             SELECT created_at::date as date, COUNT(*) as count
             FROM posts
-            WHERE created_at >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date - INTERVAL '29 days'
+            WHERE created_at >= $1::date - INTERVAL '29 days'
             GROUP BY date
             ORDER BY date
         `;
-        const postsResult = await pool.query(postsQuery);
+        const postsResult = await pool.query(postsQuery, [todayStr]);
         const postsMap = {};
         postsResult.rows.forEach(row => { postsMap[row.date.toISOString().slice(0, 10)] = parseInt(row.count); });
         const reportsQuery = `
             SELECT created_at::date as date, COUNT(*) as count
             FROM reports
-            WHERE created_at >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date - INTERVAL '29 days'
+            WHERE created_at >= $1::date - INTERVAL '29 days'
             GROUP BY date
             ORDER BY date
         `;
-        const reportsResult = await pool.query(reportsQuery);
+        const reportsResult = await pool.query(reportsQuery, [todayStr]);
         const reportsMap = {};
         reportsResult.rows.forEach(row => { reportsMap[row.date.toISOString().slice(0, 10)] = parseInt(row.count); });
         const dau = dates.map(d => dauMap[d] || 0);
