@@ -711,33 +711,29 @@ app.get('/api/users/:id/activity', async (req, res) => {
             [userId, refDate]
         );
 
-        // 构建日期到次数的映射
+        // 构建日期到次数的映射——直接用本地时间，避免 toISOString 的 UTC 偏移
         const activityMap = {};
         result.rows.forEach(row => {
-            activityMap[row.date.toISOString().slice(0, 10)] = parseInt(row.total_count);
+            const d = row.date;
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            activityMap[y + '-' + m + '-' + dd] = parseInt(row.total_count);
         });
 
-        // 生成365天数据（使用 UTC 日期避免时区干扰）
+        // 生成365天数据
         const activity = [];
-        const [y, m, d] = refDate.split('-').map(Number);
-        const startDate = new Date(Date.UTC(y, m - 1, d - 364));
-
-        // 🐛 调试日志 - 看 SQL 返回了什么
-        const rawDates = result.rows.map(r => ({ iso: r.date.toISOString().slice(0,10), count: r.total_count }));
-        console.log('🐛 活动调试 refDate=%s, SQL结果=%j', refDate, rawDates);
-
+        const [y0, m0, d0] = refDate.split('-').map(Number);
         for (let i = 0; i < 365; i++) {
-            const current = new Date(startDate);
-            current.setUTCDate(current.getUTCDate() + i);
-            const dateStr = current.toISOString().slice(0, 10);
+            const dt = new Date(y0, m0 - 1, d0 - 364 + i);
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            const dateStr = y + '-' + m + '-' + dd;
             const count = activityMap[dateStr] || 0;
             const level = count === 0 ? 0 : count <= 2 ? 1 : count <= 5 ? 2 : count <= 10 ? 3 : 4;
             activity.push({ date: dateStr, count, level });
         }
-
-        // 🐛 看最后几条
-        const last5 = activity.slice(-5);
-        console.log('🐛 最后5天:', JSON.stringify(last5));
 
         res.json({ hidden: false, activity });
     } catch (err) {
@@ -1402,11 +1398,12 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
         const dates = [];
         const todayStr = getBeijingDate();
         const [y, m, dd] = todayStr.split('-').map(Number);
-        const startDate = new Date(Date.UTC(y, m - 1, dd - (days - 1)));
         for (let i = 0; i < days; i++) {
-            const d = new Date(startDate);
-            d.setUTCDate(d.getUTCDate() + i);
-            dates.push(d.toISOString().slice(0, 10));
+            const d = new Date(y, m - 1, dd - (days - 1) + i);
+            const ys = d.getFullYear();
+            const ms = String(d.getMonth() + 1).padStart(2, '0');
+            const ds = String(d.getDate()).padStart(2, '0');
+            dates.push(ys + '-' + ms + '-' + ds);
         }
         const dauQuery = `
             WITH daily_users AS (
