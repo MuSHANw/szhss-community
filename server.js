@@ -328,6 +328,18 @@ app.post('/api/me/avatar', authMiddleware, upload.single('avatar'), async (req, 
     }
 });
 
+// ---------- 通用文件上传（图片/视频）----------
+const generalUpload = multer({
+    storage,
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+});
+
+app.post('/api/upload/file', authMiddleware, generalUpload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: '请选择文件' });
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({ url: fileUrl });
+});
+
 // 获取当前用户的帖子列表
 app.get('/api/my-posts', authMiddleware, async (req, res) => {
     const userId = req.user.userId;
