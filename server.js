@@ -1419,7 +1419,7 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
         `;
         const dauResult = await pool.query(dauQuery, [todayStr]);
         const dauMap = {};
-        dauResult.rows.forEach(row => { dauMap[row.date.toISOString().slice(0, 10)] = parseInt(row.dau); });
+        dauResult.rows.forEach(row => { dauMap[(function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})(row.date)] = parseInt(row.dau); });
         const postsQuery = `
             SELECT (created_at AT TIME ZONE 'Asia/Shanghai')::date as date, COUNT(*) as count
             FROM posts
@@ -1429,7 +1429,7 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
         `;
         const postsResult = await pool.query(postsQuery, [todayStr]);
         const postsMap = {};
-        postsResult.rows.forEach(row => { postsMap[row.date.toISOString().slice(0, 10)] = parseInt(row.count); });
+        postsResult.rows.forEach(row => { postsMap[(function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})(row.date)] = parseInt(row.count); });
         const reportsQuery = `
             SELECT (created_at AT TIME ZONE 'Asia/Shanghai')::date as date, COUNT(*) as count
             FROM reports
@@ -1439,7 +1439,7 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
         `;
         const reportsResult = await pool.query(reportsQuery, [todayStr]);
         const reportsMap = {};
-        reportsResult.rows.forEach(row => { reportsMap[row.date.toISOString().slice(0, 10)] = parseInt(row.count); });
+        reportsResult.rows.forEach(row => { reportsMap[(function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})(row.date)] = parseInt(row.count); });
         const dau = dates.map(d => dauMap[d] || 0);
         const posts = dates.map(d => postsMap[d] || 0);
         const reports = dates.map(d => reportsMap[d] || 0);
