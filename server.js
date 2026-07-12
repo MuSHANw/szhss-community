@@ -685,20 +685,42 @@ app.get('/api/users/:id/posts', async (req, res) => {
 app.get('/api/users/:id/activity', async (req, res) => {
     const userId = parseInt(req.params.id);
     if (isNaN(userId)) return res.status(400).json({ error: '无效的用户ID' });
+
     try {
+        // 检查隐私设置
         const priv = await pool.query('SELECT show_activity FROM users WHERE id = $1', [userId]);
         if (!priv.rows[0]?.show_activity) return res.json({ hidden: true, activity: [] });
+
+        // 查询最近365天的活跃数据
+        const result = await pool.query(
+            `SELECT date, SUM(count) as total_count
+             FROM daily_exp_limits
+             WHERE user_id = $1 AND date >= CURRENT_DATE - INTERVAL '364 days'
+             GROUP BY date
+             ORDER BY date`,
+            [userId]
+        );
+
+        // 构建日期到次数的映射
+        const activityMap = {};
+        result.rows.forEach(row => {
+            activityMap[row.date.toISOString().slice(0, 10)] = parseInt(row.total_count);
+        });
+
+        // 生成365天数据
         const activity = [];
-        const today = new Date();
         for (let i = 364; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(today.getDate() - i);
-            const level = Math.floor(Math.random() * 5);
-            activity.push({ date, level });
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().slice(0, 10);
+            const count = activityMap[dateStr] || 0;
+            const level = count === 0 ? 0 : count <= 2 ? 1 : count <= 5 ? 2 : count <= 10 ? 3 : 4;
+            activity.push({ date: dateStr, count, level });
         }
+
         res.json({ hidden: false, activity });
     } catch (err) {
-        console.error(err);
+        console.error('获取活跃度失败:', err);
         res.status(500).json({ error: '获取活跃度失败' });
     }
 });

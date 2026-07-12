@@ -1133,7 +1133,31 @@
                 window.location.href = '/login.html';
                 return;
             }
-            const activity = generateActivityData();
+            // 从 API 获取真实活跃度数据
+            let activityData = null;
+            try {
+                const token = localStorage.getItem('token');
+                if (token && currentUser.id) {
+                    const res = await fetch(`${window.API_BASE}/users/${currentUser.id}/activity`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+                    if (!data.hidden && data.activity) activityData = data.activity;
+                }
+            } catch (e) {
+                console.warn('获取活跃度失败，使用模拟数据', e);
+            }
+            // 降级：API 失败则使用模拟数据
+            const activity = activityData || (function() {
+                const d = [];
+                const today = new Date();
+                for (let i = 364; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(today.getDate() - i);
+                    d.push({ date, level: 0 });
+                }
+                return d;
+            })();
             renderCalendar(activity);
             initTabs();
             await renderMyPosts(1);
