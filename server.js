@@ -9,6 +9,13 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+// 获取北京时间日期字符串 (YYYY-MM-DD)
+function getBeijingDate() {
+    const now = new Date();
+    const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000)); // UTC+8
+    return beijingTime.toISOString().slice(0, 10);
+}
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -61,7 +68,7 @@ async function addExp(userId, actionType) {
     const rule = EXP_RULES[actionType];
     if (!rule) return;
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getBeijingDate();
 
     try {
         if (rule.dailyMax > 0) {
@@ -707,10 +714,11 @@ app.get('/api/users/:id/activity', async (req, res) => {
             activityMap[row.date.toISOString().slice(0, 10)] = parseInt(row.total_count);
         });
 
-        // 生成365天数据
+        // 生成365天数据（使用北京时间，与存储日期对齐）
         const activity = [];
+        const beijingBase = new Date(new Date().getTime() + 8 * 60 * 60 * 1000);
         for (let i = 364; i >= 0; i--) {
-            const date = new Date();
+            const date = new Date(beijingBase);
             date.setDate(date.getDate() - i);
             const dateStr = date.toISOString().slice(0, 10);
             const count = activityMap[dateStr] || 0;
@@ -1251,7 +1259,7 @@ app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) =>
         const totalLikes = parseInt(likeCountRes.rows[0].total) || 0;
         const favCountRes = await pool.query('SELECT COUNT(*) as total FROM post_favorites');
         const totalFavorites = parseInt(favCountRes.rows[0].total);
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getBeijingDate();
         const newUsersRes = await pool.query('SELECT COUNT(*) as total FROM users WHERE created_at::date = $1', [today]);
         const newUsersToday = parseInt(newUsersRes.rows[0].total);
         const newPostsRes = await pool.query('SELECT COUNT(*) as total FROM posts WHERE created_at::date = $1', [today]);
@@ -1379,8 +1387,10 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
     try {
         const days = 30;
         const dates = [];
+        const now = new Date();
+        const beijingNow = new Date(now.getTime() + (8 * 60 * 60 * 1000));
         for (let i = days - 1; i >= 0; i--) {
-            const d = new Date();
+            const d = new Date(beijingNow);
             d.setDate(d.getDate() - i);
             dates.push(d.toISOString().slice(0, 10));
         }
