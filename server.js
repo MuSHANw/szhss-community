@@ -717,13 +717,14 @@ app.get('/api/users/:id/activity', async (req, res) => {
             activityMap[row.date.toISOString().slice(0, 10)] = parseInt(row.total_count);
         });
 
-        // 生成365天数据（使用北京时间，与存储日期对齐）
+        // 生成365天数据（使用 UTC 日期避免时区干扰）
         const activity = [];
-        const beijingBase = new Date(new Date().getTime() + 8 * 60 * 60 * 1000);
-        for (let i = 364; i >= 0; i--) {
-            const date = new Date(beijingBase);
-            date.setDate(date.getDate() - i);
-            const dateStr = date.toISOString().slice(0, 10);
+        const [y, m, d] = refDate.split('-').map(Number);
+        const startDate = new Date(Date.UTC(y, m - 1, d - 364));
+        for (let i = 0; i < 365; i++) {
+            const current = new Date(startDate);
+            current.setUTCDate(current.getUTCDate() + i);
+            const dateStr = current.toISOString().slice(0, 10);
             const count = activityMap[dateStr] || 0;
             const level = count === 0 ? 0 : count <= 2 ? 1 : count <= 5 ? 2 : count <= 10 ? 3 : 4;
             activity.push({ date: dateStr, count, level });
@@ -1390,14 +1391,14 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
     try {
         const days = 30;
         const dates = [];
-        const now = new Date();
-        const beijingNow = new Date(now.getTime() + (8 * 60 * 60 * 1000));
-        for (let i = days - 1; i >= 0; i--) {
-            const d = new Date(beijingNow);
-            d.setDate(d.getDate() - i);
+        const todayStr = getBeijingDate();
+        const [y, m, dd] = todayStr.split('-').map(Number);
+        const startDate = new Date(Date.UTC(y, m - 1, dd - (days - 1)));
+        for (let i = 0; i < days; i++) {
+            const d = new Date(startDate);
+            d.setUTCDate(d.getUTCDate() + i);
             dates.push(d.toISOString().slice(0, 10));
         }
-        const todayStr = getBeijingDate();
         const dauQuery = `
             WITH daily_users AS (
                 SELECT DISTINCT user_id, (created_at AT TIME ZONE 'Asia/Shanghai')::date as date FROM posts
