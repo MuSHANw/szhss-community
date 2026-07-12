@@ -721,6 +721,11 @@ app.get('/api/users/:id/activity', async (req, res) => {
         const activity = [];
         const [y, m, d] = refDate.split('-').map(Number);
         const startDate = new Date(Date.UTC(y, m - 1, d - 364));
+
+        // 🐛 调试日志 - 看 SQL 返回了什么
+        const rawDates = result.rows.map(r => ({ iso: r.date.toISOString().slice(0,10), count: r.total_count }));
+        console.log('🐛 活动调试 refDate=%s, SQL结果=%j', refDate, rawDates);
+
         for (let i = 0; i < 365; i++) {
             const current = new Date(startDate);
             current.setUTCDate(current.getUTCDate() + i);
@@ -729,6 +734,10 @@ app.get('/api/users/:id/activity', async (req, res) => {
             const level = count === 0 ? 0 : count <= 2 ? 1 : count <= 5 ? 2 : count <= 10 ? 3 : 4;
             activity.push({ date: dateStr, count, level });
         }
+
+        // 🐛 看最后几条
+        const last5 = activity.slice(-5);
+        console.log('🐛 最后5天:', JSON.stringify(last5));
 
         res.json({ hidden: false, activity });
     } catch (err) {
