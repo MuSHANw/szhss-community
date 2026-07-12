@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
     <script src="/js/mobile.js" defer></script>
     <script src="/js/level-utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* ========== 全局样式（与 index 一致） ========== */
@@ -458,6 +459,23 @@
             font-size: 0.8rem;
             color: #6c757d;
         }
+
+        .post-content h1, .post-content h2, .post-content h3 { margin-top:20px; margin-bottom:12px; }
+        .post-content h2 { font-size:1.4rem; border-bottom:2px solid #f0f0f0; padding-bottom:8px; }
+        .post-content h3 { font-size:1.2rem; }
+        .post-content p { margin-bottom:12px; line-height:1.7; }
+        .post-content ul, .post-content ol { margin-left:20px; margin-bottom:12px; }
+        .post-content li { margin-bottom:4px; }
+        .post-content code { background:#f0f0f0; padding:2px 6px; border-radius:4px; font-family:'Consolas','Monaco','Courier New',monospace; font-size:0.9em; }
+        .post-content pre { background:#1e1e1e; color:#d4d4d4; padding:16px; border-radius:8px; overflow-x:auto; margin-bottom:16px; }
+        .post-content pre code { background:none; color:inherit; padding:0; }
+        .post-content blockquote { border-left:4px solid #1E88E5; padding-left:16px; color:#666; margin:12px 0; }
+        .post-content img { max-width:100%; border-radius:8px; margin:12px 0; }
+        .post-content video { max-width:100%; border-radius:8px; margin:12px 0; }
+        .post-content a { color:#1E88E5; text-decoration:underline; }
+        .post-content table { border-collapse:collapse; width:100%; margin:12px 0; }
+        .post-content th, .post-content td { border:1px solid #e5e7eb; padding:8px 12px; text-align:left; }
+        .post-content th { background:#f9fafb; font-weight:600; }
 
         .post-content {
             font-size: 1rem;
@@ -1205,6 +1223,22 @@
             return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
         }
 
+        function renderMarkdown(text) {
+            if (!text) return '';
+            try { return marked.parse(text); }
+            catch(e) { return escapeHtml(text); }
+        }
+        function getPlainText(markdown, maxLen) {
+            if (!markdown) return '';
+            try {
+                var html = marked.parse(markdown);
+                var temp = document.createElement('div');
+                temp.innerHTML = html;
+                var t = temp.textContent || temp.innerText || '';
+                return t.length > (maxLen||150) ? t.substring(0, (maxLen||150)) + '...' : t;
+            } catch(e) { return escapeHtml(markdown.substring(0, (maxLen||150))); }
+        }
+
         function formatDate(isoString) {
             const date = new Date(isoString);
             return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
@@ -1302,7 +1336,7 @@
                                 ${!isAuthor && token ? '<a href="/chat.html?uid=' + post.user_id + '" class="action-btn" style="text-decoration:none;margin-left:auto;"><i class="fas fa-envelope"></i> 发私信</a>' : ''}
                             </div>
                         </div>
-                        <div class="post-content">${escapeHtml(post.content)}</div>
+                        <div class="post-content">${typeof renderMarkdown === 'function' ? renderMarkdown(post.content) : escapeHtml(post.content)}</div>
                         <div class="post-actions">
                             <button class="like-btn ${isLiked ? 'liked' : ''}" data-id="${post.id}" id="likeBtn">
                                 <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> <span id="likesCount">${post.likes || 0}</span>
