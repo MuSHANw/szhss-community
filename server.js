@@ -21,7 +21,11 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static('public'));
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    // 强制使用北京时间，确保 DATE 类型字段写入和查询都基于北京时间
+    timezone: 'Asia/Shanghai'
+});
 
 pool.query('SELECT NOW()', (err, res) => {
     if (err) console.error('❌ 数据库连接失败:', err);
@@ -702,7 +706,7 @@ app.get('/api/users/:id/activity', async (req, res) => {
         const result = await pool.query(
             `SELECT date, SUM(count) as total_count
              FROM daily_exp_limits
-             WHERE user_id = $1 AND date >= CURRENT_DATE - INTERVAL '364 days'
+             WHERE user_id = $1 AND date >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date - INTERVAL '364 days'
              GROUP BY date
              ORDER BY date`,
             [userId]
@@ -1402,7 +1406,7 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
             )
             SELECT date, COUNT(DISTINCT user_id) as dau
             FROM daily_users
-            WHERE date >= CURRENT_DATE - INTERVAL '29 days'
+            WHERE date >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date - INTERVAL '29 days'
             GROUP BY date
             ORDER BY date
         `;
@@ -1412,7 +1416,7 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
         const postsQuery = `
             SELECT created_at::date as date, COUNT(*) as count
             FROM posts
-            WHERE created_at >= CURRENT_DATE - INTERVAL '29 days'
+            WHERE created_at >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date - INTERVAL '29 days'
             GROUP BY date
             ORDER BY date
         `;
@@ -1422,7 +1426,7 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
         const reportsQuery = `
             SELECT created_at::date as date, COUNT(*) as count
             FROM reports
-            WHERE created_at >= CURRENT_DATE - INTERVAL '29 days'
+            WHERE created_at >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date - INTERVAL '29 days'
             GROUP BY date
             ORDER BY date
         `;
