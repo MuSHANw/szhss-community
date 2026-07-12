@@ -22,9 +22,7 @@ app.use(cors());
 app.use(express.static('public'));
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // 强制使用北京时间，确保 DATE 类型字段写入和查询都基于北京时间
-    timezone: 'Asia/Shanghai'
+    connectionString: process.env.DATABASE_URL
 });
 
 pool.query('SELECT NOW()', (err, res) => {
@@ -1265,9 +1263,9 @@ app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) =>
         const favCountRes = await pool.query('SELECT COUNT(*) as total FROM post_favorites');
         const totalFavorites = parseInt(favCountRes.rows[0].total);
         const today = getBeijingDate();
-        const newUsersRes = await pool.query('SELECT COUNT(*) as total FROM users WHERE created_at::date = $1', [today]);
+        const newUsersRes = await pool.query('SELECT COUNT(*) as total FROM users WHERE (created_at AT TIME ZONE \'Asia/Shanghai\')::date = $1', [today]);
         const newUsersToday = parseInt(newUsersRes.rows[0].total);
-        const newPostsRes = await pool.query('SELECT COUNT(*) as total FROM posts WHERE created_at::date = $1', [today]);
+        const newPostsRes = await pool.query('SELECT COUNT(*) as total FROM posts WHERE (created_at AT TIME ZONE \'Asia/Shanghai\')::date = $1', [today]);
         const newPostsToday = parseInt(newPostsRes.rows[0].total);
         res.json({ totalUsers, totalPosts, totalReplies, totalLikes, totalFavorites, newUsersToday, newPostsToday });
     } catch (err) {
@@ -1402,9 +1400,9 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
         const todayStr = getBeijingDate();
         const dauQuery = `
             WITH daily_users AS (
-                SELECT DISTINCT user_id, created_at::date as date FROM posts
+                SELECT DISTINCT user_id, (created_at AT TIME ZONE 'Asia/Shanghai')::date as date FROM posts
                 UNION
-                SELECT DISTINCT user_id, created_at::date FROM replies
+                SELECT DISTINCT user_id, (created_at AT TIME ZONE 'Asia/Shanghai')::date as date FROM replies
             )
             SELECT date, COUNT(DISTINCT user_id) as dau
             FROM daily_users
@@ -1416,9 +1414,9 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
         const dauMap = {};
         dauResult.rows.forEach(row => { dauMap[row.date.toISOString().slice(0, 10)] = parseInt(row.dau); });
         const postsQuery = `
-            SELECT created_at::date as date, COUNT(*) as count
+            SELECT (created_at AT TIME ZONE 'Asia/Shanghai')::date as date, COUNT(*) as count
             FROM posts
-            WHERE created_at >= $1::date - INTERVAL '29 days'
+            WHERE (created_at AT TIME ZONE 'Asia/Shanghai')::date >= $1::date - INTERVAL '29 days'
             GROUP BY date
             ORDER BY date
         `;
@@ -1426,9 +1424,9 @@ app.get('/api/admin/daily-stats', authMiddleware, adminMiddleware, async (req, r
         const postsMap = {};
         postsResult.rows.forEach(row => { postsMap[row.date.toISOString().slice(0, 10)] = parseInt(row.count); });
         const reportsQuery = `
-            SELECT created_at::date as date, COUNT(*) as count
+            SELECT (created_at AT TIME ZONE 'Asia/Shanghai')::date as date, COUNT(*) as count
             FROM reports
-            WHERE created_at >= $1::date - INTERVAL '29 days'
+            WHERE (created_at AT TIME ZONE 'Asia/Shanghai')::date >= $1::date - INTERVAL '29 days'
             GROUP BY date
             ORDER BY date
         `;
