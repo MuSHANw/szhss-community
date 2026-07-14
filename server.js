@@ -1650,6 +1650,84 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
+// ---------- 统一搜索 API（支持帖子/用户/圈子多维度）----------
+app.get('/api/search/all', async (req, res) => {
+    const q = req.query.q?.trim();
+    if (!q) return res.status(400).json({ error: '请提供搜索关键词' });
+
+    const searchPattern = `%${q}%`;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const type = req.query.type || 'posts';
+    const offset = (page - 1) * limit;
+
+    try {
+        if (type === 'posts') {
+            const query = `
+                SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at,
+                       u.nickname, u.id as user_id, u.avatar_url,
+                       (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
+                FROM posts p
+                JOIN users u ON p.user_id = u.id
+                WHERE p.title ILIKE $1 OR p.content ILIKE $1 OR p.category ILIKE $1
+                   OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE $1)
+                ORDER BY p.created_at DESC
+                LIMIT $2 OFFSET $3
+            `;
+            const countQuery = `
+                SELECT COUNT(*) as total FROM posts p
+                WHERE p.title ILIKE $1 OR p.content ILIKE $1 OR p.category ILIKE $1
+                   OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE $1)
+            `;
+            const result = await pool.query(query, [searchPattern, limit, offset]);
+            const countResult = await pool.query(countQuery, [searchPattern]);
+            const total = parseInt(countResult.rows[0].total);
+            res.json({ type: 'posts', results: result.rows, page, limit, total, totalPages: Math.ceil(total / limit) });
+
+        } else if (type === 'users') {
+            const query = `
+                SELECT id, nickname, email, avatar_url, school, district
+                FROM users
+                WHERE nickname ILIKE $1 OR email ILIKE $1 OR school ILIKE $1
+                ORDER BY CASE WHEN nickname ILIKE $1 THEN 0 ELSE 1 END, nickname
+                LIMIT $2 OFFSET $3
+            `;
+            const countQuery = `
+                SELECT COUNT(*) as total FROM users
+                WHERE nickname ILIKE $1 OR email ILIKE $1 OR school ILIKE $1
+            `;
+            const result = await pool.query(query, [searchPattern, limit, offset]);
+            const countResult = await pool.query(countQuery, [searchPattern]);
+            const total = parseInt(countResult.rows[0].total);
+            res.json({ type: 'users', results: result.rows, page, limit, total, totalPages: Math.ceil(total / limit) });
+
+        } else if (type === 'circles') {
+            const query = `
+                SELECT c.id, c.name, c.description, c.icon_url, c.member_count, c.post_count,
+                       u.nickname as creator_nickname
+                FROM circles c
+                LEFT JOIN users u ON c.creator_id = u.id
+                WHERE c.name ILIKE $1 OR c.description ILIKE $1
+                ORDER BY c.member_count DESC
+                LIMIT $2 OFFSET $3
+            `;
+            const countQuery = `
+                SELECT COUNT(*) as total FROM circles
+                WHERE name ILIKE $1 OR description ILIKE $1
+            `;
+            const result = await pool.query(query, [searchPattern, limit, offset]);
+            const countResult = await pool.query(countQuery, [searchPattern]);
+            const total = parseInt(countResult.rows[0].total);
+            res.json({ type: 'circles', results: result.rows, page, limit, total, totalPages: Math.ceil(total / limit) });
+        } else {
+            return res.status(400).json({ error: '无效的搜索类型，支持 posts/users/circles' });
+        }
+    } catch (err) {
+        console.error('统一搜索失败:', err);
+        res.status(500).json({ error: '搜索失败' });
+    }
+});
+
 // ---------- 圈子图片上传配置 ----------
 const circleUploadDir = path.join(__dirname, 'public/uploads/circles');
 if (!fs.existsSync(circleUploadDir)) fs.mkdirSync(circleUploadDir, { recursive: true });

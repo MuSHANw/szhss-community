@@ -407,6 +407,83 @@
         .post-stat { cursor: default; display: inline-flex; align-items: center; gap: 2px; }
         .post-divider { height: 1px; background: #F3F4F6; margin: 0 20px; }
         .post-divider:last-child { display: none; }
+
+        /* 搜索标签栏 */
+        .search-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #F3F4F6;
+            flex-wrap: wrap;
+        }
+        .search-tab {
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #6B7280;
+            cursor: pointer;
+            border: none;
+            background: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .search-tab:hover { color: #1F2937; }
+        .search-tab.active {
+            color: #1E88E5;
+            border-bottom-color: #1E88E5;
+        }
+        .search-tab span { color: #9CA3AF; font-weight: 400; }
+        .search-tab.active span { color: #1E88E5; }
+
+        /* 用户搜索结果 */
+        .user-search-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: background 0.15s;
+            background: white;
+        }
+        .user-search-item:hover { background: #F9FAFB; }
+        .user-search-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+        .user-search-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .user-search-info { flex: 1; min-width: 0; }
+        .user-search-name { font-weight: 600; font-size: 0.95rem; color: #1F2937; }
+        .user-search-meta { font-size: 0.8rem; color: #9CA3AF; margin-top: 2px; }
+
+        /* 圈子搜索结果 */
+        .circle-search-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: background 0.15s;
+            background: white;
+        }
+        .circle-search-item:hover { background: #F9FAFB; }
+        .circle-search-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            overflow: hidden; flex-shrink: 0;
+            background: #EFF6FF;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .circle-search-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .circle-search-info { flex: 1; min-width: 0; }
+        .circle-search-name { font-weight: 600; font-size: 0.95rem; color: #1F2937; }
+        .circle-search-meta {
+            font-size: 0.8rem; color: #9CA3AF; margin-top: 2px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+
+        /* 关键词高亮 */
+        mark { background: #FFF3CD; padding: 2px 4px; border-radius: 3px; color: #1F2937; }
+
+        .user-search-item + .user-search-item,
+        .circle-search-item + .circle-search-item { border-top: 1px solid #F3F4F6; }
         .post-item-tags { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; }
         .post-tag { background: #F3F4F6; color: #6B7280; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; cursor: pointer; transition: background 0.15s; }
         .post-tag:hover { background: #E5E7EB; }
@@ -670,6 +747,13 @@
             </div>
         </div>
 
+        <!-- 搜索维度标签 -->
+        <div class="search-tabs" id="searchTabs" style="display:none;">
+            <button class="search-tab active" data-type="posts">📝 帖子 (<span id="postsCount">0</span>)</button>
+            <button class="search-tab" data-type="users">👤 用户 (<span id="usersCount">0</span>)</button>
+            <button class="search-tab" data-type="circles">👥 圈子 (<span id="circlesCount">0</span>)</button>
+        </div>
+
         <!-- 搜索结果区域 -->
         <div id="resultsArea">
             <div class="loading">加载中...</div>
@@ -797,6 +881,8 @@
         let currentKeyword = '';
         let currentPage = 1;
         let totalPages = 1;
+        let currentType = 'posts';
+        let counts = { posts: 0, users: 0, circles: 0 };
 
         // 获取 URL 参数
         const urlParams = new URLSearchParams(window.location.search);
@@ -834,31 +920,53 @@
             return text;
         }
 
+        // 关键词高亮
+        function highlightKeyword(text, keyword) {
+            if (!text || !keyword) return escapeHtml(text || '');
+            const escaped = escapeHtml(text);
+            const safeKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${safeKeyword})`, 'gi');
+            return escaped.replace(regex, '<mark style="background:#FFF3CD;padding:2px 4px;border-radius:3px;color:#1F2937;">$1</mark>');
+        }
+
         function formatDate(isoString) {
             const date = new Date(isoString);
             return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
 
-        // 执行搜索
-        async function performSearch(q, page = 1) {
+        function getTypeLabel(type) {
+            return { posts: '帖子', users: '用户', circles: '圈子' }[type] || '结果';
+        }
+
+        // 异步获取其他维度的数量
+        async function fetchOtherCounts(q) {
+            for (const type of ['posts', 'users', 'circles']) {
+                try {
+                    const res = await fetch(`${window.API_BASE}/search/all?q=${encodeURIComponent(q)}&type=${type}&page=1&limit=1`);
+                    if (res.ok) { const data = await res.json(); counts[type] = data.total; }
+                } catch (e) {}
+            }
+            updateTabCounts();
+        }
+
+        function updateTabCounts() {
+            document.getElementById('postsCount').textContent = counts.posts || 0;
+            document.getElementById('usersCount').textContent = counts.users || 0;
+            document.getElementById('circlesCount').textContent = counts.circles || 0;
+        }
+
+        // 帖子结果渲染
+        function renderPostResults(data, q) {
             const resultsDiv = document.getElementById('resultsArea');
-            resultsDiv.innerHTML = '<div class="loading">搜索中...</div>';
-            try {
-                const res = await fetch(`${window.API_BASE}/search?q=${encodeURIComponent(q)}&page=${page}&limit=10`);
-                if (!res.ok) throw new Error('搜索失败');
-                const data = await res.json();
-                const posts = data.posts;
-                totalPages = data.totalPages || 1;
-
-                if (!posts.length) {
-                    resultsDiv.innerHTML = `<div class="no-results">没有找到与“${escapeHtml(q)}”相关的帖子</div>`;
-                    document.getElementById('pagination').innerHTML = '';
-                    return;
-                }
-
-                const html = `
-                    <div class="results-count">找到 ${data.total} 条结果，第 ${page}/${totalPages} 页</div>
-                    ${posts.map(post => {
+            const totalPages = data.totalPages || 1;
+            if (!data.results.length) {
+                resultsDiv.innerHTML = `<div class="no-results">没有找到与"${escapeHtml(q)}"相关的帖子</div>`;
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+            resultsDiv.innerHTML = `
+                <div class="results-count">找到 ${data.total} 条结果，第 ${data.page}/${totalPages} 页</div>
+                ${data.results.map(post => {
                     const avatarHtml = post.avatar_url
                         ? `<img src="${post.avatar_url}" alt="头像" class="post-item-avatar">`
                         : `<i class="fas fa-user-circle post-item-avatar-icon"></i>`;
@@ -866,8 +974,8 @@
                         <div class="post-item" data-post-id="${post.id}">
                             <div class="post-item-avatar-area">${avatarHtml}</div>
                             <div class="post-item-content">
-                                <div class="post-item-title">${escapeHtml(post.title)}</div>
-                                <div class="post-item-excerpt">${getPlainText(post.content, 150)}</div>
+                                <div class="post-item-title">${highlightKeyword(post.title, q)}</div>
+                                <div class="post-item-excerpt">${highlightKeyword(getPlainText(post.content, 150), q)}</div>
                                 <div class="post-item-meta">
                                     <span class="post-item-author">${escapeHtml(post.nickname)}</span>
                                     <span class="post-item-dot">·</span>
@@ -886,26 +994,100 @@
                         <div class="post-divider"></div>
                     `;
                 }).join('')}
-                `;
-                resultsDiv.innerHTML = html;
-                renderPagination(page, totalPages);
+            `;
+            renderPagination(data.page, totalPages);
 
-                // 条目点击跳转
-                document.querySelectorAll('.post-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        const postId = item.dataset.postId;
-                        window.location.href = `/post-detail.html?id=${postId}`;
-                    });
+            document.querySelectorAll('.post-item').forEach(item => {
+                item.addEventListener('click', () => { window.location.href = `/post-detail.html?id=${item.dataset.postId}`; });
+            });
+            document.querySelectorAll('.post-tag').forEach(tagEl => {
+                tagEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const tag = tagEl.getAttribute('data-tag');
+                    if (tag) window.location.href = `/search.html?q=${encodeURIComponent(tag)}`;
                 });
+            });
+        }
 
-                // 标签二次搜索
-                document.querySelectorAll('.post-tag').forEach(tagEl => {
-                    tagEl.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const tag = tagEl.getAttribute('data-tag');
-                        if (tag) window.location.href = `/search.html?q=${encodeURIComponent(tag)}`;
-                    });
-                });
+        // 用户结果渲染
+        function renderUserResults(data, q) {
+            const resultsDiv = document.getElementById('resultsArea');
+            if (!data.results.length) {
+                resultsDiv.innerHTML = `<div class="no-results">没有找到与"${escapeHtml(q)}"相关的用户</div>`;
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+            resultsDiv.innerHTML = `
+                <div class="results-count">找到 ${data.total} 位用户，第 ${data.page}/${data.totalPages} 页</div>
+                ${data.results.map(user => {
+                    const avatarHtml = user.avatar_url
+                        ? `<img src="${escapeHtml(user.avatar_url)}" alt="头像">`
+                        : `<i class="fas fa-user-circle" style="font-size:44px;color:#1E88E5;"></i>`;
+                    return `
+                        <div class="user-search-item" onclick="location.href='/user-profile.html?uid=${user.id}'">
+                            <div class="user-search-avatar">${avatarHtml}</div>
+                            <div class="user-search-info">
+                                <div class="user-search-name">${highlightKeyword(user.nickname, q)}</div>
+                                <div class="user-search-meta">
+                                    ${user.school ? highlightKeyword(user.school, q) + ' · ' : ''}${user.district || '未填写区域'}
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right" style="color:#D1D5DB;"></i>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+            renderPagination(data.page, data.totalPages);
+        }
+
+        // 圈子结果渲染
+        function renderCircleResults(data, q) {
+            const resultsDiv = document.getElementById('resultsArea');
+            if (!data.results.length) {
+                resultsDiv.innerHTML = `<div class="no-results">没有找到与"${escapeHtml(q)}"相关的圈子</div>`;
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+            resultsDiv.innerHTML = `
+                <div class="results-count">找到 ${data.total} 个圈子，第 ${data.page}/${data.totalPages} 页</div>
+                ${data.results.map(circle => {
+                    return `
+                        <div class="circle-search-item" onclick="location.href='/circle-detail.html?id=${circle.id}'">
+                            <div class="circle-search-icon">
+                                ${circle.icon_url
+                                    ? `<img src="${escapeHtml(circle.icon_url)}" alt="圈子图标">`
+                                    : `<i class="fas fa-users" style="font-size:24px;color:#1E88E5;"></i>`}
+                            </div>
+                            <div class="circle-search-info">
+                                <div class="circle-search-name">${highlightKeyword(circle.name, q)}</div>
+                                <div class="circle-search-meta">${circle.description ? highlightKeyword(circle.description, q).substring(0, 80) : '暂无简介'} · ${circle.member_count || 0} 成员</div>
+                            </div>
+                            <i class="fas fa-chevron-right" style="color:#D1D5DB;"></i>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+            renderPagination(data.page, data.totalPages);
+        }
+
+        // 执行搜索
+        async function performSearch(q, page = 1) {
+            const resultsDiv = document.getElementById('resultsArea');
+            resultsDiv.innerHTML = '<div class="loading">搜索中...</div>';
+            document.getElementById('searchTabs').style.display = 'flex';
+
+            try {
+                const res = await fetch(`${window.API_BASE}/search/all?q=${encodeURIComponent(q)}&type=${currentType}&page=${page}&limit=10`);
+                if (!res.ok) throw new Error('搜索失败');
+                const data = await res.json();
+
+                counts[data.type] = data.total;
+                updateTabCounts();
+                fetchOtherCounts(q);
+
+                if (currentType === 'posts') renderPostResults(data, q);
+                else if (currentType === 'users') renderUserResults(data, q);
+                else if (currentType === 'circles') renderCircleResults(data, q);
             } catch (err) {
                 console.error(err);
                 resultsDiv.innerHTML = `<div class="error">${err.message}</div>`;
@@ -936,6 +1118,19 @@
                 });
             });
         }
+
+        // 搜索标签点击切换
+        document.querySelectorAll('.search-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const type = tab.dataset.type;
+                if (type === currentType) return;
+                currentType = type;
+                document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentPage = 1;
+                performSearch(currentKeyword, currentPage);
+            });
+        });
 
         // 大搜索框按钮事件
         const doSearchBtn = document.getElementById('doSearchBtn');
