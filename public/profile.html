@@ -656,6 +656,20 @@
                         <div style="font-size: 0.75rem; color: #6c757d;">粉丝</div>
                     </a>
                 </div>
+                <!-- 互动统计 -->
+                <div id="statsArea" style="display:none; margin-top:16px; padding-top:16px; border-top: 1px solid #f0f2f5;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+                        <div>📝 <strong id="statPosts">0</strong> 篇帖子</div>
+                        <div>💬 <strong id="statReplies">0</strong> 条回复</div>
+                        <div>❤️ <strong id="statLikes">0</strong> 个赞</div>
+                        <div>⭐ <strong id="statFavorites">0</strong> 个收藏</div>
+                    </div>
+                </div>
+                <!-- 成就徽章 -->
+                <div id="achievementsArea" style="display:none; margin-top:16px; padding-top:16px; border-top: 1px solid #f0f2f5;">
+                    <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 10px;">🏆 成就徽章</div>
+                    <div id="achievementsContainer" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                </div>
                 <button class="edit-profile-btn" id="editProfileBtn">编辑资料</button>
             </aside>
 
@@ -672,6 +686,7 @@
                     <button class="tab-btn active" data-tab="posts">我的帖子</button>
                     <button class="tab-btn" data-tab="replies">我的回复</button>
                     <button class="tab-btn" data-tab="favorites">我的收藏</button>
+                    <button class="tab-btn" data-tab="activities">最近动态</button>
                 </div>
 
                 <div id="postsTab" class="tab-content active">
@@ -692,6 +707,11 @@
                     <div class="my-favorites">
                         <div id="myFavoritesList">加载中...</div>
                         <div id="favoritesPagination" class="pagination"></div>
+                    </div>
+                </div>
+                <div id="activitiesTab" class="tab-content">
+                    <div class="my-posts">
+                        <div id="myActivitiesList">加载中...</div>
                     </div>
                 </div>
             </div>
@@ -1038,7 +1058,26 @@
             }
         }
 
-        function renderPagination(container, current, total, onPageChange) {
+        async function renderMyActivities() {
+            const container = document.getElementById('myActivitiesList');
+            const activities = currentUser._recentActivities || [];
+            if (!activities.length) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;">暂无动态，快去发帖或回复吧~</div>';
+                return;
+            }
+            container.innerHTML = activities.map(a => {
+                const icon = a.type === 'post' ? '📝' : '💬';
+                const label = a.type === 'post' ? '发布了帖子' : '回复了帖子';
+                return `
+                    <div class="post-item" style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:0.9rem;">${icon}</span>
+                        <span style="color:#6c757d;font-size:0.85rem;flex-shrink:0;">${label}</span>
+                        <a href="/post-detail.html?id=${a.id}" style="color:#1f2d3d;text-decoration:none;font-size:0.9rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.target_title)}</a>
+                        <span style="color:#999;font-size:0.8rem;flex-shrink:0;">${formatDate(a.created_at)}</span>
+                    </div>
+                `;
+            }).join('');
+        }
             if (total <= 1) {
                 container.innerHTML = '';
                 return;
@@ -1095,6 +1134,7 @@
             const postsTab = document.getElementById('postsTab');
             const repliesTab = document.getElementById('repliesTab');
             const favoritesTab = document.getElementById('favoritesTab');
+            const activitiesTab = document.getElementById('activitiesTab');
             tabBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
                     const tab = btn.dataset.tab;
@@ -1104,17 +1144,26 @@
                         postsTab.classList.add('active');
                         repliesTab.classList.remove('active');
                         favoritesTab.classList.remove('active');
+                        activitiesTab.classList.remove('active');
                         renderMyPosts(postsCurrentPage);
                     } else if (tab === 'replies') {
                         repliesTab.classList.add('active');
                         postsTab.classList.remove('active');
                         favoritesTab.classList.remove('active');
+                        activitiesTab.classList.remove('active');
                         renderMyReplies(repliesCurrentPage);
                     } else if (tab === 'favorites') {
                         favoritesTab.classList.add('active');
                         postsTab.classList.remove('active');
                         repliesTab.classList.remove('active');
+                        activitiesTab.classList.remove('active');
                         renderMyFavorites(favoritesCurrentPage);
+                    } else if (tab === 'activities') {
+                        activitiesTab.classList.add('active');
+                        postsTab.classList.remove('active');
+                        repliesTab.classList.remove('active');
+                        favoritesTab.classList.remove('active');
+                        renderMyActivities();
                     }
                 });
             });
@@ -1143,6 +1192,45 @@
                 followersLink.href = `/follow-list.html?type=followers&uid=${currentUser.id}`;
                 if (currentUser.avatar_url) {
                     document.getElementById('avatarImg').src = currentUser.avatar_url;
+                }
+
+                // 获取扩展信息（统计数据、成就徽章、最近动态）
+                try {
+                    const token = localStorage.getItem('token');
+                    const extRes = await fetch(`${window.API_BASE}/users/${currentUser.id}`, {
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                    if (extRes.ok) {
+                        const extData = await extRes.json();
+
+                        // 渲染统计数据
+                        if (extData.stats) {
+                            document.getElementById('statPosts').innerText = extData.stats.posts_count || 0;
+                            document.getElementById('statReplies').innerText = extData.stats.replies_count || 0;
+                            document.getElementById('statLikes').innerText = extData.stats.likes_received || 0;
+                            document.getElementById('statFavorites').innerText = extData.stats.favorites_received || 0;
+                            document.getElementById('statsArea').style.display = 'block';
+                        }
+
+                        // 渲染成就徽章
+                        if (extData.achievements && extData.achievements.length) {
+                            const container = document.getElementById('achievementsContainer');
+                            container.innerHTML = extData.achievements.map(a =>
+                                `<span title="${escapeHtml(a.description)}"
+                                      style="font-size: 1.5rem; cursor: help; transition: transform 0.2s; display:inline-block;"
+                                      onmouseover="this.style.transform='scale(1.3)'"
+                                      onmouseout="this.style.transform='scale(1)'">
+                                    ${a.icon}
+                                </span>`
+                            ).join('');
+                            document.getElementById('achievementsArea').style.display = 'block';
+                        }
+
+                        // 保存最近动态供标签页使用
+                        currentUser._recentActivities = extData.recent_activities || [];
+                    }
+                } catch (e) {
+                    console.warn('获取扩展信息失败', e);
                 }
             } catch (err) {
                 console.error(err);

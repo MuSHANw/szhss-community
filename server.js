@@ -656,7 +656,9 @@ app.get('/api/users/:id', async (req, res) => {
 
     try {
         const query = `
-            SELECT id, email, nickname, school, district, hobby, avatar_url, allow_messages, exp, has_passed_quiz, created_at,
+            SELECT id, email, nickname, school, district, hobby, avatar_url, allow_messages,
+                   exp, has_passed_quiz, created_at,
+                   total_likes_received, total_favorites_received, total_replies_received,
                    (SELECT COUNT(*) FROM user_follows WHERE follower_id = $1) as following_count,
                    (SELECT COUNT(*) FROM user_follows WHERE followee_id = $1) as follower_count,
                    EXISTS(SELECT 1 FROM user_follows WHERE follower_id = $2 AND followee_id = $1) as is_following
@@ -664,7 +666,135 @@ app.get('/api/users/:id', async (req, res) => {
         `;
         const result = await pool.query(query, [userId, currentUserId || 0]);
         if (result.rows.length === 0) return res.status(404).json({ error: '用户不存在' });
-        res.json(result.rows[0]);
+
+        const user = result.rows[0];
+
+        // ---- 统计数据 ----
+        const postsCountRes = await pool.query('SELECT COUNT(*) FROM posts WHERE user_id = $1', [userId]);
+        const repliesCountRes = await pool.query('SELECT COUNT(*) FROM replies WHERE user_id = $1', [userId]);
+        const stats = {
+            posts_count: parseInt(postsCountRes.rows[0].count),
+            replies_count: parseInt(repliesCountRes.rows[0].count),
+            likes_received: user.total_likes_received || 0,
+            favorites_received: user.total_favorites_received || 0,
+            replies_received: user.total_replies_received || 0,
+            following_count: user.following_count || 0,
+            follower_count: user.follower_count || 0
+        };
+
+        // ---- 成就徽章计算 ----
+        const achievements = [];
+        const exp = user.exp || 0;
+        const hasPassedQuiz = user.has_passed_quiz;
+        const createdAt = user.created_at;
+
+        // 内测成员：在2026年7月12日前注册的用户
+        const betaCutoff = new Date('2026-07-12');
+        if (new Date(createdAt) < betaCutoff) {
+            achievements.push({ id: 'beta', name: '内测成员', icon: '\uD83D\uDD2C', description: '社区内测阶段的早期成员' });
+        }
+        // 初来乍到
+        achievements.push({ id: 'newcomer', name: '初来乍到', icon: '\uD83C\uDD95', description: '加入深圳高中生社区' });
+        // 答题达人
+        if (hasPassedQuiz) {
+            achievements.push({ id: 'quiz_master', name: '答题达人', icon: '\u2705', description: '通过入站答题' });
+        }
+        // 首次发帖
+        if (stats.posts_count >= 1) {
+            achievements.push({ id: 'first_post', name: '首次发帖', icon: '\uD83D\uDCDD', description: '发布第一篇帖子' });
+        }
+        // 高产作者
+        if (stats.posts_count >= 10) {
+            achievements.push({ id: 'prolific', name: '高产作者', icon: '\u270D\uFE0F', description: '发布10篇帖子' });
+        }
+        // 创作大师
+        if (stats.posts_count >= 50) {
+            achievements.push({ id: 'master', name: '创作大师', icon: '\uD83D\uDCDA', description: '发布50篇帖子' });
+        }
+        // 话题制造者：帖子获得50条回复
+        if (stats.replies_received >= 50) {
+            achievements.push({ id: 'topic_maker', name: '话题制造者', icon: '\uD83D\uDCAC', description: '帖子累计获得50条回复' });
+        }
+        // 百赞达人
+        if (stats.likes_received >= 100) {
+            achievements.push({ id: 'hundred_likes', name: '百赞达人', icon: '\u2764\uFE0F', description: '累计获得100个赞' });
+        }
+        // 收藏家
+        const favCountRes = await pool.query('SELECT COUNT(*) FROM post_favorites WHERE user_id = $1', [userId]);
+        const favCount = parseInt(favCountRes.rows[0].count);
+        if (favCount >= 10) {
+            achievements.push({ id: 'collector', name: '收藏家', icon: '\u2B50', description: '收藏10篇帖子' });
+        }
+        // 社交达人
+        if (stats.following_count >= 10) {
+            achievements.push({ id: 'social', name: '社交达人', icon: '\uD83D\uDC65', description: '关注10位用户' });
+        }
+        // 人气之星
+        if (stats.follower_count >= 10) {
+            achievements.push({ id: 'popular', name: '人气之星', icon: '\uD83C\uDF1F', description: '被10位用户关注' });
+        }
+        // 圈主
+        const circleCountRes = await pool.query('SELECT COUNT(*) FROM circles WHERE creator_id = $1', [userId]);
+        if (parseInt(circleCountRes.rows[0].count) >= 1) {
+            achievements.push({ id: 'circle_owner', name: '圈主', icon: '\uD83C\uDFE0', description: '创建了一个圈子' });
+        }
+        // 自习达人
+        try {
+            const studyRes = await pool.query(
+                'SELECT COALESCE(SUM(duration), 0) as total_seconds FROM study_records WHERE user_id = $1',
+                [userId]
+            );
+            const totalHours = parseInt(studyRes.rows[0].total_seconds) / 3600;
+            if (totalHours >= 10) {
+                achievements.push({ id: 'study_master', name: '自习达人', icon: '\u23F1\uFE0F', description: '累计自习10小时' });
+            }
+        } catch (e) {
+            // study_records 表可能不存在，忽略
+        }
+        // 经验大师：达到LV3（exp >= 400）
+        if (exp >= 400) {
+            achievements.push({ id: 'exp_master', name: '经验大师', icon: '\uD83D\uDCC8', description: '达到LV3活跃分子' });
+        }
+        // 传说级存在：达到LV7（exp >= 9000）
+        if (exp >= 9000) {
+            achievements.push({ id: 'legend', name: '传说级存在', icon: '\uD83D\uDC51', description: '达到LV7传说级存在' });
+        }
+        // Bug猎人
+        const feedbackRes = await pool.query(
+            "SELECT COUNT(*) FROM feedbacks WHERE user_id = $1 AND status = 'resolved'",
+            [userId]
+        );
+        if (parseInt(feedbackRes.rows[0].count) >= 1) {
+            achievements.push({ id: 'bug_hunter', name: 'Bug猎人', icon: '\uD83D\uDC1B', description: '提交1条被采纳的反馈' });
+        }
+        // 正义使者
+        const reportRes = await pool.query(
+            "SELECT COUNT(*) FROM reports WHERE reporter_id = $1 AND status = 'resolved'",
+            [userId]
+        );
+        if (parseInt(reportRes.rows[0].count) >= 1) {
+            achievements.push({ id: 'justice', name: '正义使者', icon: '\uD83D\uDEE1\uFE0F', description: '提交1条被采纳的举报' });
+        }
+
+        // ---- 最近动态 ----
+        const activitiesRes = await pool.query(
+            `SELECT 'post' as type, id, title as target_title, created_at
+             FROM posts WHERE user_id = $1
+             UNION ALL
+             SELECT 'reply' as type, r.id, p.title as target_title, r.created_at
+             FROM replies r JOIN posts p ON r.post_id = p.id
+             WHERE r.user_id = $1
+             ORDER BY created_at DESC
+             LIMIT 20`,
+            [userId]
+        );
+
+        res.json({
+            ...user,
+            stats,
+            achievements,
+            recent_activities: activitiesRes.rows
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: '获取用户信息失败' });
@@ -1013,6 +1143,10 @@ app.post('/api/posts/:id/replies', authMiddleware, quizRequired, async (req, res
             addExp(ownerId, 'replied');
         }
         addExp(req.user.userId, 'reply');
+        // 更新帖子作者的被回复计数器
+        if (ownerId !== req.user.userId) {
+            await pool.query('UPDATE users SET total_replies_received = total_replies_received + 1 WHERE id = $1', [ownerId]);
+        }
         res.json({ id: result.rows[0].id, message: '回复成功' });
     } catch (err) {
         console.error(err);
@@ -1046,18 +1180,22 @@ app.post('/api/posts/:id/like', authMiddleware, quizRequired, async (req, res) =
     const userId = req.user.userId;
     try {
         const existing = await pool.query('SELECT id FROM post_likes WHERE user_id = $1 AND post_id = $2', [userId, postId]);
+        // 获取帖子作者
+        const postOwner = await pool.query('SELECT user_id FROM posts WHERE id = $1', [postId]);
+        const ownerId = postOwner.rows[0].user_id;
+
         if (existing.rows.length > 0) {
             await pool.query('DELETE FROM post_likes WHERE user_id = $1 AND post_id = $2', [userId, postId]);
             await pool.query('UPDATE posts SET likes = likes - 1 WHERE id = $1', [postId]);
+            await pool.query('UPDATE users SET total_likes_received = GREATEST(total_likes_received - 1, 0) WHERE id = $1', [ownerId]);
             const likesResult = await pool.query('SELECT likes FROM posts WHERE id = $1', [postId]);
             res.json({ liked: false, likes: likesResult.rows[0].likes });
         } else {
             await pool.query('INSERT INTO post_likes (user_id, post_id) VALUES ($1, $2)', [userId, postId]);
             await pool.query('UPDATE posts SET likes = likes + 1 WHERE id = $1', [postId]);
+            await pool.query('UPDATE users SET total_likes_received = total_likes_received + 1 WHERE id = $1', [ownerId]);
             const likesResult = await pool.query('SELECT likes FROM posts WHERE id = $1', [postId]);
             res.json({ liked: true, likes: likesResult.rows[0].likes });
-            const postOwner = await pool.query('SELECT user_id FROM posts WHERE id = $1', [postId]);
-            const ownerId = postOwner.rows[0].user_id;
             if (ownerId !== userId) {
                 await createNotification(ownerId, 'like', postId, userId);
             }
@@ -1092,14 +1230,18 @@ app.post('/api/posts/:id/favorite', authMiddleware, quizRequired, async (req, re
     const userId = req.user.userId;
     try {
         const existing = await pool.query('SELECT id FROM post_favorites WHERE user_id = $1 AND post_id = $2', [userId, postId]);
+        // 获取帖子作者
+        const postOwner = await pool.query('SELECT user_id FROM posts WHERE id = $1', [postId]);
+        const ownerId = postOwner.rows[0].user_id;
+
         if (existing.rows.length > 0) {
             await pool.query('DELETE FROM post_favorites WHERE user_id = $1 AND post_id = $2', [userId, postId]);
+            await pool.query('UPDATE users SET total_favorites_received = GREATEST(total_favorites_received - 1, 0) WHERE id = $1', [ownerId]);
             res.json({ favorited: false });
         } else {
             await pool.query('INSERT INTO post_favorites (user_id, post_id) VALUES ($1, $2)', [userId, postId]);
+            await pool.query('UPDATE users SET total_favorites_received = total_favorites_received + 1 WHERE id = $1', [ownerId]);
             res.json({ favorited: true });
-            const postOwner = await pool.query('SELECT user_id FROM posts WHERE id = $1', [postId]);
-            const ownerId = postOwner.rows[0].user_id;
             if (ownerId !== userId) {
                 await createNotification(ownerId, 'favorite', postId, userId);
                 addExp(ownerId, 'favorited');

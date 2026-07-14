@@ -1270,11 +1270,34 @@
             });
         }
 
+        function renderUserActivities(activities) {
+            const container = document.getElementById('userActivitiesList');
+            if (!activities.length) {
+                container.innerHTML = '<div class="hidden-module">暂无动态</div>';
+                return;
+            }
+            container.innerHTML = activities.map(a => {
+                const icon = a.type === 'post' ? '📝' : '💬';
+                const label = a.type === 'post' ? '发布了帖子' : '回复了帖子';
+                return `
+                    <div class="post-item" style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:0.9rem;">${icon}</span>
+                        <span style="color:#6c757d;font-size:0.85rem;flex-shrink:0;">${label}</span>
+                        <a href="/post-detail.html?id=${a.id}" style="color:#1f2d3d;text-decoration:none;font-size:0.9rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.target_title)}</a>
+                        <span style="color:#999;font-size:0.8rem;flex-shrink:0;">${formatShortDate(a.created_at)}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
         async function loadUserProfile(uid) {
             await fetchCurrentUser();
             const grid = document.getElementById('profileGrid');
             try {
                 const user = await loadUserInfo(uid);
+                const stats = user.stats || {};
+                const achievements = user.achievements || [];
+                const recentActivities = user.recent_activities || [];
                 const canReportUser = (currentLoggedInUserId !== user.id);
                 const reportUserButton = canReportUser ? `
             <button class="report-btn" 
@@ -1309,6 +1332,30 @@
                         <div style="font-size: 0.75rem; color: #6c757d;">粉丝</div>
                     </a>
                 </div>
+                <!-- 互动统计 -->
+                <div style="margin-top:16px; padding-top:16px; border-top:1px solid #f0f2f5;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.85rem;">
+                        <div>📝 <strong>${stats.posts_count}</strong> 篇帖子</div>
+                        <div>💬 <strong>${stats.replies_count}</strong> 条回复</div>
+                        <div>❤️ <strong>${stats.likes_received}</strong> 个赞</div>
+                        <div>⭐ <strong>${stats.favorites_received}</strong> 个收藏</div>
+                    </div>
+                </div>
+                <!-- 成就徽章 -->
+                <div style="margin-top:16px; padding-top:16px; border-top:1px solid #f0f2f5;">
+                    <div style="font-size:0.9rem; font-weight:600; margin-bottom:10px;">🏆 成就徽章</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                        ${achievements.map(a => `
+                            <span title="${escapeHtml(a.description)}"
+                                  style="font-size:1.5rem; cursor:help; transition:transform 0.2s; display:inline-block;"
+                                  onmouseover="this.style.transform='scale(1.3)'"
+                                  onmouseout="this.style.transform='scale(1)'">
+                                ${a.icon}
+                            </span>
+                        `).join('')}
+                        ${achievements.length === 0 ? '<span style="color:#999;font-size:0.85rem;">暂无徽章</span>' : ''}
+                    </div>
+                </div>
                 <!-- 关注按钮（不能关注自己） -->
                 ${currentLoggedInUserId && currentLoggedInUserId !== user.id ? `
                     <div style="display:flex;gap:8px;margin-top:12px;">
@@ -1332,6 +1379,7 @@
                     <button class="tab-btn active" data-tab="posts">帖子</button>
                     <button class="tab-btn" data-tab="replies">回复</button>
                     <button class="tab-btn" data-tab="favorites">收藏</button>
+                    <button class="tab-btn" data-tab="activities">最近动态</button>
                 </div>
                 <div id="postsTab" class="tab-content active">
                     <div class="posts-list">
@@ -1349,6 +1397,11 @@
                     <div class="favorites-list">
                         <div id="userFavoritesList">加载中...</div>
                         <div id="favoritesPagination" class="pagination"></div>
+                    </div>
+                </div>
+                <div id="activitiesTab" class="tab-content">
+                    <div class="posts-list">
+                        <div id="userActivitiesList">加载中...</div>
                     </div>
                 </div>
             </div>
@@ -1401,7 +1454,8 @@
                 const contents = {
                     posts: document.getElementById('postsTab'),
                     replies: document.getElementById('repliesTab'),
-                    favorites: document.getElementById('favoritesTab')
+                    favorites: document.getElementById('favoritesTab'),
+                    activities: document.getElementById('activitiesTab')
                 };
                 tabs.forEach(btn => {
                     btn.addEventListener('click', () => {
@@ -1410,6 +1464,7 @@
                         btn.classList.add('active');
                         Object.values(contents).forEach(c => c.classList.remove('active'));
                         contents[tab].classList.add('active');
+                        if (tab === 'activities') renderUserActivities(recentActivities);
                     });
                 });
             } catch (err) {
