@@ -160,6 +160,9 @@
             <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
             <a href="admin.html" class="sidebar-link" title="管理后台"><i class="fas fa-shield-alt"></i><span>管理后台</span></a>
             <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信"><i class="fas fa-envelope"></i><span>私信</span></a>
+            <a href="drafts.html" class="sidebar-link" title="草稿箱">
+                <i class="fas fa-edit"></i><span>草稿箱</span>
+            </a>
             <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈"><i class="fas fa-comment-dots"></i><span>反馈</span></a>
             <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
                 <i class="fas fa-bell"></i><span>通知</span>
@@ -423,26 +426,80 @@
             }
         });
 
-        // ---------- 草稿箱 ----------
-        var autoSaveTimer;
+        // ---------- 草稿箱（多草稿）----------
+        var currentDraftId = null;
 
+        // 检查 URL 参数，加载指定草稿
+        (function() {
+            var draftId = new URLSearchParams(window.location.search).get('draft');
+            if (draftId) { loadDraftById(draftId); }
+        })();
+
+        function getAllDrafts() {
+            try { return JSON.parse(localStorage.getItem('post_drafts')) || []; }
+            catch(e) { return []; }
+        }
+
+        function saveDraftsToStorage(drafts) {
+            try { localStorage.setItem('post_drafts', JSON.stringify(drafts)); } catch(e) {}
+        }
+
+        var autoSaveTimer;
         function startAutoSave() {
             clearTimeout(autoSaveTimer);
             autoSaveTimer = setTimeout(saveDraft, 30000);
         }
 
         function saveDraft() {
-            var draft = {
-                title: document.getElementById('postTitle').value,
-                content: quill.root.innerHTML,
-                category: document.getElementById('postCategory').value,
-                tags: selectedTags.join(','),
-                savedAt: new Date().toLocaleString()
-            };
-            try {
-                localStorage.setItem('post_draft', JSON.stringify(draft));
-                showSaveIndicator();
-            } catch(e) {}
+            var title = document.getElementById('postTitle').value;
+            var content = quill.root.innerHTML;
+            if (!title && (!content || content === '<p><br></p>' || content === '<p></p>')) return;
+
+            var drafts = getAllDrafts();
+            if (currentDraftId) {
+                // 更新已有草稿
+                var idx = drafts.findIndex(function(d) { return d.id === currentDraftId; });
+                if (idx !== -1) {
+                    drafts[idx].title = title;
+                    drafts[idx].content = content;
+                    drafts[idx].category = document.getElementById('postCategory').value;
+                    drafts[idx].tags = selectedTags.join(',');
+                    drafts[idx].savedAt = new Date().toLocaleString();
+                }
+            } else {
+                // 新建草稿
+                currentDraftId = Date.now().toString();
+                drafts.push({
+                    id: currentDraftId,
+                    title: title,
+                    content: content,
+                    category: document.getElementById('postCategory').value,
+                    tags: selectedTags.join(','),
+                    savedAt: new Date().toLocaleString()
+                });
+            }
+            saveDraftsToStorage(drafts);
+            showSaveIndicator();
+        }
+
+        function loadDraftById(draftId) {
+            var drafts = getAllDrafts();
+            var data = drafts.find(function(d) { return d.id === draftId; });
+            if (!data) return;
+            currentDraftId = draftId;
+            document.getElementById('postTitle').value = data.title || '';
+            quill.root.innerHTML = data.content || '';
+            document.getElementById('postCategory').value = data.category || '综合';
+            selectedTags = [];
+            if (data.tags) setTagsFromString(data.tags);
+        }
+
+        function removeCurrentDraft() {
+            if (!currentDraftId) return;
+            var drafts = getAllDrafts();
+            drafts = drafts.filter(function(d) { return d.id !== currentDraftId; });
+            saveDraftsToStorage(drafts);
+            currentDraftId = null;
         }
 
         function showSaveIndicator() {
@@ -458,38 +515,44 @@
 
         document.getElementById('saveDraftBtn').addEventListener('click', function() { saveDraft(); showSaveIndicator(); });
 
-        // ---------- 草稿恢复 ----------
-        function checkDraft() {
-            try {
-                var draftStr = localStorage.getItem('post_draft');
-                if (!draftStr) return;
-                var data = JSON.parse(draftStr);
-                if (data.title || (data.content && data.content.replace(/<[^>]*>/g, '').trim())) {
-                    document.getElementById('draftNotice').style.display = 'flex';
-                    document.getElementById('draftTime').textContent = data.savedAt || '';
-                }
-            } catch(e) {}
+        // ---------- 草稿恢复提示 ----------
+        function checkRecentDraft() {
+            var drafts = getAllDrafts();
+            if (drafts.length === 0) return;
+            // 如果当前已通过 draft=id 加载了草稿，不重复提示
+            if (currentDraftId) return;
+            var latest = drafts[drafts.length - 1];
+            if (latest.title || (latest.content && latest.content.replace(/<[^>]*>/g, '').trim())) {
+                document.getElementById('draftNotice').style.display = 'flex';
+                document.getElementById('draftTime').textContent = latest.savedAt || '';
+            }
         }
 
         document.getElementById('restoreDraftBtn').addEventListener('click', function() {
-            try {
-                var data = JSON.parse(localStorage.getItem('post_draft'));
-                document.getElementById('postTitle').value = data.title || '';
-                quill.root.innerHTML = data.content || '';
-                document.getElementById('postCategory').value = data.category || '综合';
-                selectedTags = [];
-                if (data.tags) setTagsFromString(data.tags);
-                document.getElementById('draftNotice').style.display = 'none';
-                saveDraft();
-            } catch(e) {}
+            var drafts = getAllDrafts();
+            if (drafts.length === 0) return;
+            var latest = drafts[drafts.length - 1];
+            currentDraftId = latest.id;
+            document.getElementById('postTitle').value = latest.title || '';
+            quill.root.innerHTML = latest.content || '';
+            document.getElementById('postCategory').value = latest.category || '综合';
+            selectedTags = [];
+            if (latest.tags) setTagsFromString(latest.tags);
+            document.getElementById('draftNotice').style.display = 'none';
+            saveDraft();
         });
 
         document.getElementById('discardDraftBtn').addEventListener('click', function() {
-            localStorage.removeItem('post_draft');
+            var drafts = getAllDrafts();
+            if (drafts.length > 0) {
+                var latest = drafts[drafts.length - 1];
+                drafts = drafts.filter(function(d) { return d.id !== latest.id; });
+                saveDraftsToStorage(drafts);
+            }
             document.getElementById('draftNotice').style.display = 'none';
         });
 
-        checkDraft();
+        checkRecentDraft();
 
         // ---------- 发布帖子 ----------
         document.getElementById('submitBtn').addEventListener('click', async function() {
@@ -511,7 +574,7 @@
                 });
                 var data = await res.json();
                 if (res.ok) {
-                    localStorage.removeItem('post_draft');
+                    removeCurrentDraft();
                     window.location.href = '/post-detail.html?id=' + data.id;
                 } else {
                     alert(data.error || '发布失败');
