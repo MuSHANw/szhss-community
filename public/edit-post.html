@@ -317,7 +317,10 @@
         async function uploadFile(file, type) {
             var fd = new FormData(); fd.append('file', file);
             var placeholder = type==='image' ? '![上传中...](uploading)' : '\n<video src="uploading" controls></video>\n';
-            insertMarkdown(placeholder, '');
+            var cursorPos = contentEl.selectionStart;
+            contentEl.value = contentEl.value.substring(0, cursorPos) + placeholder + contentEl.value.substring(contentEl.selectionEnd);
+            contentEl.selectionStart = contentEl.selectionEnd = cursorPos + placeholder.length;
+            contentEl.dispatchEvent(new Event('input'));
             try {
                 var res = await fetch(window.API_BASE+'/upload/file', { method:'POST', headers:{'Authorization':'Bearer '+token}, body:fd });
                 var data = await res.json();
@@ -328,7 +331,11 @@
                         : val.replace('<video src="uploading" controls></video>','<video src="'+data.url+'" controls></video>');
                     contentEl.dispatchEvent(new Event('input'));
                 } else { alert('上传失败'); }
-            } catch(e) { alert('上传失败'); }
+            } catch(e) {
+                alert('上传失败');
+                var val = contentEl.value, idx = val.indexOf(placeholder);
+                if (idx !== -1) { contentEl.value = val.substring(0, idx) + val.substring(idx + placeholder.length); contentEl.dispatchEvent(new Event('input')); }
+            }
         }
         document.getElementById('imageInput').addEventListener('change', async function(e) {
             for(var i=0;i<e.target.files.length;i++) await uploadFile(e.target.files[i],'image');

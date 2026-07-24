@@ -341,12 +341,20 @@
         async function uploadFile(file, type) {
             var fd = new FormData();
             fd.append('file', file);
-            // 显示上传中
+            // 显示上传中（直接插入，不经过 insertMarkdown 以避免默认文本）
+            var placeholder, replacement;
             if (type === 'image') {
-                insertMarkdown('![上传中...]', '(uploading)');
+                placeholder = '![上传中...](uploading)';
+                replacement = '![' + file.name + '](';
             } else {
-                insertMarkdown('\n<video src="uploading" controls></video>\n', '');
+                placeholder = '\n<video src="uploading" controls></video>\n';
+                replacement = '<video src="';
             }
+            var cursorPos = textarea.selectionStart;
+            textarea.value = textarea.value.substring(0, cursorPos) + placeholder + textarea.value.substring(textarea.selectionEnd);
+            textarea.selectionStart = textarea.selectionEnd = cursorPos + placeholder.length;
+            textarea.dispatchEvent(new Event('input'));
+
             try {
                 var res = await fetch(window.API_BASE+'/upload/file', {
                     method: 'POST',
@@ -365,13 +373,19 @@
                     textarea.dispatchEvent(new Event('input'));
                 } else {
                     alert('上传失败：'+data.error);
+                    removePlaceholder(placeholder);
                 }
             } catch(err) {
                 alert('上传失败');
-                // 移除占位
-                var val = textarea.value;
-                if (type === 'image') textarea.value = val.replace('![上传中...](uploading)', '');
-                else textarea.value = val.replace('<video src="uploading" controls></video>', '');
+                removePlaceholder(placeholder);
+            }
+        }
+
+        function removePlaceholder(placeholder) {
+            var val = textarea.value;
+            var idx = val.indexOf(placeholder);
+            if (idx !== -1) {
+                textarea.value = val.substring(0, idx) + val.substring(idx + placeholder.length);
                 textarea.dispatchEvent(new Event('input'));
             }
         }
