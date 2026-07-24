@@ -141,8 +141,12 @@ const adminMiddleware = async (req, res, next) => {
 // 图片视频上传权限检查（需通过第二级考试）
 const mediaUploadRequired = async (req, res, next) => {
     try {
-        const result = await pool.query('SELECT can_upload_media FROM users WHERE id = $1', [req.user.userId]);
-        if (!result.rows[0]?.can_upload_media) {
+        // 直接查 quiz_attempts 表有没有通过的二级记录，不依赖 can_upload_media 列
+        const result = await pool.query(
+            'SELECT id FROM quiz_attempts WHERE user_id = $1 AND level = 2 AND passed = true LIMIT 1',
+            [req.user.userId]
+        );
+        if (result.rows.length === 0) {
             return res.status(403).json({
                 error: '请先通过第二级入站考试',
                 quiz_required: true,
@@ -2143,12 +2147,11 @@ app.post('/api/quiz/submit', authMiddleware, async (req, res) => {
                 return res.status(400).json({ error: '已通过第一级' });
             }
         } else if (level === 2) {
-            let canUpload = false;
-            try {
-                const r = await pool.query('SELECT can_upload_media FROM users WHERE id = $1', [userId]);
-                canUpload = r.rows[0]?.can_upload_media || false;
-            } catch (e) { /* 旧表无此列，视为未通过 */ }
-            if (canUpload) {
+            const passedRes = await pool.query(
+                'SELECT id FROM quiz_attempts WHERE user_id = $1 AND level = 2 AND passed = true LIMIT 1',
+                [userId]
+            );
+            if (passedRes.rows.length > 0) {
                 return res.status(400).json({ error: '已通过第二级' });
             }
         }
@@ -2237,13 +2240,17 @@ app.get('/api/quiz/status', authMiddleware, async (req, res) => {
     const level = parseInt(req.query.level) || 1;
 
     try {
+        const userRes = await pool.query('SELECT has_passed_quiz, exp FROM users WHERE id = $1', [userId]);
+
+        // 检查二级考试是否通过（从 quiz_attempts 查询，不依赖 can_upload_media 列）
         let canUploadMedia = false;
         try {
-            const r = await pool.query('SELECT can_upload_media FROM users WHERE id = $1', [userId]);
-            canUploadMedia = r.rows[0]?.can_upload_media || false;
-        } catch (e) { /* 旧表没有 can_upload_media 列 */ }
-
-        const userRes = await pool.query('SELECT has_passed_quiz, exp FROM users WHERE id = $1', [userId]);
+            const l2Res = await pool.query(
+                'SELECT id FROM quiz_attempts WHERE user_id = $1 AND level = 2 AND passed = true LIMIT 1',
+                [userId]
+            );
+            canUploadMedia = l2Res.rows.length > 0;
+        } catch (e) { /* 旧表无 level 列 */ }
         const todayStart = getBeijingDate();
 
         let todayCount = 0;
