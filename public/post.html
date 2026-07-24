@@ -357,6 +357,13 @@
                     }
                     quill.setSelection(range.index + 1);
                 } else {
+                    if (data.quiz_required) {
+                        hideUploading();
+                        if (confirm('⚠️ 请先通过第二级入站考试才能上传文件\n点击确定前往答题页面')) {
+                            window.location.href = data.quiz_url || '/quiz.html?level=2';
+                        }
+                        return;
+                    }
                     alert(data.error || '上传失败');
                 }
             } catch (err) {
@@ -577,6 +584,11 @@
                     removeCurrentDraft();
                     window.location.href = '/post-detail.html?id=' + data.id;
                 } else {
+                    if (data && data.quiz_required) {
+                        alert('⚠️ 请先通过入站答题才能发布帖子');
+                        window.location.href = data.quiz_url || '/quiz.html';
+                        return;
+                    }
                     alert(data.error || '发布失败');
                     this.disabled = false;
                     this.textContent = '🚀 发布帖子';

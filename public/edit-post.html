@@ -314,7 +314,16 @@
                     var range = quill.getSelection(true);
                     quill.insertEmbed(range.index, type === 'image' ? 'image' : 'video', data.url);
                     quill.setSelection(range.index + 1);
-                } else { alert(data.error || '上传失败'); }
+                } else {
+                    if (data.quiz_required) {
+                        hideUploading();
+                        if (confirm('⚠️ 请先通过第二级入站考试才能上传文件\n点击确定前往答题页面')) {
+                            window.location.href = data.quiz_url || '/quiz.html?level=2';
+                        }
+                        return;
+                    }
+                    alert(data.error || '上传失败');
+                }
             } catch (err) { alert('上传失败，请重试'); } finally { hideUploading(); }
         }
 
@@ -406,6 +415,11 @@
                 if (res.ok) {
                     window.location.href = '/post-detail.html?id=' + postId;
                 } else {
+                    if (data && data.quiz_required) {
+                        alert('⚠️ 请先通过入站答题才能修改帖子');
+                        window.location.href = data.quiz_url || '/quiz.html';
+                        return;
+                    }
                     alert(data.error || '修改失败');
                     this.disabled = false;
                     this.textContent = '💾 保存修改';

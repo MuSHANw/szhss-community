@@ -988,6 +988,20 @@
         </div>
     </div>
 
+    <!-- 入站考试提醒弹窗 -->
+    <div id="examReminderModal" class="modal-overlay" style="display: none;">
+        <div class="modal-dialog" style="max-width:480px;">
+            <button class="modal-close-btn" id="examModalClose">&times;</button>
+            <div class="modal-icon">📝</div>
+            <div class="modal-title">入站考试</div>
+            <div class="modal-body" id="examModalBody"></div>
+            <div class="modal-footer-actions">
+                <button class="btn-primary-sm" id="examModalGoBtn" style="display:none;">前往考试</button>
+                <button class="btn-secondary-sm" id="examModalLaterBtn">稍后再说</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 顶部栏 -->
     <div class="top-bar-container">
         <div class="top-bar">
@@ -1591,6 +1605,63 @@
                     hideModal();
                 });
             }
+        })();
+
+        // ---------- 入站考试提醒弹窗 ----------
+        (function() {
+            var modal = document.getElementById('examReminderModal');
+            var closeBtn = document.getElementById('examModalClose');
+            var laterBtn = document.getElementById('examModalLaterBtn');
+            var goBtn = document.getElementById('examModalGoBtn');
+            var bodyEl = document.getElementById('examModalBody');
+
+            if (!modal) return;
+
+            function hideExamModal() { if (modal) modal.style.display = 'none'; }
+            if (closeBtn) closeBtn.addEventListener('click', hideExamModal);
+            if (laterBtn) laterBtn.addEventListener('click', hideExamModal);
+
+            // 检查考试状态
+            (async function() {
+                try {
+                    var res = await fetch(window.API_BASE + '/quiz/status', {
+                        headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+                    });
+                    if (!res.ok) return;
+                    var data = await res.json();
+
+                    var l1 = data.level1_passed;
+                    var l2 = data.level2_passed;
+
+                    if (l1 && l2) return; // 都通过了，不弹窗
+
+                    var html = '';
+                    var targetUrl = '/quiz.html';
+                    var btnHtml = '';
+
+                    if (!l1 && !l2) {
+                        html = '你还没有参加过入站考试，通过后方可使用全部社区功能。<br><br>考试共有两级：<br>' +
+                            '<ul><li><strong>第一级</strong>：基础考试（60分及格）→ 解锁发帖、评论、点赞等互动功能</li>' +
+                            '<li><strong>第二级</strong>：进阶考试（70分及格）→ 解锁图片和视频上传功能</li></ul>' +
+                            '每天每级各有3次考试机会，加油！';
+                        btnHtml = '前往考试 📝';
+                        targetUrl = '/quiz.html';
+                    } else if (l1 && !l2) {
+                        html = '你已经通过第一级考试，可以发布和互动了！<br><br>' +
+                            '如果你还想上传图片和视频，建议继续参加<strong>第二级进阶考试</strong>。<br><br>' +
+                            '第二级考试可选择你擅长的领域作答，70分及格。';
+                        btnHtml = '前往第二级考试 🎯';
+                        targetUrl = '/quiz.html?level=2';
+                    }
+
+                    bodyEl.innerHTML = html;
+                    goBtn.textContent = btnHtml;
+                    goBtn.style.display = 'block';
+                    goBtn.onclick = function() { window.location.href = targetUrl; };
+
+                    modal.style.display = 'flex';
+                } catch(e) {}
+            })();
         })();
     </script>
 </body>
