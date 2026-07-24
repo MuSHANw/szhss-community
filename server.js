@@ -141,23 +141,25 @@ const adminMiddleware = async (req, res, next) => {
 // 图片视频上传权限检查（需通过第二级考试）
 const mediaUploadRequired = async (req, res, next) => {
     try {
-        var passed = false;
+        var l2Passed = false;
         try {
-            // 优先查 level = 2（新表结构）
+            // 新表结构：直接查 level = 2
             const r = await pool.query(
                 'SELECT id FROM quiz_attempts WHERE user_id = $1 AND level = 2 AND passed = true LIMIT 1',
                 [req.user.userId]
             );
-            passed = r.rows.length > 0;
+            l2Passed = r.rows.length > 0;
         } catch (e) {
-            // 旧表无 level 列，回退：查全部通过的记录（score >= 70 视为二阶）
-            const r = await pool.query(
-                'SELECT id FROM quiz_attempts WHERE user_id = $1 AND passed = true AND score >= 70 LIMIT 1',
-                [req.user.userId]
-            );
-            passed = r.rows.length > 0;
+            // 旧表：数用户总共通过了多少次考试，超过 1 次说明二阶也过了
+            try {
+                const r = await pool.query(
+                    'SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND passed = true',
+                    [req.user.userId]
+                );
+                l2Passed = parseInt(r.rows[0].cnt) > 1;
+            } catch (e2) {}
         }
-        if (!passed) {
+        if (!l2Passed) {
             return res.status(403).json({
                 error: '请先通过第二级入站考试',
                 quiz_required: true,
@@ -2166,11 +2168,13 @@ app.post('/api/quiz/submit', authMiddleware, async (req, res) => {
                 );
                 l2Passed = r.rows.length > 0;
             } catch (e) {
-                const r = await pool.query(
-                    'SELECT id FROM quiz_attempts WHERE user_id = $1 AND passed = true AND score >= 70 LIMIT 1',
-                    [userId]
-                );
-                l2Passed = r.rows.length > 0;
+                try {
+                    const r = await pool.query(
+                        'SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND passed = true',
+                        [userId]
+                    );
+                    l2Passed = parseInt(r.rows[0].cnt) > 1;
+                } catch (e2) {}
             }
             if (l2Passed) {
                 return res.status(400).json({ error: '已通过第二级' });
@@ -2272,10 +2276,10 @@ app.get('/api/quiz/status', authMiddleware, async (req, res) => {
             );
             canUploadMedia = l2Res.rows.length > 0;
         } catch (e) {
-            // 旧表无 level 列，按分数 >= 70 判断
+            // 旧表无 level 列，通过的记录数 > 1 说明已过二阶
             try {
-                const r = await pool.query('SELECT id FROM quiz_attempts WHERE user_id = $1 AND passed = true AND score >= 70 LIMIT 1', [userId]);
-                canUploadMedia = r.rows.length > 0;
+                const r = await pool.query('SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND passed = true', [userId]);
+                canUploadMedia = parseInt(r.rows[0].cnt) > 1;
             } catch (e2) {}
         }
         const todayStart = getBeijingDate();
