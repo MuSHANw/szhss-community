@@ -2143,19 +2143,32 @@ app.post('/api/quiz/submit', authMiddleware, async (req, res) => {
                 return res.status(400).json({ error: '已通过第一级' });
             }
         } else if (level === 2) {
-            const userRes = await pool.query('SELECT can_upload_media FROM users WHERE id = $1', [userId]);
-            if (userRes.rows[0]?.can_upload_media) {
+            let canUpload = false;
+            try {
+                const r = await pool.query('SELECT can_upload_media FROM users WHERE id = $1', [userId]);
+                canUpload = r.rows[0]?.can_upload_media || false;
+            } catch (e) { /* 旧表无此列，视为未通过 */ }
+            if (canUpload) {
                 return res.status(400).json({ error: '已通过第二级' });
             }
         }
 
-        // 检查今日答题次数
+        // 检查今日答题次数（兼容旧表无 level 列）
         const todayStart = getBeijingDate();
-        const countRes = await pool.query(
-            'SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND level = $2 AND created_at >= $3::date',
-            [userId, level, todayStart]
-        );
-        const todayCount = parseInt(countRes.rows[0].cnt);
+        var todayCount = 0;
+        try {
+            const cr = await pool.query(
+                'SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND level = $2 AND created_at >= $3::date',
+                [userId, level, todayStart]
+            );
+            todayCount = parseInt(cr.rows[0].cnt);
+        } catch (e) {
+            const cr = await pool.query(
+                'SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND created_at >= $2::date',
+                [userId, todayStart]
+            );
+            todayCount = parseInt(cr.rows[0].cnt);
+        }
         if (todayCount >= MAX_DAILY_ATTEMPTS) {
             return res.status(403).json({
                 error: '今日答题次数已用完（' + MAX_DAILY_ATTEMPTS + '/' + MAX_DAILY_ATTEMPTS + '），请明天再来'
@@ -2201,7 +2214,7 @@ app.post('/api/quiz/submit', authMiddleware, async (req, res) => {
             if (level === 1) {
                 await pool.query('UPDATE users SET has_passed_quiz = true WHERE id = $1', [userId]);
             } else if (level === 2) {
-                await pool.query('UPDATE users SET can_upload_media = true WHERE id = $1', [userId]);
+                try { await pool.query('UPDATE users SET can_upload_media = true WHERE id = $1', [userId]); } catch (e) {} // 旧表无此列，忽略
             }
         }
 
