@@ -339,16 +339,21 @@
         });
 
         async function uploadFile(file, type) {
+            // 前端文件大小校验
+            var maxSize = type === 'video' ? 200 * 1024 * 1024 : 50 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('文件过大！' + (type === 'video' ? '视频不能超过 200MB' : '图片不能超过 50MB'));
+                return;
+            }
+
             var fd = new FormData();
             fd.append('file', file);
-            // 显示上传中（直接插入，不经过 insertMarkdown 以避免默认文本）
-            var placeholder, replacement;
+            // 显示上传中（使用 # 占位 URL，避免 marked 预览时触发请求）
+            var placeholder;
             if (type === 'image') {
-                placeholder = '![上传中...](uploading)';
-                replacement = '![' + file.name + '](';
+                placeholder = '![上传中...](#)';
             } else {
-                placeholder = '\n<video src="uploading" controls></video>\n';
-                replacement = '<video src="';
+                placeholder = '\n<video src="#" controls></video>\n';
             }
             var cursorPos = textarea.selectionStart;
             textarea.value = textarea.value.substring(0, cursorPos) + placeholder + textarea.value.substring(textarea.selectionEnd);
@@ -366,9 +371,9 @@
                     // 替换上传中的占位
                     var val = textarea.value;
                     if (type === 'image') {
-                        textarea.value = val.replace('![上传中...](uploading)', '!['+file.name+']('+data.url+')');
+                        textarea.value = val.replace('![上传中...](#)', '!['+file.name+']('+data.url+')');
                     } else {
-                        textarea.value = val.replace('<video src="uploading" controls></video>', '<video src="'+data.url+'" controls></video>');
+                        textarea.value = val.replace('<video src="#" controls></video>', '<video src="'+data.url+'" controls></video>');
                     }
                     textarea.dispatchEvent(new Event('input'));
                 } else {

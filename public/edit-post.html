@@ -315,8 +315,15 @@
 
         // 文件上传
         async function uploadFile(file, type) {
+            // 前端文件大小校验
+            var maxSize = type === 'video' ? 200 * 1024 * 1024 : 50 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('文件过大！' + (type === 'video' ? '视频不能超过 200MB' : '图片不能超过 50MB'));
+                return;
+            }
+
             var fd = new FormData(); fd.append('file', file);
-            var placeholder = type==='image' ? '![上传中...](uploading)' : '\n<video src="uploading" controls></video>\n';
+            var placeholder = type==='image' ? '![上传中...](#)' : '\n<video src="#" controls></video>\n';
             var cursorPos = contentEl.selectionStart;
             contentEl.value = contentEl.value.substring(0, cursorPos) + placeholder + contentEl.value.substring(contentEl.selectionEnd);
             contentEl.selectionStart = contentEl.selectionEnd = cursorPos + placeholder.length;
@@ -327,8 +334,8 @@
                 if (res.ok) {
                     var val = contentEl.value;
                     contentEl.value = type==='image'
-                        ? val.replace('![上传中...](uploading)','!['+file.name+']('+data.url+')')
-                        : val.replace('<video src="uploading" controls></video>','<video src="'+data.url+'" controls></video>');
+                        ? val.replace('![上传中...](#)','!['+file.name+']('+data.url+')')
+                        : val.replace('<video src="#" controls></video>','<video src="'+data.url+'" controls></video>');
                     contentEl.dispatchEvent(new Event('input'));
                 } else { alert('上传失败'); }
             } catch(e) {

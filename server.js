@@ -331,7 +331,7 @@ app.post('/api/me/avatar', authMiddleware, upload.single('avatar'), async (req, 
 // ---------- 通用文件上传（图片/视频）----------
 const generalUpload = multer({
     storage,
-    limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+    limits: { fileSize: 200 * 1024 * 1024 } // 200MB（图片/视频通用）
 });
 
 app.post('/api/upload/file', authMiddleware, generalUpload.single('file'), (req, res) => {
