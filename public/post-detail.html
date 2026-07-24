@@ -1336,7 +1336,7 @@
                                 ${!isAuthor && token ? '<a href="/chat.html?uid=' + post.user_id + '" class="action-btn" style="text-decoration:none;margin-left:auto;"><i class="fas fa-envelope"></i> 发私信</a>' : ''}
                             </div>
                         </div>
-                        <div class="post-content">${typeof renderMarkdown === 'function' ? renderMarkdown(post.content) : escapeHtml(post.content)}</div>
+                        <div class="post-content">${post.content || ''}</div>
                         <div class="post-actions">
                             <button class="like-btn ${isLiked ? 'liked' : ''}" data-id="${post.id}" id="likeBtn">
                                 <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> <span id="likesCount">${post.likes || 0}</span>

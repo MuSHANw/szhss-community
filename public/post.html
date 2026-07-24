@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
     <script src="/js/mobile.js" defer></script>
     <script src="/js/level-utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -50,69 +50,79 @@
         .sidebar-logout { width: 100%; background: none; border: none; padding: 8px; cursor: pointer; color: #e53e3e; border-radius: 8px; text-align: center; }
         .sidebar-logout:hover { background: #ffe5e5; }
 
-        /* 编辑器 */
-        .editor-container { max-width: 900px; margin: 32px auto; background: white; border-radius: 16px; padding: 24px; border: 1px solid #eef2f6; }
-        .editor-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 20px; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 0.9rem; }
-        .form-group input, .form-group select { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 0.95rem; outline: none; }
-        .form-group input:focus, .form-group select:focus { border-color: #1E88E5; box-shadow: 0 0 0 3px rgba(30,136,229,0.1); }
-        #title { font-size: 1.2rem; }
+        /* 编辑器主体 */
+        .post-wrapper { max-width: 900px; margin: 32px auto; }
+        .page-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 24px; }
+
+        /* 草稿提示 */
+        .draft-notice { display:none; background:#FFF3CD; padding:12px 16px; border-radius:12px; margin-bottom:16px; align-items:center; flex-wrap:wrap; gap:8px; font-size:0.9rem; }
+        .draft-notice button { background:#1E88E5; color:white; border:none; padding:6px 16px; border-radius:20px; cursor:pointer; font-size:0.85rem; }
+        .draft-notice button:last-child { background:#e2e8f0; color:#4a5568; }
+
+        /* 表单 */
+        .form-card { background:white; border-radius:16px; padding:24px; border:1px solid #eef2f6; margin-bottom:16px; }
+        .form-group { margin-bottom:16px; }
+        .form-group:last-child { margin-bottom:0; }
+        .form-group label { display:block; font-weight:600; margin-bottom:6px; font-size:0.9rem; color:#374151; }
+        #postTitle { width:100%; padding:12px 16px; border:1px solid #e2e8f0; border-radius:12px; font-size:1.2rem; outline:none; font-family:inherit; }
+        #postTitle:focus { border-color:#1E88E5; box-shadow:0 0 0 3px rgba(30,136,229,0.1); }
+        #postCategory { width:100%; padding:10px 14px; border:1px solid #e2e8f0; border-radius:12px; font-size:0.95rem; outline:none; background:white; font-family:inherit; }
+        #postCategory:focus { border-color:#1E88E5; }
 
         /* 预设标签 */
-        .preset-tags { margin-bottom: 12px; }
-        .preset-tags-label { font-size: 0.85rem; color: #6c757d; margin-bottom: 8px; }
-        .preset-tag { display: inline-block; padding: 6px 14px; border-radius: 20px; background: #F3F4F6; color: #6B7280; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; margin-right: 6px; margin-bottom: 6px; border: 1px solid transparent; }
-        .preset-tag:hover { background: #EFF6FF; color: #1E88E5; border-color: #1E88E5; }
-        .preset-tag.active { background: #1E88E5; color: white; border-color: #1E88E5; }
+        .preset-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+        .preset-tag { padding:6px 16px; border-radius:20px; background:#F3F4F6; color:#6B7280; font-size:0.85rem; cursor:pointer; transition:all 0.2s; border:1px solid transparent; user-select:none; }
+        .preset-tag:hover { background:#EFF6FF; color:#1E88E5; border-color:#1E88E5; }
+        .preset-tag.active { background:#1E88E5; color:white; border-color:#1E88E5; }
 
-        /* 标签输入 */
-        .tags-input-wrap { border: 1px solid #e2e8f0; border-radius: 12px; padding: 8px 10px; min-height: 42px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-        .tags-input-wrap:focus-within { border-color: #1E88E5; box-shadow: 0 0 0 3px rgba(30,136,229,0.1); }
-        .tag-chip { display: inline-flex; align-items: center; gap: 4px; background: #EFF6FF; color: #1E88E5; padding: 3px 10px; border-radius: 16px; font-size: 0.8rem; }
-        .tag-chip .tag-del { cursor: pointer; font-size: 1rem; line-height: 1; margin-left: 2px; }
-        .tag-chip .tag-del:hover { color: #e53e3e; }
-        .tags-input-wrap input { flex: 1; border: none; outline: none; font-size: 0.9rem; min-width: 100px; padding: 4px 0; }
+        /* 标签显示 */
+        .tags-display { display:flex; flex-wrap:wrap; gap:6px; padding:8px 0; min-height:36px; }
+        .tag-pill { display:inline-flex; align-items:center; gap:4px; background:#EFF6FF; color:#1E88E5; padding:4px 12px; border-radius:20px; font-size:0.85rem; }
+        .tag-pill button { background:none; border:none; color:#1E88E5; cursor:pointer; font-size:1.1rem; padding:0; line-height:1; }
+        .tag-pill button:hover { color:#e53e3e; }
+        #customTagInput { border:none; outline:none; font-size:0.9rem; padding:6px 0; flex:1; min-width:120px; font-family:inherit; }
 
-        /* 工具栏 */
-        .editor-toolbar { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 12px; background: #F8FAFC; border: 1px solid #E5E7EB; border-radius: 12px 12px 0 0; }
-        .editor-toolbar .sep { width: 1px; height: 28px; background: #E5E7EB; margin: 0 4px; }
-        .toolbar-btn { width: 36px; height: 36px; border: none; background: white; border-radius: 8px; cursor: pointer; font-size: 0.9rem; color: #4B5563; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; }
-        .toolbar-btn:hover { background: #EFF6FF; color: #1E88E5; }
+        /* 编辑器 */
+        .editor-wrapper { border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; background:white; }
+        #editor-container .ql-editor { min-height:320px; font-size:1rem; line-height:1.7; padding:16px 20px; }
+        #editor-container .ql-toolbar { border:none; border-bottom:1px solid #eef2f6; background:#FAFBFC; padding:8px 12px; }
+        #editor-container .ql-container { border:none; }
+        #editor-container img { max-width:100%; border-radius:8px; margin:8px 0; }
+        #editor-container video { max-width:100%; border-radius:8px; margin:8px 0; }
+        #editor-container .ql-editor.ql-blank::before { color:#9CA3AF; font-style:normal; }
 
-        /* 编辑工作区 */
-        .editor-workspace { display: flex; border: 1px solid #E5E7EB; border-top: none; border-radius: 0 0 12px 12px; min-height: 350px; }
-        .editor-textarea { flex: 1; padding: 16px; border: none; border-right: 1px solid #E5E7EB; resize: vertical; font-family: 'Consolas','Monaco','Courier New',monospace; font-size: 0.9rem; line-height: 1.6; outline: none; min-height: 300px; }
-        .editor-preview { flex: 1; padding: 16px; background: white; overflow-y: auto; line-height: 1.6; font-size: 0.95rem; min-height: 300px; }
-        .editor-preview img { max-width: 100%; border-radius: 8px; }
-        .editor-preview video { max-width: 100%; border-radius: 8px; }
-        .editor-preview pre { background: #F8FAFC; padding: 12px; border-radius: 8px; overflow-x: auto; }
-        .editor-preview code { background: #F3F4F6; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
-        .editor-preview pre code { background: none; padding: 0; }
-        .editor-preview blockquote { border-left: 4px solid #1E88E5; padding-left: 16px; color: #6B7280; margin: 12px 0; }
-        .editor-preview h1, .editor-preview h2, .editor-preview h3 { margin: 16px 0 8px; }
-        .editor-preview p { margin: 8px 0; }
-        .editor-preview ul, .editor-preview ol { padding-left: 24px; margin: 8px 0; }
-
-        .submit-btn { width: 100%; background: #1E88E5; color: white; border: none; padding: 14px; border-radius: 40px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 16px; transition: background 0.2s; }
-        .submit-btn:hover { background: #1565C0; }
-        .error-msg { color: #e53e3e; text-align: center; margin-top: 12px; font-size: 0.9rem; }
-
-        .hidden-input { display: none; }
+        /* 操作按钮 */
+        .action-bar { display:flex; gap:12px; margin-top:16px; align-items:center; flex-wrap:wrap; }
+        .btn-primary { background:#1E88E5; color:white; border:none; padding:12px 32px; border-radius:40px; font-size:1rem; font-weight:600; cursor:pointer; transition:background 0.2s; }
+        .btn-primary:hover { background:#1565C0; }
+        .btn-secondary { background:#f0f2f5; color:#4a5568; border:none; padding:12px 24px; border-radius:40px; font-size:1rem; cursor:pointer; transition:background 0.2s; }
+        .btn-secondary:hover { background:#e2e6ea; }
+        .save-hint { font-size:0.8rem; color:#9CA3AF; margin-left:auto; }
 
         @media (max-width: 768px) {
-            body { margin-left: 0; }
-            #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; width: 260px !important; }
-            #sidebar.open-mobile { transform: translateX(0); }
-            .search-area { width: 180px; }
-            .editor-container { margin: 16px; padding: 16px; }
-            .editor-workspace { flex-direction: column; }
-            .editor-textarea { border-right: none; border-bottom: 1px solid #E5E7EB; min-height: 200px; }
-            .editor-preview { min-height: 200px; }
+            body { margin-left:0; }
+            #sidebar { transform:translateX(-100%); transition:transform 0.3s ease; width:260px !important; }
+            #sidebar.open-mobile { transform:translateX(0); }
+            .search-area { width:34px; }
+            .post-wrapper { margin:16px; }
+            .form-card { padding:16px; }
+            #editor-container .ql-editor { min-height:200px; font-size:16px; }
+            .action-bar { flex-direction:column; }
+            .btn-primary, .btn-secondary { width:100%; text-align:center; }
+            .save-hint { margin-left:0; }
         }
     </style>
 </head>
 <body id="appBody">
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <!-- 顶部栏 -->
     <div class="top-bar-container">
         <div class="top-bar">
             <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
@@ -121,13 +131,15 @@
                 <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
                 <button id="searchBtn"><i class="fas fa-search"></i></button>
             </div>
-            <a href="/about.html" class="about-link" id="aboutLink"><i class="fas fa-info-circle"></i> 关于</a>
+            <a href="/about.html" class="about-link"><i class="fas fa-info-circle"></i> 关于</a>
             <a href="/notifications.html" class="notifications-icon" id="notifLink">
                 <i class="fas fa-bell"></i>
                 <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
             </a>
         </div>
     </div>
+
+    <!-- 侧边栏 -->
     <div id="sidebar">
         <div class="sidebar-user" id="sidebarUserBtn">
             <div class="sidebar-avatar" id="sidebarAvatar"><i class="fas fa-user-circle"></i></div>
@@ -159,30 +171,45 @@
         </div>
     </div>
 
+    <!-- 主内容 -->
     <div class="container">
-        <div class="editor-container">
-            <h1 class="editor-title">📝 发布新帖子</h1>
-            <form id="postForm">
+        <div class="post-wrapper">
+            <h1 class="page-title">📝 发布新帖子</h1>
+
+            <!-- 草稿恢复提示 -->
+            <div class="draft-notice" id="draftNotice">
+                <span>📝 检测到上次未发布的草稿（保存于 <span id="draftTime"></span>）</span>
+                <button id="restoreDraftBtn">恢复草稿</button>
+                <button id="discardDraftBtn">丢弃</button>
+            </div>
+
+            <!-- 标题 -->
+            <div class="form-card">
                 <div class="form-group">
                     <label>标题</label>
-                    <input type="text" id="title" placeholder="给你的帖子起个响亮的标题吧 ✨">
+                    <input type="text" id="postTitle" placeholder="给你的帖子起个响亮的标题 ✨">
                 </div>
-                <div class="form-group" style="display:flex;gap:16px;">
-                    <div style="flex:1;">
-                        <label>分类</label>
-                        <select id="category">
-                            <option value="学习">学习</option>
-                            <option value="生活">生活</option>
-                            <option value="社团">社团</option>
-                            <option value="升学">升学</option>
-                            <option value="综合" selected>综合</option>
-                        </select>
-                    </div>
+            </div>
+
+            <!-- 分类 -->
+            <div class="form-card">
+                <div class="form-group">
+                    <label>分类</label>
+                    <select id="postCategory">
+                        <option value="综合" selected>综合</option>
+                        <option value="学习">学习</option>
+                        <option value="生活">生活</option>
+                        <option value="社团">社团</option>
+                        <option value="升学">升学</option>
+                    </select>
                 </div>
+            </div>
+
+            <!-- 标签 -->
+            <div class="form-card">
                 <div class="form-group">
                     <label>快速添加标签</label>
                     <div class="preset-tags">
-                        <div class="preset-tags-label">点击添加：</div>
                         <span class="preset-tag" data-tag="学习资料">📚 学习资料</span>
                         <span class="preset-tag" data-tag="经验分享">💬 经验分享</span>
                         <span class="preset-tag" data-tag="社团活动">🎉 社团活动</span>
@@ -192,154 +219,115 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>标签</label>
-                    <div class="tags-input-wrap" id="tagsInputWrap">
-                        <input type="text" id="tagInput" placeholder="输入自定义标签，按回车添加...">
-                    </div>
+                    <label>自定义标签</label>
+                    <div class="tags-display" id="tagsDisplay"></div>
+                    <input type="text" id="customTagInput" placeholder="输入自定义标签，按回车添加...">
+                    <input type="hidden" id="postTags">
                 </div>
-                <div class="form-group">
-                    <label>内容（支持 Markdown）</label>
-                    <div class="editor-toolbar">
-                        <button type="button" class="toolbar-btn" title="加粗" data-cmd="bold"><b>B</b></button>
-                        <button type="button" class="toolbar-btn" title="斜体" data-cmd="italic"><i>I</i></button>
-                        <button type="button" class="toolbar-btn" title="标题" data-cmd="heading">H</button>
-                        <div class="sep"></div>
-                        <button type="button" class="toolbar-btn" title="无序列表" data-cmd="ulist"><i class="fas fa-list-ul"></i></button>
-                        <button type="button" class="toolbar-btn" title="有序列表" data-cmd="olist"><i class="fas fa-list-ol"></i></button>
-                        <div class="sep"></div>
-                        <button type="button" class="toolbar-btn" title="链接" data-cmd="link"><i class="fas fa-link"></i></button>
-                        <button type="button" class="toolbar-btn" title="图片" data-cmd="image"><i class="far fa-image"></i></button>
-                        <button type="button" class="toolbar-btn" title="视频" data-cmd="video"><i class="fas fa-video"></i></button>
-                        <div class="sep"></div>
-                        <button type="button" class="toolbar-btn" title="代码块" data-cmd="code"><i class="fas fa-code"></i></button>
-                        <button type="button" class="toolbar-btn" title="引用" data-cmd="quote"><i class="fas fa-quote-right"></i></button>
-                    </div>
-                    <div class="editor-workspace">
-                        <textarea class="editor-textarea" id="content" placeholder="写下你的想法... 支持 Markdown 语法 &#10;&#10;例如：&#10;# 标题 &#10;**加粗** *斜体* &#10;- 列表项 &#10;> 引用"></textarea>
-                        <div class="editor-preview" id="preview"><p style="color:#9CA3AF;">预览区域</p></div>
-                    </div>
+            </div>
+
+            <!-- 编辑器 -->
+            <div class="form-card" style="padding:0;">
+                <div class="editor-wrapper">
+                    <div id="editor-container"></div>
                 </div>
-                <input type="file" accept="image/*" class="hidden-input" id="imageInput" multiple>
-                <input type="file" accept="video/*" class="hidden-input" id="videoInput">
-                <button type="submit" class="submit-btn">发布帖子 🚀</button>
-                <div id="errorMsg" class="error-msg"></div>
-            </form>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-bar">
+                <button class="btn-primary" id="submitBtn">🚀 发布帖子</button>
+                <button class="btn-secondary" id="saveDraftBtn">💾 保存草稿</button>
+                <span class="save-hint">草稿每30秒自动保存</span>
+            </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <script>
         window.API_BASE = window.API_BASE || '/api';
-        const token = localStorage.getItem('token');
+        var token = localStorage.getItem('token');
         if (!token) { window.location.href = '/login.html'; }
 
-        // 侧边栏、用户信息、通知、搜索（略，同之前版本）
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('menuToggle');
-        const body = document.getElementById('appBody');
-        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
-        if (!isExpanded) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); }
-        else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); }
+        // ---------- 侧边栏等通用 ----------
+        var sidebar = document.getElementById('sidebar'), toggleBtn = document.getElementById('menuToggle'), body = document.getElementById('appBody');
+        if (localStorage.getItem('sidebarExpanded') !== 'false') { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); }
+        else { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); }
         toggleBtn.addEventListener('click', function() {
             var e = !sidebar.classList.contains('collapsed');
             if (e) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); localStorage.setItem('sidebarExpanded','false'); }
             else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); localStorage.setItem('sidebarExpanded','true'); }
         });
-
-        const avatarDiv = document.getElementById('sidebarAvatar');
-        const nicknameSpan = document.getElementById('sidebarNickname');
-        const emailSpan = document.getElementById('sidebarEmail');
         async function updateSidebarUser() {
-            try {
-                var res = await fetch(window.API_BASE+'/me', { headers: { 'Authorization': 'Bearer '+token } });
-                if (res.status === 401) { localStorage.removeItem('token'); window.location.href='/login.html'; return; }
-                if (res.ok) { var u = await res.json(); nicknameSpan.innerText = u.nickname||'用户'; emailSpan.innerText = u.email||''; avatarDiv.innerHTML = u.avatar_url ? '<img src="'+u.avatar_url+'" alt="头像">' : '<i class="fas fa-user-circle"></i>'; }
-            } catch(e) {}
+            try { var res = await fetch(window.API_BASE+'/me', { headers: { 'Authorization': 'Bearer '+token } }); if (res.status===401) { localStorage.removeItem('token'); window.location.href='/login.html'; return; } if (res.ok) { var u = await res.json(); document.getElementById('sidebarNickname').innerText = u.nickname||'用户'; document.getElementById('sidebarEmail').innerText = u.email||''; document.getElementById('sidebarAvatar').innerHTML = u.avatar_url ? '<img src="'+u.avatar_url+'" alt="头像">' : '<i class="fas fa-user-circle"></i>'; } } catch(e) {}
         }
         updateSidebarUser();
         document.getElementById('sidebarUserBtn')?.addEventListener('click', function() { window.location.href='/profile.html'; });
         document.getElementById('sidebarLogoutBtn')?.addEventListener('click', function() { localStorage.removeItem('token'); window.location.href='/login.html'; });
-
         async function updateNotifDot() {
             if (!token) return;
             try { var res = await fetch(window.API_BASE+'/notifications?page=1&limit=1', { headers: { 'Authorization': 'Bearer '+token } }); var d = await res.json(); var cnt = d.unreadCount||0; var badge = document.getElementById('notifBadge'); var dot = document.getElementById('sidebarNotifDot'); if (badge) { badge.style.display = cnt>0?'flex':'none'; badge.innerText = cnt>99?'99+':cnt; } if (dot) dot.style.display = cnt>0?'inline-block':'none'; } catch(e) {}
         }
         updateNotifDot();
         if (token) setInterval(updateNotifDot, 30000);
-
         document.getElementById('searchBtn')?.addEventListener('click', function() { var q = document.getElementById('searchInput').value.trim(); if (q) window.location.href='/search.html?q='+encodeURIComponent(q); else alert('请输入搜索关键词'); });
         document.getElementById('searchInput')?.addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('searchBtn').click(); });
 
-        // ---------- Markdown 实时预览 ----------
-        var contentEl = document.getElementById('content');
-        var previewEl = document.getElementById('preview');
-        contentEl.addEventListener('input', function() {
-            updatePreview();
-        });
-
-        function updatePreview() {
-            var md = contentEl.value || '';
-            try {
-                previewEl.innerHTML = marked.parse(md);
-            } catch(e) {
-                previewEl.innerHTML = '<p style="color:#e53e3e;">Markdown 解析出错</p>';
-            }
-        }
-
-        // ---------- 工具栏 ----------
-        var textarea = contentEl;
-        function insertMarkdown(before, after) {
-            var start = textarea.selectionStart;
-            var end = textarea.selectionEnd;
-            var text = textarea.value;
-            var selected = text.substring(start, end) || '文本';
-            var newText = text.substring(0, start) + before + selected + after + text.substring(end);
-            textarea.value = newText;
-            textarea.focus();
-            textarea.selectionStart = start + before.length;
-            textarea.selectionEnd = start + before.length + selected.length;
-            textarea.dispatchEvent(new Event('input'));
-        }
-
-        document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var cmd = btn.dataset.cmd;
-                switch(cmd) {
-                    case 'bold': insertMarkdown('**', '**'); break;
-                    case 'italic': insertMarkdown('*', '*'); break;
-                    case 'heading': insertMarkdown('\n## ', '\n'); break;
-                    case 'ulist': insertMarkdown('\n- ', ''); break;
-                    case 'olist': insertMarkdown('\n1. ', ''); break;
-                    case 'link': {
-                        var url = prompt('输入链接地址：', 'https://');
-                        if (url) insertMarkdown('[', ']( '+url+')');
-                        break;
+        // ---------- Quill 编辑器 ----------
+        var quill = new Quill('#editor-container', {
+            theme: 'snow',
+            placeholder: '在这里写下你的内容...支持文字排版、图片、视频等',
+            modules: {
+                toolbar: {
+                    container: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'align': [] }],
+                        ['link', 'image', 'video'],
+                        ['clean']
+                    ],
+                    handlers: {
+                        'image': imageHandler,
+                        'video': videoHandler
                     }
-                    case 'code': insertMarkdown('\n```\n', '\n```\n'); break;
-                    case 'quote': insertMarkdown('\n> ', '\n'); break;
-                    case 'image': document.getElementById('imageInput').click(); break;
-                    case 'video': document.getElementById('videoInput').click(); break;
                 }
-            });
+            }
         });
 
         // ---------- 图片上传 ----------
-        document.getElementById('imageInput').addEventListener('change', async function(e) {
-            var files = e.target.files;
-            for (var i = 0; i < files.length; i++) {
-                await uploadFile(files[i], 'image');
-            }
-            this.value = '';
-        });
+        function imageHandler() {
+            var input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
+            input.onchange = function() {
+                var file = input.files[0];
+                if (!file) return;
+                uploadAndInsert(file, 'image');
+            };
+        }
 
         // ---------- 视频上传 ----------
-        document.getElementById('videoInput').addEventListener('change', async function(e) {
-            var file = e.target.files[0];
-            if (file) await uploadFile(file, 'video');
-            this.value = '';
-        });
+        function videoHandler() {
+            var input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'video/*');
+            input.click();
+            input.onchange = function() {
+                var file = input.files[0];
+                if (!file) return;
+                uploadAndInsert(file, 'video');
+            };
+        }
 
-        async function uploadFile(file, type) {
-            // 前端文件大小校验
+        // ---------- 上传并插入 ----------
+        async function uploadAndInsert(file, type) {
             var maxSize = type === 'video' ? 200 * 1024 * 1024 : 50 * 1024 * 1024;
             if (file.size > maxSize) {
                 alert('文件过大！' + (type === 'video' ? '视频不能超过 200MB' : '图片不能超过 50MB'));
@@ -348,155 +336,192 @@
 
             var fd = new FormData();
             fd.append('file', file);
-            // 显示上传中（使用 # 占位 URL，避免 marked 预览时触发请求）
-            var placeholder;
-            if (type === 'image') {
-                placeholder = '![上传中...](#)';
-            } else {
-                placeholder = '\n<video src="#" controls></video>\n';
-            }
-            var cursorPos = textarea.selectionStart;
-            textarea.value = textarea.value.substring(0, cursorPos) + placeholder + textarea.value.substring(textarea.selectionEnd);
-            textarea.selectionStart = textarea.selectionEnd = cursorPos + placeholder.length;
-            textarea.dispatchEvent(new Event('input'));
+            showUploading();
 
             try {
-                var res = await fetch(window.API_BASE+'/upload/file', {
+                var res = await fetch(window.API_BASE + '/upload/file', {
                     method: 'POST',
-                    headers: { 'Authorization': 'Bearer '+token },
+                    headers: { 'Authorization': 'Bearer ' + token },
                     body: fd
                 });
                 var data = await res.json();
-                if (res.ok) {
-                    // 替换上传中的占位
-                    var val = textarea.value;
+                if (res.ok && data.url) {
+                    var range = quill.getSelection(true);
                     if (type === 'image') {
-                        textarea.value = val.replace('![上传中...](#)', '!['+file.name+']('+data.url+')');
+                        quill.insertEmbed(range.index, 'image', data.url);
                     } else {
-                        textarea.value = val.replace('<video src="#" controls></video>', '<video src="'+data.url+'" controls></video>');
+                        quill.insertEmbed(range.index, 'video', data.url);
                     }
-                    textarea.dispatchEvent(new Event('input'));
+                    quill.setSelection(range.index + 1);
                 } else {
-                    alert('上传失败：'+data.error);
-                    removePlaceholder(placeholder);
+                    alert(data.error || '上传失败');
                 }
-            } catch(err) {
-                alert('上传失败');
-                removePlaceholder(placeholder);
+            } catch (err) {
+                alert('上传失败，请重试');
+            } finally {
+                hideUploading();
             }
         }
 
-        function removePlaceholder(placeholder) {
-            var val = textarea.value;
-            var idx = val.indexOf(placeholder);
-            if (idx !== -1) {
-                textarea.value = val.substring(0, idx) + val.substring(idx + placeholder.length);
-                textarea.dispatchEvent(new Event('input'));
-            }
+        function showUploading() {
+            var el = document.getElementById('uploadToast');
+            if (!el) { el = document.createElement('div'); el.id = 'uploadToast'; el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:white;padding:16px 24px;border-radius:12px;z-index:9999;font-size:1rem;'; el.textContent = '⏳ 上传中...'; document.body.appendChild(el); }
+            el.style.display = 'block';
         }
+        function hideUploading() { var el = document.getElementById('uploadToast'); if (el) el.style.display = 'none'; }
 
-        // ---------- 粘贴上传 ----------
-        textarea.addEventListener('paste', function(e) {
-            var items = e.clipboardData.items;
-            for (var i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf('image') !== -1) {
-                    e.preventDefault();
-                    var file = items[i].getAsFile();
-                    if (file) uploadFile(file, 'image');
-                    return;
-                }
-            }
-        });
-
-        // ---------- 预设标签 ----------
+        // ---------- 标签系统 ----------
         var selectedTags = [];
 
-        document.querySelectorAll('.preset-tag').forEach(function(el) {
-            el.addEventListener('click', function() {
-                var tag = el.dataset.tag;
-                el.classList.toggle('active');
-                var idx = selectedTags.indexOf(tag);
-                if (idx !== -1) {
-                    selectedTags.splice(idx, 1);
-                } else {
-                    selectedTags.push(tag);
-                }
-                renderTags();
-            });
-        });
+        function getCurrentTags() { return selectedTags; }
 
-        // ---------- 标签输入 ----------
-        var tagInput = document.getElementById('tagInput');
-        tagInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ',') {
-                e.preventDefault();
-                var val = tagInput.value.trim();
-                if (val) {
-                    if (selectedTags.indexOf(val) === -1) {
-                        selectedTags.push(val);
-                        renderTags();
-                    }
-                    tagInput.value = '';
-                }
-            }
-        });
+        function setTagsFromString(tagString) {
+            if (!tagString) return;
+            selectedTags = tagString.split(',').filter(function(t) { return t.trim(); });
+            syncTagUI();
+        }
 
-        function renderTags() {
-            var wrap = document.getElementById('tagsInputWrap');
-            // 清除所有 .tag-chip
-            wrap.querySelectorAll('.tag-chip').forEach(function(el) { el.remove(); });
-            selectedTags.forEach(function(tag) {
-                var chip = document.createElement('span');
-                chip.className = 'tag-chip';
-                chip.innerHTML = tag + '<span class="tag-del" data-tag="'+tag+'">&times;</span>';
-                chip.querySelector('.tag-del').addEventListener('click', function() {
-                    var t = this.dataset.tag;
-                    var idx = selectedTags.indexOf(t);
-                    if (idx !== -1) { selectedTags.splice(idx, 1); renderTags(); }
-                    // 也取消预设按钮的激活
-                    document.querySelectorAll('.preset-tag').forEach(function(el) {
-                        if (el.dataset.tag === t) el.classList.remove('active');
-                    });
-                });
-                wrap.insertBefore(chip, tagInput);
-            });
-            // 同步预设标签状态
-            document.querySelectorAll('.preset-tag').forEach(function(el) {
-                if (selectedTags.indexOf(el.dataset.tag) !== -1) el.classList.add('active');
-                else el.classList.remove('active');
+        function syncTagUI() {
+            // 标签显示
+            var container = document.getElementById('tagsDisplay');
+            container.innerHTML = selectedTags.map(function(tag) {
+                return '<span class="tag-pill">' + escapeHtml(tag) + ' <button onclick="removeTag(\'' + escapeHtml(tag) + '\')">&times;</button></span>';
+            }).join('');
+            document.getElementById('postTags').value = selectedTags.join(',');
+            // 预设标签状态
+            document.querySelectorAll('.preset-tag').forEach(function(btn) {
+                if (selectedTags.indexOf(btn.dataset.tag) !== -1) btn.classList.add('active');
+                else btn.classList.remove('active');
             });
         }
 
-        // ---------- 提交 ----------
-        document.getElementById('postForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            var title = document.getElementById('title').value.trim();
-            var content = contentEl.value.trim();
-            var category = document.getElementById('category').value;
+        function toggleTag(tag) {
+            var idx = selectedTags.indexOf(tag);
+            if (idx !== -1) selectedTags.splice(idx, 1);
+            else selectedTags.push(tag);
+            syncTagUI();
+        }
 
-            if (!title || !content) {
-                document.getElementById('errorMsg').innerText = '请填写标题和内容';
-                return;
+        function removeTag(tag) {
+            var idx = selectedTags.indexOf(tag);
+            if (idx !== -1) selectedTags.splice(idx, 1);
+            syncTagUI();
+        }
+
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if (m==='&') return '&amp;'; if (m==='<') return '&lt;'; if (m==='>') return '&gt;'; return m; }); }
+
+        document.querySelectorAll('.preset-tag').forEach(function(el) {
+            el.addEventListener('click', function() { toggleTag(el.dataset.tag); });
+        });
+
+        document.getElementById('customTagInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                var tag = e.target.value.trim().replace(/,/g, '');
+                if (tag && selectedTags.indexOf(tag) === -1) { selectedTags.push(tag); syncTagUI(); }
+                e.target.value = '';
             }
+        });
 
-            var tags = selectedTags.map(function(t) { return t.startsWith('#') ? t : '#' + t; });
+        // ---------- 草稿箱 ----------
+        var autoSaveTimer;
+
+        function startAutoSave() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(saveDraft, 30000);
+        }
+
+        function saveDraft() {
+            var draft = {
+                title: document.getElementById('postTitle').value,
+                content: quill.root.innerHTML,
+                category: document.getElementById('postCategory').value,
+                tags: selectedTags.join(','),
+                savedAt: new Date().toLocaleString()
+            };
+            try {
+                localStorage.setItem('post_draft', JSON.stringify(draft));
+                showSaveIndicator();
+            } catch(e) {}
+        }
+
+        function showSaveIndicator() {
+            var el = document.getElementById('saveToast');
+            if (!el) { el = document.createElement('div'); el.id = 'saveToast'; el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:white;padding:8px 16px;border-radius:20px;z-index:9999;font-size:0.85rem;transition:opacity 0.3s;pointer-events:none;'; el.textContent = '💾 草稿已保存'; document.body.appendChild(el); }
+            el.style.opacity = '1'; el.style.display = 'block';
+            setTimeout(function() { el.style.opacity = '0'; }, 1500);
+        }
+
+        document.getElementById('postTitle').addEventListener('input', startAutoSave);
+        quill.on('text-change', startAutoSave);
+        document.getElementById('postCategory').addEventListener('change', startAutoSave);
+
+        document.getElementById('saveDraftBtn').addEventListener('click', function() { saveDraft(); showSaveIndicator(); });
+
+        // ---------- 草稿恢复 ----------
+        function checkDraft() {
+            try {
+                var draftStr = localStorage.getItem('post_draft');
+                if (!draftStr) return;
+                var data = JSON.parse(draftStr);
+                if (data.title || (data.content && data.content.replace(/<[^>]*>/g, '').trim())) {
+                    document.getElementById('draftNotice').style.display = 'flex';
+                    document.getElementById('draftTime').textContent = data.savedAt || '';
+                }
+            } catch(e) {}
+        }
+
+        document.getElementById('restoreDraftBtn').addEventListener('click', function() {
+            try {
+                var data = JSON.parse(localStorage.getItem('post_draft'));
+                document.getElementById('postTitle').value = data.title || '';
+                quill.root.innerHTML = data.content || '';
+                document.getElementById('postCategory').value = data.category || '综合';
+                selectedTags = [];
+                if (data.tags) setTagsFromString(data.tags);
+                document.getElementById('draftNotice').style.display = 'none';
+                saveDraft();
+            } catch(e) {}
+        });
+
+        document.getElementById('discardDraftBtn').addEventListener('click', function() {
+            localStorage.removeItem('post_draft');
+            document.getElementById('draftNotice').style.display = 'none';
+        });
+
+        checkDraft();
+
+        // ---------- 发布帖子 ----------
+        document.getElementById('submitBtn').addEventListener('click', async function() {
+            var title = document.getElementById('postTitle').value.trim();
+            var content = quill.root.innerHTML.trim();
+            var category = document.getElementById('postCategory').value;
+
+            if (!title) { alert('请输入标题'); return; }
+            if (!content || content === '<p><br></p>' || content === '<p></p>') { alert('请输入内容'); return; }
+
+            this.disabled = true;
+            this.textContent = '⏳ 发布中...';
 
             try {
-                var res = await fetch(window.API_BASE+'/posts', {
+                var res = await fetch(window.API_BASE + '/posts', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+token },
-                    body: JSON.stringify({ title: title, content: content, category: category, tags: tags })
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ title: title, content: content, category: category, tags: selectedTags })
                 });
                 var data = await res.json();
-                if (!res.ok) {
-                    if (typeof handleQuizRequired !== 'function' || !handleQuizRequired(data)) {
-                        document.getElementById('errorMsg').innerText = data.error || '发布失败';
-                    }
-                    return;
+                if (res.ok) {
+                    localStorage.removeItem('post_draft');
+                    window.location.href = '/post-detail.html?id=' + data.id;
+                } else {
+                    alert(data.error || '发布失败');
+                    this.disabled = false;
+                    this.textContent = '🚀 发布帖子';
                 }
-                window.location.href = '/';
-            } catch(err) {
-                document.getElementById('errorMsg').innerText = '网络错误';
+            } catch (err) {
+                alert('发布失败，请检查网络');
+                this.disabled = false;
+                this.textContent = '🚀 发布帖子';
             }
         });
     </script>

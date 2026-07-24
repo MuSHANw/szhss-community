@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
     <script src="/js/mobile.js" defer></script>
     <script src="/js/level-utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif; background-color: #F5F7FA; color: #1f2d3d; line-height: 1.5; padding-top: 60px; margin-left: 260px; transition: margin-left 0.3s ease; position: relative; min-height: 100vh; }
         body.sidebar-collapsed { margin-left: 70px; }
         .bg-decorations { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none; }
-        .bg-decorations .wave { position: absolute; bottom: 0; left: 0; width: 100%; height: 120px; background: url('data:image/svg+xml;utf8,...') repeat-x; background-size: cover; opacity: 0.5; }
+        .bg-decorations .wave { position: absolute; bottom: 0; left: 0; width: 100%; height: 120px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x; background-size: cover; opacity: 0.5; }
         .bg-decorations .circle { position: absolute; border-radius: 50%; background: rgba(30,136,229,0.05); }
         .bg-decorations .circle1 { width: 300px; height: 300px; top: -100px; left: -100px; }
         .bg-decorations .circle2 { width: 200px; height: 200px; bottom: -50px; right: -50px; }
@@ -55,62 +55,52 @@
         .sidebar-logout { width: 100%; background: none; border: none; padding: 8px; cursor: pointer; color: #e53e3e; border-radius: 8px; text-align: center; }
         .sidebar-logout:hover { background: #ffe5e5; }
 
-        .edit-wrapper { display: flex; justify-content: center; margin: 32px 0; }
-        .editor-container { max-width: 900px; width: 100%; background: white; border-radius: 16px; padding: 24px; border: 1px solid #eef2f6; }
-        .back-link { display: inline-block; margin-bottom: 16px; color: #1E88E5; text-decoration: none; font-size: 0.9rem; }
-        .back-link i { margin-right: 6px; }
-        .editor-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 20px; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 0.9rem; }
-        .form-group input, .form-group select { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 0.95rem; outline: none; }
-        .form-group input:focus, .form-group select:focus { border-color: #1E88E5; box-shadow: 0 0 0 3px rgba(30,136,229,0.1); }
-        #title { font-size: 1.2rem; }
+        /* 编辑器主体 */
+        .edit-wrapper { max-width: 900px; margin: 32px auto; }
+        .back-link { display:inline-block; margin-bottom:16px; color:#1E88E5; text-decoration:none; font-size:0.9rem; }
+        .page-title { font-size:1.6rem; font-weight:700; margin-bottom:24px; }
 
-        .preset-tags { margin-bottom: 12px; }
-        .preset-tags-label { font-size: 0.85rem; color: #6c757d; margin-bottom: 8px; }
-        .preset-tag { display: inline-block; padding: 6px 14px; border-radius: 20px; background: #F3F4F6; color: #6B7280; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; margin-right: 6px; margin-bottom: 6px; border: 1px solid transparent; }
-        .preset-tag:hover { background: #EFF6FF; color: #1E88E5; border-color: #1E88E5; }
-        .preset-tag.active { background: #1E88E5; color: white; border-color: #1E88E5; }
+        .form-card { background:white; border-radius:16px; padding:24px; border:1px solid #eef2f6; margin-bottom:16px; }
+        .form-group { margin-bottom:16px; }
+        .form-group:last-child { margin-bottom:0; }
+        .form-group label { display:block; font-weight:600; margin-bottom:6px; font-size:0.9rem; color:#374151; }
+        #postTitle { width:100%; padding:12px 16px; border:1px solid #e2e8f0; border-radius:12px; font-size:1.2rem; outline:none; font-family:inherit; }
+        #postTitle:focus { border-color:#1E88E5; box-shadow:0 0 0 3px rgba(30,136,229,0.1); }
+        #postCategory { width:100%; padding:10px 14px; border:1px solid #e2e8f0; border-radius:12px; font-size:0.95rem; outline:none; background:white; font-family:inherit; }
+        #postCategory:focus { border-color:#1E88E5; }
 
-        .tags-input-wrap { border: 1px solid #e2e8f0; border-radius: 12px; padding: 8px 10px; min-height: 42px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-        .tags-input-wrap:focus-within { border-color: #1E88E5; box-shadow: 0 0 0 3px rgba(30,136,229,0.1); }
-        .tag-chip { display: inline-flex; align-items: center; gap: 4px; background: #EFF6FF; color: #1E88E5; padding: 3px 10px; border-radius: 16px; font-size: 0.8rem; }
-        .tag-chip .tag-del { cursor: pointer; font-size: 1rem; line-height: 1; }
-        .tag-chip .tag-del:hover { color: #e53e3e; }
-        .tags-input-wrap input { flex: 1; border: none; outline: none; font-size: 0.9rem; min-width: 100px; padding: 4px 0; }
+        .preset-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+        .preset-tag { padding:6px 16px; border-radius:20px; background:#F3F4F6; color:#6B7280; font-size:0.85rem; cursor:pointer; transition:all 0.2s; border:1px solid transparent; user-select:none; }
+        .preset-tag:hover { background:#EFF6FF; color:#1E88E5; border-color:#1E88E5; }
+        .preset-tag.active { background:#1E88E5; color:white; border-color:#1E88E5; }
 
-        .editor-toolbar { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 12px; background: #F8FAFC; border: 1px solid #E5E7EB; border-radius: 12px 12px 0 0; }
-        .editor-toolbar .sep { width: 1px; height: 28px; background: #E5E7EB; margin: 0 4px; }
-        .toolbar-btn { width: 36px; height: 36px; border: none; background: white; border-radius: 8px; cursor: pointer; font-size: 0.9rem; color: #4B5563; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; }
-        .toolbar-btn:hover { background: #EFF6FF; color: #1E88E5; }
+        .tags-display { display:flex; flex-wrap:wrap; gap:6px; padding:8px 0; min-height:36px; }
+        .tag-pill { display:inline-flex; align-items:center; gap:4px; background:#EFF6FF; color:#1E88E5; padding:4px 12px; border-radius:20px; font-size:0.85rem; }
+        .tag-pill button { background:none; border:none; color:#1E88E5; cursor:pointer; font-size:1.1rem; padding:0; line-height:1; }
+        .tag-pill button:hover { color:#e53e3e; }
+        #customTagInput { border:none; outline:none; font-size:0.9rem; padding:6px 0; flex:1; min-width:120px; font-family:inherit; }
 
-        .editor-workspace { display: flex; border: 1px solid #E5E7EB; border-top: none; border-radius: 0 0 12px 12px; min-height: 350px; }
-        .editor-textarea { flex: 1; padding: 16px; border: none; border-right: 1px solid #E5E7EB; resize: vertical; font-family: 'Consolas','Monaco','Courier New',monospace; font-size: 0.9rem; line-height: 1.6; outline: none; min-height: 300px; }
-        .editor-preview { flex: 1; padding: 16px; background: white; overflow-y: auto; line-height: 1.6; font-size: 0.95rem; min-height: 300px; }
-        .editor-preview img { max-width: 100%; border-radius: 8px; }
-        .editor-preview video { max-width: 100%; border-radius: 8px; }
-        .editor-preview pre { background: #F8FAFC; padding: 12px; border-radius: 8px; overflow-x: auto; }
-        .editor-preview code { background: #F3F4F6; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
-        .editor-preview pre code { background: none; padding: 0; }
-        .editor-preview blockquote { border-left: 4px solid #1E88E5; padding-left: 16px; color: #6B7280; margin: 12px 0; }
-        .editor-preview h1, .editor-preview h2, .editor-preview h3 { margin: 16px 0 8px; }
-        .editor-preview p { margin: 8px 0; }
-        .editor-preview ul, .editor-preview ol { padding-left: 24px; margin: 8px 0; }
+        .editor-wrapper { border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; background:white; }
+        #editor-container .ql-editor { min-height:320px; font-size:1rem; line-height:1.7; padding:16px 20px; }
+        #editor-container .ql-toolbar { border:none; border-bottom:1px solid #eef2f6; background:#FAFBFC; padding:8px 12px; }
+        #editor-container .ql-container { border:none; }
+        #editor-container img { max-width:100%; border-radius:8px; margin:8px 0; }
+        #editor-container video { max-width:100%; border-radius:8px; margin:8px 0; }
+        #editor-container .ql-editor.ql-blank::before { color:#9CA3AF; font-style:normal; }
 
-        .submit-btn { width: 100%; background: #1E88E5; color: white; border: none; padding: 14px; border-radius: 40px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 16px; transition: background 0.2s; }
-        .submit-btn:hover { background: #1565C0; }
-        .error-msg { color: #e53e3e; text-align: center; margin-top: 12px; font-size: 0.9rem; }
-        .hidden-input { display: none; }
+        .action-bar { display:flex; gap:12px; margin-top:16px; }
+        .btn-primary { background:#1E88E5; color:white; border:none; padding:12px 32px; border-radius:40px; font-size:1rem; font-weight:600; cursor:pointer; transition:background 0.2s; }
+        .btn-primary:hover { background:#1565C0; }
+        .btn-primary:disabled { opacity:0.6; cursor:not-allowed; }
 
         @media (max-width: 768px) {
-            body { margin-left: 0; }
-            #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; width: 260px !important; }
-            #sidebar.open-mobile { transform: translateX(0); }
-            .search-area { width: 180px; }
-            .editor-container { margin: 16px; padding: 16px; }
-            .editor-workspace { flex-direction: column; }
-            .editor-textarea { border-right: none; border-bottom: 1px solid #E5E7EB; min-height: 200px; }
-            .editor-preview { min-height: 200px; }
+            body { margin-left:0; }
+            #sidebar { transform:translateX(-100%); transition:transform 0.3s ease; width:260px !important; }
+            #sidebar.open-mobile { transform:translateX(0); }
+            .search-area { width:34px; }
+            .edit-wrapper { margin:16px; }
+            .form-card { padding:16px; }
+            #editor-container .ql-editor { min-height:200px; font-size:16px; }
         }
     </style>
 </head>
@@ -121,6 +111,8 @@
         <div class="circle circle3"></div>
         <div class="wave"></div>
     </div>
+
+    <!-- 顶部栏 -->
     <div class="top-bar-container">
         <div class="top-bar">
             <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
@@ -129,13 +121,15 @@
                 <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
                 <button id="searchBtn"><i class="fas fa-search"></i></button>
             </div>
-            <a href="/about.html" class="about-link" id="aboutLink"><i class="fas fa-info-circle"></i> 关于</a>
+            <a href="/about.html" class="about-link"><i class="fas fa-info-circle"></i> 关于</a>
             <a href="/notifications.html" class="notifications-icon" id="notifLink">
                 <i class="fas fa-bell"></i>
                 <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
             </a>
         </div>
     </div>
+
+    <!-- 侧边栏 -->
     <div id="sidebar">
         <div class="sidebar-user" id="sidebarUserBtn">
             <div class="sidebar-avatar" id="sidebarAvatar"><i class="fas fa-user-circle"></i></div>
@@ -167,102 +161,86 @@
         </div>
     </div>
 
+    <!-- 主内容 -->
     <div class="container">
-        <div class="edit-wrapper">
-            <div class="editor-container">
-                <a href="#" id="backLink" class="back-link"><i class="fas fa-arrow-left"></i> 返回帖子</a>
-                <h1 class="editor-title">📝 编辑帖子</h1>
-                <form id="editForm">
-                    <div class="form-group">
-                        <label>标题</label>
-                        <input type="text" id="title" required>
+        <div class="edit-wrapper" id="editForm">
+            <a href="#" id="backLink" class="back-link"><i class="fas fa-arrow-left"></i> 返回帖子</a>
+            <h1 class="page-title">📝 编辑帖子</h1>
+
+            <!-- 标题 -->
+            <div class="form-card">
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" id="postTitle" placeholder="给你的帖子起个响亮的标题 ✨">
+                </div>
+            </div>
+
+            <!-- 分类 -->
+            <div class="form-card">
+                <div class="form-group">
+                    <label>分类</label>
+                    <select id="postCategory">
+                        <option value="综合">综合</option>
+                        <option value="学习">学习</option>
+                        <option value="生活">生活</option>
+                        <option value="社团">社团</option>
+                        <option value="升学">升学</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 标签 -->
+            <div class="form-card">
+                <div class="form-group">
+                    <label>快速添加标签</label>
+                    <div class="preset-tags">
+                        <span class="preset-tag" data-tag="学习资料">📚 学习资料</span>
+                        <span class="preset-tag" data-tag="经验分享">💬 经验分享</span>
+                        <span class="preset-tag" data-tag="社团活动">🎉 社团活动</span>
+                        <span class="preset-tag" data-tag="校园生活">🏫 校园生活</span>
+                        <span class="preset-tag" data-tag="升学指导">🎓 升学指导</span>
+                        <span class="preset-tag" data-tag="求助提问">❓ 求助提问</span>
                     </div>
-                    <div class="form-group" style="display:flex;gap:16px;">
-                        <div style="flex:1;">
-                            <label>分类</label>
-                            <select id="category">
-                                <option value="学习">学习</option>
-                                <option value="生活">生活</option>
-                                <option value="社团">社团</option>
-                                <option value="升学">升学</option>
-                                <option value="综合">综合</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>快速添加标签</label>
-                        <div class="preset-tags">
-                            <div class="preset-tags-label">点击添加：</div>
-                            <span class="preset-tag" data-tag="学习资料">📚 学习资料</span>
-                            <span class="preset-tag" data-tag="经验分享">💬 经验分享</span>
-                            <span class="preset-tag" data-tag="社团活动">🎉 社团活动</span>
-                            <span class="preset-tag" data-tag="校园生活">🏫 校园生活</span>
-                            <span class="preset-tag" data-tag="升学指导">🎓 升学指导</span>
-                            <span class="preset-tag" data-tag="求助提问">❓ 求助提问</span>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>标签</label>
-                        <div class="tags-input-wrap" id="tagsInputWrap">
-                            <input type="text" id="tagInput" placeholder="输入自定义标签，按回车添加...">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>内容（支持 Markdown）</label>
-                        <div class="editor-toolbar">
-                            <button type="button" class="toolbar-btn" title="加粗" data-cmd="bold"><b>B</b></button>
-                            <button type="button" class="toolbar-btn" title="斜体" data-cmd="italic"><i>I</i></button>
-                            <button type="button" class="toolbar-btn" title="标题" data-cmd="heading">H</button>
-                            <div class="sep"></div>
-                            <button type="button" class="toolbar-btn" title="无序列表" data-cmd="ulist"><i class="fas fa-list-ul"></i></button>
-                            <button type="button" class="toolbar-btn" title="有序列表" data-cmd="olist"><i class="fas fa-list-ol"></i></button>
-                            <div class="sep"></div>
-                            <button type="button" class="toolbar-btn" title="链接" data-cmd="link"><i class="fas fa-link"></i></button>
-                            <button type="button" class="toolbar-btn" title="图片" data-cmd="image"><i class="far fa-image"></i></button>
-                            <button type="button" class="toolbar-btn" title="视频" data-cmd="video"><i class="fas fa-video"></i></button>
-                            <div class="sep"></div>
-                            <button type="button" class="toolbar-btn" title="代码块" data-cmd="code"><i class="fas fa-code"></i></button>
-                            <button type="button" class="toolbar-btn" title="引用" data-cmd="quote"><i class="fas fa-quote-right"></i></button>
-                        </div>
-                        <div class="editor-workspace">
-                            <textarea class="editor-textarea" id="content" placeholder="支持 Markdown 语法..."></textarea>
-                            <div class="editor-preview" id="preview"><p style="color:#9CA3AF;">预览区域</p></div>
-                        </div>
-                    </div>
-                    <input type="file" accept="image/*" class="hidden-input" id="imageInput" multiple>
-                    <input type="file" accept="video/*" class="hidden-input" id="videoInput">
-                    <button type="submit" class="submit-btn">保存修改</button>
-                    <div id="errorMsg" class="error-msg"></div>
-                </form>
+                </div>
+                <div class="form-group">
+                    <label>自定义标签</label>
+                    <div class="tags-display" id="tagsDisplay"></div>
+                    <input type="text" id="customTagInput" placeholder="输入自定义标签，按回车添加...">
+                    <input type="hidden" id="postTags">
+                </div>
+            </div>
+
+            <!-- 编辑器 -->
+            <div class="form-card" style="padding:0;">
+                <div class="editor-wrapper">
+                    <div id="editor-container"></div>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-bar">
+                <button class="btn-primary" id="submitBtn">💾 保存修改</button>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <script>
         window.API_BASE = window.API_BASE || '/api';
-        const token = localStorage.getItem('token');
+        var token = localStorage.getItem('token');
         if (!token) { window.location.href = '/login.html'; }
 
-        // 侧边栏、用户信息等
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('menuToggle');
-        const body = document.getElementById('appBody');
-        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
-        if (!isExpanded) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); }
-        else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); }
+        // ---------- 侧边栏通用 ----------
+        var sidebar = document.getElementById('sidebar'), toggleBtn = document.getElementById('menuToggle'), body = document.getElementById('appBody');
+        if (localStorage.getItem('sidebarExpanded') !== 'false') { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); }
+        else { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); }
         toggleBtn.addEventListener('click', function() {
             var e = !sidebar.classList.contains('collapsed');
             if (e) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); localStorage.setItem('sidebarExpanded','false'); }
             else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); localStorage.setItem('sidebarExpanded','true'); }
         });
-        const avatarDiv = document.getElementById('sidebarAvatar');
-        const nicknameSpan = document.getElementById('sidebarNickname');
-        const emailSpan = document.getElementById('sidebarEmail');
         async function updateSidebarUser() {
-            try {
-                var res = await fetch(window.API_BASE+'/me', { headers: { 'Authorization': 'Bearer '+token } });
-                if (res.ok) { var u = await res.json(); nicknameSpan.innerText = u.nickname||'用户'; emailSpan.innerText = u.email||''; avatarDiv.innerHTML = u.avatar_url?'<img src="'+u.avatar_url+'" alt="头像">':'<i class="fas fa-user-circle"></i>'; }
-            } catch(e) {}
+            try { var res = await fetch(window.API_BASE+'/me', { headers: { 'Authorization': 'Bearer '+token } }); if (res.ok) { var u = await res.json(); document.getElementById('sidebarNickname').innerText = u.nickname||'用户'; document.getElementById('sidebarEmail').innerText = u.email||''; document.getElementById('sidebarAvatar').innerHTML = u.avatar_url?'<img src="'+u.avatar_url+'" alt="头像">':'<i class="fas fa-user-circle"></i>'; } } catch(e) {}
         }
         updateSidebarUser();
         document.getElementById('sidebarUserBtn')?.addEventListener('click', function() { window.location.href='/profile.html'; });
@@ -276,181 +254,165 @@
         document.getElementById('searchBtn')?.addEventListener('click', function() { var q=document.getElementById('searchInput').value.trim(); if(q) window.location.href='/search.html?q='+encodeURIComponent(q); else alert('请输入搜索关键词'); });
         document.getElementById('searchInput')?.addEventListener('keypress', function(e) { if(e.key==='Enter') document.getElementById('searchBtn').click(); });
 
-        // ---------- 编辑器 ----------
-        var contentEl = document.getElementById('content');
-        var previewEl = document.getElementById('preview');
-        contentEl.addEventListener('input', function() { updatePreview(); });
-
-        function updatePreview() {
-            try { previewEl.innerHTML = marked.parse(contentEl.value||''); }
-            catch(e) { previewEl.innerHTML = '<p style="color:#e53e3e;">解析出错</p>'; }
-        }
-
-        // 工具栏
-        function insertMarkdown(before, after) {
-            var start = contentEl.selectionStart, end = contentEl.selectionEnd;
-            var text = contentEl.value, selected = text.substring(start, end)||'文本';
-            contentEl.value = text.substring(0,start) + before + selected + after + text.substring(end);
-            contentEl.focus();
-            contentEl.selectionStart = start + before.length;
-            contentEl.selectionEnd = start + before.length + selected.length;
-            contentEl.dispatchEvent(new Event('input'));
-        }
-        document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                switch(btn.dataset.cmd) {
-                    case 'bold': insertMarkdown('**','**'); break;
-                    case 'italic': insertMarkdown('*','*'); break;
-                    case 'heading': insertMarkdown('\n## ','\n'); break;
-                    case 'ulist': insertMarkdown('\n- ',''); break;
-                    case 'olist': insertMarkdown('\n1. ',''); break;
-                    case 'link': { var u=prompt('链接地址:','https://'); if(u) insertMarkdown('[',']('+u+')'); break; }
-                    case 'code': insertMarkdown('\n```\n','\n```\n'); break;
-                    case 'quote': insertMarkdown('\n> ','\n'); break;
-                    case 'image': document.getElementById('imageInput').click(); break;
-                    case 'video': document.getElementById('videoInput').click(); break;
+        // ---------- Quill 编辑器 ----------
+        var quill = new Quill('#editor-container', {
+            theme: 'snow',
+            placeholder: '在这里写下你的内容...支持文字排版、图片、视频等',
+            modules: {
+                toolbar: {
+                    container: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'align': [] }],
+                        ['link', 'image', 'video'],
+                        ['clean']
+                    ],
+                    handlers: { 'image': imageHandler, 'video': videoHandler }
                 }
-            });
+            }
         });
 
-        // 文件上传
-        async function uploadFile(file, type) {
-            // 前端文件大小校验
+        // ---------- 图片上传 ----------
+        function imageHandler() {
+            var input = document.createElement('input');
+            input.setAttribute('type', 'file'); input.setAttribute('accept', 'image/*');
+            input.click();
+            input.onchange = function() { var file = input.files[0]; if (file) uploadAndInsert(file, 'image'); };
+        }
+
+        // ---------- 视频上传 ----------
+        function videoHandler() {
+            var input = document.createElement('input');
+            input.setAttribute('type', 'file'); input.setAttribute('accept', 'video/*');
+            input.click();
+            input.onchange = function() { var file = input.files[0]; if (file) uploadAndInsert(file, 'video'); };
+        }
+
+        // ---------- 上传并插入 ----------
+        async function uploadAndInsert(file, type) {
             var maxSize = type === 'video' ? 200 * 1024 * 1024 : 50 * 1024 * 1024;
             if (file.size > maxSize) {
                 alert('文件过大！' + (type === 'video' ? '视频不能超过 200MB' : '图片不能超过 50MB'));
                 return;
             }
-
             var fd = new FormData(); fd.append('file', file);
-            var placeholder = type==='image' ? '![上传中...](#)' : '\n<video src="#" controls></video>\n';
-            var cursorPos = contentEl.selectionStart;
-            contentEl.value = contentEl.value.substring(0, cursorPos) + placeholder + contentEl.value.substring(contentEl.selectionEnd);
-            contentEl.selectionStart = contentEl.selectionEnd = cursorPos + placeholder.length;
-            contentEl.dispatchEvent(new Event('input'));
+            showUploading();
             try {
-                var res = await fetch(window.API_BASE+'/upload/file', { method:'POST', headers:{'Authorization':'Bearer '+token}, body:fd });
+                var res = await fetch(window.API_BASE + '/upload/file', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
+                var data = await res.json();
+                if (res.ok && data.url) {
+                    var range = quill.getSelection(true);
+                    quill.insertEmbed(range.index, type === 'image' ? 'image' : 'video', data.url);
+                    quill.setSelection(range.index + 1);
+                } else { alert(data.error || '上传失败'); }
+            } catch (err) { alert('上传失败，请重试'); } finally { hideUploading(); }
+        }
+
+        function showUploading() {
+            var el = document.getElementById('uploadToast');
+            if (!el) { el = document.createElement('div'); el.id = 'uploadToast'; el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:white;padding:16px 24px;border-radius:12px;z-index:9999;font-size:1rem;'; el.textContent = '⏳ 上传中...'; document.body.appendChild(el); }
+            el.style.display = 'block';
+        }
+        function hideUploading() { var el = document.getElementById('uploadToast'); if (el) el.style.display = 'none'; }
+
+        // ---------- 标签系统 ----------
+        var selectedTags = [];
+
+        function getCurrentTags() { return selectedTags; }
+        function setTagsFromString(tagString) {
+            if (!tagString) return;
+            selectedTags = tagString.split(',').filter(function(t) { return t.trim(); });
+            syncTagUI();
+        }
+        function syncTagUI() {
+            var container = document.getElementById('tagsDisplay');
+            container.innerHTML = selectedTags.map(function(tag) {
+                return '<span class="tag-pill">' + escapeHtml(tag) + ' <button onclick="removeTag(\'' + escapeHtml(tag) + '\')">&times;</button></span>';
+            }).join('');
+            document.getElementById('postTags').value = selectedTags.join(',');
+            document.querySelectorAll('.preset-tag').forEach(function(btn) {
+                if (selectedTags.indexOf(btn.dataset.tag) !== -1) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+        }
+        function toggleTag(tag) { var idx = selectedTags.indexOf(tag); if (idx !== -1) selectedTags.splice(idx,1); else selectedTags.push(tag); syncTagUI(); }
+        function removeTag(tag) { var idx = selectedTags.indexOf(tag); if (idx !== -1) selectedTags.splice(idx,1); syncTagUI(); }
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if (m==='&') return '&amp;'; if (m==='<') return '&lt;'; if (m==='>') return '&gt;'; return m; }); }
+
+        document.querySelectorAll('.preset-tag').forEach(function(el) { el.addEventListener('click', function() { toggleTag(el.dataset.tag); }); });
+        document.getElementById('customTagInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                var tag = e.target.value.trim().replace(/,/g, '');
+                if (tag && selectedTags.indexOf(tag) === -1) { selectedTags.push(tag); syncTagUI(); }
+                e.target.value = '';
+            }
+        });
+
+        // ---------- 加载已有帖子 ----------
+        var postId = new URLSearchParams(window.location.search).get('id');
+        if (!postId) { window.location.href = '/'; }
+
+        (async function loadPost() {
+            try {
+                var res = await fetch(window.API_BASE + '/posts/' + postId);
+                var data = await res.json();
+                if (!res.ok || !data.post) throw new Error('帖子不存在');
+                var post = data.post;
+
+                document.getElementById('postTitle').value = post.title || '';
+                document.getElementById('postCategory').value = post.category || '综合';
+                // Quill 内容：新帖子是 HTML，旧帖子是 Markdown，都直接填入
+                quill.root.innerHTML = post.content || '';
+                if (post.tags && post.tags.length) setTagsFromString(post.tags.join(','));
+
+                // 设置返回链接
+                document.getElementById('backLink').href = '/post-detail.html?id=' + postId;
+            } catch (err) {
+                alert('加载帖子失败');
+                window.location.href = '/';
+            }
+        })();
+
+        // ---------- 提交修改 ----------
+        document.getElementById('submitBtn').addEventListener('click', async function() {
+            var title = document.getElementById('postTitle').value.trim();
+            var content = quill.root.innerHTML.trim();
+            var category = document.getElementById('postCategory').value;
+
+            if (!title) { alert('请输入标题'); return; }
+            if (!content || content === '<p><br></p>' || content === '<p></p>') { alert('请输入内容'); return; }
+
+            this.disabled = true;
+            this.textContent = '⏳ 保存中...';
+
+            try {
+                var res = await fetch(window.API_BASE + '/posts/' + postId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ title: title, content: content, category: category, tags: selectedTags })
+                });
                 var data = await res.json();
                 if (res.ok) {
-                    var val = contentEl.value;
-                    contentEl.value = type==='image'
-                        ? val.replace('![上传中...](#)','!['+file.name+']('+data.url+')')
-                        : val.replace('<video src="#" controls></video>','<video src="'+data.url+'" controls></video>');
-                    contentEl.dispatchEvent(new Event('input'));
-                } else { alert('上传失败'); }
-            } catch(e) {
-                alert('上传失败');
-                var val = contentEl.value, idx = val.indexOf(placeholder);
-                if (idx !== -1) { contentEl.value = val.substring(0, idx) + val.substring(idx + placeholder.length); contentEl.dispatchEvent(new Event('input')); }
-            }
-        }
-        document.getElementById('imageInput').addEventListener('change', async function(e) {
-            for(var i=0;i<e.target.files.length;i++) await uploadFile(e.target.files[i],'image');
-            this.value='';
-        });
-        document.getElementById('videoInput').addEventListener('change', async function(e) {
-            if(e.target.files[0]) await uploadFile(e.target.files[0],'video');
-            this.value='';
-        });
-        contentEl.addEventListener('paste', function(e) {
-            for(var i=0;i<e.clipboardData.items.length;i++) {
-                if(e.clipboardData.items[i].type.indexOf('image')!==-1) {
-                    e.preventDefault();
-                    var file = e.clipboardData.items[i].getAsFile();
-                    if(file) uploadFile(file,'image');
-                    return;
+                    window.location.href = '/post-detail.html?id=' + postId;
+                } else {
+                    alert(data.error || '修改失败');
+                    this.disabled = false;
+                    this.textContent = '💾 保存修改';
                 }
+            } catch (err) {
+                alert('修改失败，请检查网络');
+                this.disabled = false;
+                this.textContent = '💾 保存修改';
             }
         });
-
-        // ---------- 标签 ----------
-        var selectedTags = [];
-        document.querySelectorAll('.preset-tag').forEach(function(el) {
-            el.addEventListener('click', function() {
-                var tag = el.dataset.tag;
-                el.classList.toggle('active');
-                var idx = selectedTags.indexOf(tag);
-                if(idx!==-1) selectedTags.splice(idx,1);
-                else selectedTags.push(tag);
-                renderTags();
-            });
-        });
-        document.getElementById('tagInput').addEventListener('keydown', function(e) {
-            if(e.key==='Enter'||e.key===',') {
-                e.preventDefault();
-                var v = this.value.trim();
-                if(v && selectedTags.indexOf(v)===-1) { selectedTags.push(v); renderTags(); }
-                this.value='';
-            }
-        });
-        function renderTags() {
-            var wrap = document.getElementById('tagsInputWrap');
-            wrap.querySelectorAll('.tag-chip').forEach(function(el){el.remove();});
-            selectedTags.forEach(function(tag) {
-                var chip = document.createElement('span');
-                chip.className='tag-chip';
-                chip.innerHTML = tag+'<span class="tag-del" data-tag="'+tag+'">&times;</span>';
-                chip.querySelector('.tag-del').addEventListener('click', function() {
-                    var t=this.dataset.tag;
-                    var idx=selectedTags.indexOf(t);
-                    if(idx!==-1) { selectedTags.splice(idx,1); renderTags(); }
-                    document.querySelectorAll('.preset-tag').forEach(function(el){if(el.dataset.tag===t)el.classList.remove('active');});
-                });
-                wrap.insertBefore(chip, document.getElementById('tagInput'));
-            });
-        }
-
-        // ---------- 加载帖子 ----------
-        var urlParams = new URLSearchParams(window.location.search);
-        var postId = urlParams.get('id');
-        if (!postId) { alert('缺少帖子ID'); window.location.href='/'; }
-
-        async function loadPost() {
-            try {
-                var res = await fetch(window.API_BASE+'/posts/'+postId);
-                if (!res.ok) throw new Error('加载失败');
-                var data = await res.json();
-                var post = data.post;
-                document.getElementById('title').value = post.title;
-                document.getElementById('category').value = post.category||'综合';
-                contentEl.value = post.content;
-                document.getElementById('backLink').href='/post-detail.html?id='+postId;
-                // 加载标签
-                if (post.tags && post.tags.length) {
-                    selectedTags = post.tags.map(function(t) { return t.replace(/^#/,''); });
-                    renderTags();
-                    document.querySelectorAll('.preset-tag').forEach(function(el) {
-                        if(selectedTags.indexOf(el.dataset.tag)!==-1) el.classList.add('active');
-                    });
-                }
-                updatePreview();
-            } catch(err) {
-                document.getElementById('errorMsg').innerText = err.message;
-            }
-        }
-
-        // ---------- 保存 ----------
-        document.getElementById('editForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            var title = document.getElementById('title').value.trim();
-            var content = contentEl.value.trim();
-            var category = document.getElementById('category').value;
-            if (!title || !content) { document.getElementById('errorMsg').innerText='标题和内容不能为空'; return; }
-            var tags = selectedTags.map(function(t){return t.startsWith('#')?t:'#'+t;});
-            try {
-                var res = await fetch(window.API_BASE+'/posts/'+postId, {
-                    method:'PUT',
-                    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-                    body:JSON.stringify({title:title,content:content,category:category,tags:tags})
-                });
-                var data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                alert('修改成功');
-                window.location.href='/post-detail.html?id='+postId;
-            } catch(err) { document.getElementById('errorMsg').innerText=err.message||'保存失败'; }
-        });
-
-        loadPost();
     </script>
 </body>
 </html>
