@@ -2149,6 +2149,19 @@ app.post('/api/quiz/submit', authMiddleware, async (req, res) => {
             }
         }
 
+        // 检查今日答题次数
+        const todayStart = getBeijingDate();
+        const countRes = await pool.query(
+            'SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND level = $2 AND created_at >= $3::date',
+            [userId, level, todayStart]
+        );
+        const todayCount = parseInt(countRes.rows[0].cnt);
+        if (todayCount >= MAX_DAILY_ATTEMPTS) {
+            return res.status(403).json({
+                error: '今日答题次数已用完（' + MAX_DAILY_ATTEMPTS + '/' + MAX_DAILY_ATTEMPTS + '），请明天再来'
+            });
+        }
+
         let correctMap;
         if (level === 1) {
             correctMap = QUIZ_ANSWERS.level1;
@@ -2171,10 +2184,18 @@ app.post('/api/quiz/submit', authMiddleware, async (req, res) => {
         const passLine = level === 1 ? 60 : 70;
         const passed = score >= passLine;
 
-        await pool.query(
-            'INSERT INTO quiz_attempts (user_id, score, passed, total_questions, level, quiz_type) VALUES ($1, $2, $3, $4, $5, $6)',
-            [userId, score, passed, totalQuestions, level, type || 'basic']
-        );
+        // 兼容旧表结构：先尝试带新字段的 INSERT，失败则回退到基本 INSERT
+        try {
+            await pool.query(
+                'INSERT INTO quiz_attempts (user_id, score, passed, total_questions, level, quiz_type) VALUES ($1, $2, $3, $4, $5, $6)',
+                [userId, score, passed, totalQuestions, level, type || 'basic']
+            );
+        } catch (e) {
+            await pool.query(
+                'INSERT INTO quiz_attempts (user_id, score, passed) VALUES ($1, $2, $3)',
+                [userId, score, passed]
+            );
+        }
 
         if (passed) {
             if (level === 1) {
@@ -2203,27 +2224,53 @@ app.get('/api/quiz/status', authMiddleware, async (req, res) => {
     const level = parseInt(req.query.level) || 1;
 
     try {
-        const userRes = await pool.query('SELECT has_passed_quiz, can_upload_media, exp FROM users WHERE id = $1', [userId]);
-        const todayStart = getBeijingDate();
-        const countRes = await pool.query(
-            'SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND level = $2 AND created_at >= $3::date',
-            [userId, level, todayStart]
-        );
-        const todayCount = parseInt(countRes.rows[0].cnt);
+        let canUploadMedia = false;
+        try {
+            const r = await pool.query('SELECT can_upload_media FROM users WHERE id = $1', [userId]);
+            canUploadMedia = r.rows[0]?.can_upload_media || false;
+        } catch (e) { /* 旧表没有 can_upload_media 列 */ }
 
-        const attemptsRes = await pool.query(
-            'SELECT score, passed, total_questions, quiz_type, level, created_at FROM quiz_attempts WHERE user_id = $1 AND level = $2 ORDER BY created_at DESC LIMIT 5',
-            [userId, level]
-        );
+        const userRes = await pool.query('SELECT has_passed_quiz, exp FROM users WHERE id = $1', [userId]);
+        const todayStart = getBeijingDate();
+
+        let todayCount = 0;
+        try {
+            const countRes = await pool.query(
+                'SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND level = $2 AND created_at >= $3::date',
+                [userId, level, todayStart]
+            );
+            todayCount = parseInt(countRes.rows[0].cnt);
+        } catch (e) {
+            const countRes = await pool.query(
+                'SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND created_at >= $2::date',
+                [userId, todayStart]
+            );
+            todayCount = parseInt(countRes.rows[0].cnt);
+        }
+
+        let recentAttempts = [];
+        try {
+            const attemptsRes = await pool.query(
+                'SELECT score, passed, total_questions, quiz_type, level, created_at FROM quiz_attempts WHERE user_id = $1 AND level = $2 ORDER BY created_at DESC LIMIT 5',
+                [userId, level]
+            );
+            recentAttempts = attemptsRes.rows;
+        } catch (e) {
+            const attemptsRes = await pool.query(
+                'SELECT score, passed, created_at FROM quiz_attempts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5',
+                [userId]
+            );
+            recentAttempts = attemptsRes.rows;
+        }
 
         res.json({
-            level1_passed: userRes.rows[0].has_passed_quiz,
-            level2_passed: userRes.rows[0].can_upload_media,
-            exp: userRes.rows[0].exp,
+            level1_passed: userRes.rows[0]?.has_passed_quiz || false,
+            level2_passed: canUploadMedia,
+            exp: userRes.rows[0]?.exp || 0,
             today_attempts: todayCount,
             max_attempts: MAX_DAILY_ATTEMPTS,
             remaining: Math.max(0, MAX_DAILY_ATTEMPTS - todayCount),
-            recent_attempts: attemptsRes.rows
+            recent_attempts: recentAttempts
         });
     } catch (err) {
         console.error('获取考试状态失败:', err);
