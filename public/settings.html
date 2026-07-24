@@ -800,6 +800,7 @@
                     <div class="checkbox-group"><input type="checkbox" id="show_replies"> 公开我的回复列表</div>
                     <div class="checkbox-group"><input type="checkbox" id="show_favorites"> 公开我的收藏列表</div>
                     <div class="checkbox-group"><input type="checkbox" id="allow_messages"> 允许他人给我发送私信</div>
+                    <div class="checkbox-group" id="uploadPermissionStatus" style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f5;"></div>
                     <button id="savePrivacyBtn">保存隐私设置</button>
                     <div id="privacyMsg" class="error-msg" style="margin-top: 12px;"></div>
                 </div>
@@ -1044,6 +1045,20 @@
                 document.getElementById('show_replies').checked = currentUser.show_replies !== false;
                 document.getElementById('show_favorites').checked = currentUser.show_favorites !== false;
                 document.getElementById('allow_messages').checked = currentUser.allow_messages === true;
+
+                // 检查上传权限状态
+                try {
+                    var quizRes = await fetch(window.API_BASE + '/quiz/status?level=2', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (quizRes.ok) {
+                        var quizData = await quizRes.json();
+                        var statusEl = document.getElementById('uploadPermissionStatus');
+                        if (quizData.level2_passed) {
+                            statusEl.innerHTML = '<span style="color:#10B981;">✅ 图片/视频上传权限：<strong>已解锁</strong></span>';
+                        } else {
+                            statusEl.innerHTML = '<span style="color:#e53e3e;">⚠️ 图片/视频上传权限：<strong>未解锁</strong> — <a href="/quiz.html?level=2" style="color:#1E88E5;">前往第二级考试</a></span>';
+                        }
+                    }
+                } catch(e) {}
                 if (currentUser.avatar_url) {
                     updateAvatarPreview(currentUser.avatar_url);
                 } else {

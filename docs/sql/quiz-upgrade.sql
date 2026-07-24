@@ -1,0 +1,5 @@
+-- 入站考试系统升级
+ALTER TABLE quiz_attempts ADD COLUMN IF NOT EXISTS level INT DEFAULT 1;
+ALTER TABLE quiz_attempts ADD COLUMN IF NOT EXISTS quiz_type VARCHAR(50) DEFAULT 'basic';
+ALTER TABLE quiz_attempts ADD COLUMN IF NOT EXISTS total_questions INT DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS can_upload_media BOOLEAN DEFAULT false;

@@ -3,57 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>入站答题 - 深圳高中生社区</title>
+    <title>入站考试 - 深圳高中生社区</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
     <script src="/js/mobile.js" defer></script>
+    <script src="/js/quiz-bank.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
-            background-color: #F5F7FA; color: #1f2d3d; line-height: 1.5;
-            padding-top: 60px; margin-left: 260px; transition: margin-left 0.3s ease;
-            position: relative; min-height: 100vh;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif; background-color: #F5F7FA; color: #1f2d3d; line-height: 1.5; padding-top: 60px; margin-left: 260px; transition: margin-left 0.3s ease; position: relative; min-height: 100vh; }
         body.sidebar-collapsed { margin-left: 70px; }
-        .bg-decorations {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; overflow: hidden; pointer-events: none;
-        }
-        .bg-decorations .wave {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 120px;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
-            background-size: cover; opacity: 0.5;
-        }
-        .bg-decorations .circle { position: absolute; border-radius: 50%; background: rgba(30, 136, 229, 0.05); }
+        .bg-decorations { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none; }
+        .bg-decorations .wave { position: absolute; bottom: 0; left: 0; width: 100%; height: 120px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x; background-size: cover; opacity: 0.5; }
+        .bg-decorations .circle { position: absolute; border-radius: 50%; background: rgba(30,136,229,0.05); }
         .bg-decorations .circle1 { width: 300px; height: 300px; top: -100px; left: -100px; }
         .bg-decorations .circle2 { width: 200px; height: 200px; bottom: -50px; right: -50px; }
         .bg-decorations .circle3 { width: 150px; height: 150px; top: 30%; right: 10%; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-
-        .top-bar-container {
-            position: fixed; top: 0; left: 0; right: 0; height: 60px;
-            background: white; border-bottom: 1px solid #e9ecef; z-index: 100;
-            display: flex; align-items: center; padding: 0 20px;
-        }
+        .top-bar-container { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; border-bottom: 1px solid #e9ecef; z-index: 100; display: flex; align-items: center; padding: 0 20px; }
         .top-bar { display: flex; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto; }
         .menu-toggle { background: none; border: none; font-size: 1.5rem; cursor: pointer; margin-right: 20px; color: #4a5568; }
         .logo { font-size: 1.5rem; font-weight: 700; color: #1E88E5; text-decoration: none; margin-right: auto; }
         .search-area { display: flex; align-items: center; background: #f1f3f5; border-radius: 24px; padding: 4px 12px; width: 260px; }
         .search-area input { border: none; background: transparent; outline: none; width: 100%; padding: 8px 0; }
         .search-area button { background: transparent; border: none; cursor: pointer; color: #6c757d; }
-        .about-link { margin-left: 16px; color: #4a5568; text-decoration: none; font-size: 0.95rem; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
+        .about-link { margin-left: 16px; color: #4a5568; text-decoration: none; font-size: 0.95rem; transition: color 0.2s; }
         .about-link:hover { color: #1E88E5; }
-        .about-link i { margin-right: 4px; }
         .notifications-icon { position: relative; margin-left: 16px; font-size: 1.4rem; color: #6c757d; text-decoration: none; display: inline-flex; align-items: center; }
         .notif-badge { position: absolute; top: -8px; right: -8px; background: #e53e3e; color: white; font-size: 0.7rem; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
-
-        #sidebar {
-            position: fixed; top: 60px; left: 0; bottom: 0; width: 260px;
-            background: white; border-right: 1px solid #eef2f6;
-            display: flex; flex-direction: column; transition: width 0.3s ease; z-index: 99; overflow-x: hidden;
-        }
+        #sidebar { position: fixed; top: 60px; left: 0; bottom: 0; width: 260px; background: white; border-right: 1px solid #eef2f6; display: flex; flex-direction: column; transition: width 0.3s ease; z-index: 99; overflow-x: hidden; }
         #sidebar.collapsed { width: 70px; }
         #sidebar.collapsed .sidebar-user-info, #sidebar.collapsed .sidebar-link span { display: none; }
         #sidebar.collapsed .sidebar-logout { font-size: 0; padding: 8px; }
@@ -76,97 +54,80 @@
         .sidebar-logout { width: 100%; background: none; border: none; padding: 8px; cursor: pointer; color: #e53e3e; border-radius: 8px; text-align: center; }
         .sidebar-logout:hover { background: #ffe5e5; }
 
-        /* 答题页面样式 */
         .quiz-wrapper { max-width: 600px; margin: 32px auto; }
-        .quiz-card {
-            background: white; border-radius: 24px; padding: 36px 32px;
-            border: 1px solid #eef2f6; box-shadow: 0 8px 24px rgba(0,0,0,0.04);
-            min-height: 400px;
-        }
+        .quiz-card { background: white; border-radius: 24px; padding: 36px 32px; border: 1px solid #eef2f6; box-shadow: 0 8px 24px rgba(0,0,0,0.04); min-height: 400px; }
+        .fs { font-size: 0.85rem; color: #6c757d; text-align: center; margin-bottom: 16px; }
+        .fs.danger { color: #e53e3e; }
 
-        /* 介绍页 */
-        .intro-title { font-size: 1.8rem; font-weight: 700; text-align: center; margin-bottom: 8px; }
-        .intro-sub { text-align: center; color: #6c757d; font-size: 0.9rem; margin-bottom: 28px; }
-        .intro-rules {
-            background: #f8f9fa; border-radius: 16px; padding: 20px;
-            margin-bottom: 28px; font-size: 0.9rem; line-height: 1.8;
-        }
+        .intro-title { font-size: 1.6rem; font-weight: 700; text-align: center; margin-bottom: 8px; }
+        .intro-sub { text-align: center; color: #6c757d; font-size: 0.9rem; margin-bottom: 24px; }
+        .intro-rules { background: #f8f9fa; border-radius: 16px; padding: 20px; margin-bottom: 24px; font-size: 0.9rem; line-height: 1.8; }
         .intro-rules li { margin-bottom: 6px; color: #4a5568; }
-        .start-btn {
-            display: block; width: 100%; max-width: 240px; margin: 0 auto;
-            background: #1E88E5; color: white; border: none;
-            padding: 14px; border-radius: 40px; font-size: 1.1rem; font-weight: 600;
-            cursor: pointer; transition: background 0.2s;
-        }
-        .start-btn:hover { background: #1565C0; }
 
-        /* 答题页 */
+        .level-cards { display: flex; gap: 12px; margin-bottom: 24px; }
+        .level-card { flex: 1; border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; cursor: pointer; text-align: center; transition: all 0.2s; background: white; }
+        .level-card:hover { border-color: #90caf9; }
+        .level-card.active { border-color: #1E88E5; background: #f0f7ff; }
+        .level-card.disabled { opacity: 0.5; cursor: not-allowed; }
+        .level-card .icon { font-size: 2rem; margin-bottom: 8px; }
+        .level-card .name { font-weight: 600; font-size: 1rem; }
+        .level-card .desc { font-size: 0.8rem; color: #6c757d; margin-top: 4px; }
+        .level-card .status { font-size: 0.75rem; margin-top: 8px; padding: 2px 10px; border-radius: 10px; display: inline-block; }
+        .level-card .status.passed { background: #d1fae5; color: #10B981; }
+        .level-card .status.locked { background: #fee2e2; color: #e53e3e; }
+
+        .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+        .type-card { border: 2px solid #e2e8f0; border-radius: 16px; padding: 18px; cursor: pointer; text-align: center; transition: all 0.2s; background: white; }
+        .type-card:hover { border-color: #90caf9; }
+        .type-card.active { border-color: #1E88E5; background: #f0f7ff; }
+        .type-card .icon { font-size: 1.8rem; margin-bottom: 6px; }
+        .type-card .name { font-weight: 600; font-size: 0.95rem; }
+        .type-card .desc { font-size: 0.8rem; color: #6c757d; margin-top: 4px; }
+
+        .start-btn { display: block; width: 100%; max-width: 240px; margin: 0 auto; background: #1E88E5; color: white; border: none; padding: 14px; border-radius: 40px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .start-btn:hover { background: #1565C0; }
+        .start-btn:disabled { background: #9CA3AF; cursor: not-allowed; }
+
         .progress-section { margin-bottom: 24px; }
         .progress-text { font-size: 0.85rem; color: #6c757d; margin-bottom: 8px; text-align: center; }
         .progress-bar { height: 6px; background: #eef2f6; border-radius: 3px; overflow: hidden; }
         .progress-fill { height: 100%; background: #1E88E5; border-radius: 3px; transition: width 0.3s ease; }
-        .question-text {
-            font-size: 1.15rem; font-weight: 600; margin-bottom: 24px;
-            line-height: 1.6; min-height: 60px;
-        }
+        .question-text { font-size: 1.1rem; font-weight: 600; margin-bottom: 24px; line-height: 1.6; min-height: 60px; }
         .options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
-        .option-btn {
-            width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0;
-            border-radius: 14px; background: white; cursor: pointer;
-            font-size: 0.95rem; text-align: left; transition: all 0.2s;
-            display: flex; align-items: center; gap: 12px;
-        }
+        .option-btn { width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 14px; background: white; cursor: pointer; font-size: 0.95rem; text-align: left; transition: all 0.2s; display: flex; align-items: center; gap: 12px; }
         .option-btn:hover { border-color: #90caf9; background: #f8fbff; }
-        .option-btn.selected { border-color: #1E88E5; background: #e9f0fe; color: #1E88E5; font-weight: 500; }
-        .option-letter {
-            width: 28px; height: 28px; border-radius: 50%;
-            background: #f0f2f5; display: flex; align-items: center; justify-content: center;
-            font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
-        }
+        .option-btn.selected { border-color: #1E88E5; background: #EFF6FF; }
+        .option-letter { width: 28px; height: 28px; border-radius: 50%; background: #f0f2f5; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; flex-shrink: 0; }
         .option-btn.selected .option-letter { background: #1E88E5; color: white; }
-
-        .nav-buttons { display: flex; justify-content: space-between; gap: 12px; }
-        .nav-btn {
-            padding: 10px 28px; border-radius: 40px; font-size: 0.95rem;
-            font-weight: 600; cursor: pointer; transition: all 0.2s; border: none;
-        }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { flex: 1; padding: 12px; border-radius: 40px; font-size: 1rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
         .nav-btn.prev { background: #f0f2f5; color: #4a5568; }
         .nav-btn.prev:hover { background: #e2e6ea; }
-        .nav-btn.next { background: #1E88E5; color: white; margin-left: auto; }
+        .nav-btn.next { background: #1E88E5; color: white; }
         .nav-btn.next:hover { background: #1565C0; }
         .nav-btn.submit { background: #10B981; color: white; }
         .nav-btn.submit:hover { background: #059669; }
         .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* 结果页 */
-        .result-icon { font-size: 4rem; text-align: center; margin-bottom: 16px; }
-        .result-score { font-size: 3rem; font-weight: 800; text-align: center; margin-bottom: 8px; }
-        .result-label { text-align: center; font-size: 0.9rem; color: #6c757d; margin-bottom: 20px; }
-        .result-msg { text-align: center; font-size: 1.1rem; margin-bottom: 28px; font-weight: 600; }
-        .result-msg.pass { color: #10B981; }
-        .result-msg.fail { color: #e53e3e; }
-        .retry-btn {
-            display: block; width: 100%; max-width: 200px; margin: 0 auto;
-            background: #1E88E5; color: white; border: none;
-            padding: 12px; border-radius: 40px; font-size: 1rem; font-weight: 600;
-            cursor: pointer; transition: background 0.2s;
-        }
-        .retry-btn:hover { background: #1565C0; }
+        .result-icon { font-size: 3.5rem; text-align: center; margin-bottom: 16px; }
+        .result-score { font-size: 3rem; font-weight: 700; text-align: center; }
+        .result-label { text-align: center; color: #9CA3AF; font-size: 1rem; margin-bottom: 8px; }
+        .result-msg { text-align: center; font-size: 1rem; margin-bottom: 24px; padding: 12px; border-radius: 12px; }
+        .result-msg.pass { background: #d1fae5; color: #065f46; }
+        .result-msg.fail { background: #fee2e2; color: #991b1b; }
+        .retry-btn { display: block; width: 100%; max-width: 200px; margin: 0 auto; background: #f0f2f5; color: #4a5568; border: none; padding: 12px; border-radius: 40px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .retry-btn:hover { background: #e2e6ea; }
         .loading { text-align: center; padding: 60px 20px; color: #6c757d; }
-
-        .footer {
-            background: white; border-top: 1px solid #e9ecef;
-            padding: 20px 0; text-align: center; font-size: 0.75rem; color: #6c757d; margin-top: 40px;
-        }
 
         @media (max-width: 768px) {
             body { margin-left: 0; }
             #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; width: 260px !important; }
             #sidebar.open-mobile { transform: translateX(0); }
-            .search-area { width: 180px; }
+            .search-area { width: 34px; }
             .quiz-wrapper { margin: 16px; }
-            .quiz-card { padding: 24px 20px; }
-            .intro-title { font-size: 1.4rem; }
+            .quiz-card { padding: 24px 16px; }
+            .level-cards { flex-direction: column; }
+            .type-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
@@ -177,7 +138,6 @@
         <div class="circle circle3"></div>
         <div class="wave"></div>
     </div>
-
     <div class="top-bar-container">
         <div class="top-bar">
             <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
@@ -186,14 +146,13 @@
                 <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
                 <button id="searchBtn"><i class="fas fa-search"></i></button>
             </div>
-            <a href="/about.html" class="about-link" id="aboutLink"><i class="fas fa-info-circle"></i> 关于</a>
+            <a href="/about.html" class="about-link"><i class="fas fa-info-circle"></i> 关于</a>
             <a href="/notifications.html" class="notifications-icon" id="notifLink">
                 <i class="fas fa-bell"></i>
                 <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
             </a>
         </div>
     </div>
-
     <div id="sidebar">
         <div class="sidebar-user" id="sidebarUserBtn">
             <div class="sidebar-avatar" id="sidebarAvatar"><i class="fas fa-user-circle"></i></div>
@@ -214,9 +173,7 @@
             <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
             <a href="admin.html" class="sidebar-link" title="管理后台"><i class="fas fa-shield-alt"></i><span>管理后台</span></a>
             <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信"><i class="fas fa-envelope"></i><span>私信</span></a>
-            <a href="drafts.html" class="sidebar-link" title="草稿箱">
-                <i class="fas fa-edit"></i><span>草稿箱</span>
-            </a>
+            <a href="drafts.html" class="sidebar-link" title="草稿箱"><i class="fas fa-edit"></i><span>草稿箱</span></a>
             <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈"><i class="fas fa-comment-dots"></i><span>反馈</span></a>
             <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
                 <i class="fas fa-bell"></i><span>通知</span>
@@ -230,25 +187,30 @@
 
     <div class="container quiz-wrapper">
         <div class="quiz-card" id="quizCard">
-            <!-- 由 JS 动态渲染三个阶段 -->
             <div class="loading" id="quizLoading">加载中...</div>
-            <div id="quizIntro" style="display:none;">
-                <div class="intro-title">📝 入站答题</div>
-                <div class="intro-sub">成为深圳高中生社区正式成员的第一步</div>
-                <div class="intro-rules">
-                    <ul>
-                        <li>📌 共 <strong>10</strong> 道题目，满分 <strong>100</strong> 分</li>
-                        <li>🎯 <strong>60</strong> 分及以上即为通过，自动升级为 <strong>LV1</strong></li>
-                        <li>📖 题目涵盖社区公约、深圳常识和互联网礼仪</li>
-                        <li>🔄 可无限次重考，直到通过为止</li>
-                    </ul>
-                </div>
-                <button class="start-btn" id="startQuizBtn">开始答题</button>
+
+            <!-- 等级选择 -->
+            <div id="pageSelect" style="display:none;">
+                <div class="intro-title">📝 入站考试</div>
+                <div class="intro-sub">选择你要参加的考试等级</div>
+                <div class="fs" id="remainingInfo"></div>
+                <div class="level-cards" id="levelCards"></div>
+                <button class="start-btn" id="startLevelBtn" style="display:none;" disabled>请先选择等级</button>
             </div>
+
+            <!-- 第二级：类型选择 -->
+            <div id="pageTypeSelect" style="display:none;">
+                <div class="intro-title">🔖 选择考试类型</div>
+                <div class="intro-sub">选择你擅长的领域进行第二级考试</div>
+                <div class="type-grid" id="typeGrid"></div>
+                <button class="start-btn" id="startTypeBtn" style="display:none;" disabled>请先选择类型</button>
+            </div>
+
+            <!-- 答题页 -->
             <div id="quizQuestions" style="display:none;">
                 <div class="progress-section">
-                    <div class="progress-text" id="progressText">1 / 10</div>
-                    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:10%"></div></div>
+                    <div class="progress-text" id="progressText">1 / 20</div>
+                    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:5%"></div></div>
                 </div>
                 <div class="question-text" id="questionText"></div>
                 <div class="options" id="optionsContainer"></div>
@@ -257,118 +219,204 @@
                     <button class="nav-btn next" id="nextBtn">下一题</button>
                 </div>
             </div>
+
+            <!-- 结果 -->
             <div id="quizResult" style="display:none;">
                 <div class="result-icon" id="resultIcon"></div>
                 <div class="result-score" id="resultScore"></div>
-                <div class="result-label">/ 100 分</div>
+                <div class="result-label" id="resultLabel">/ 100 分</div>
                 <div class="result-msg" id="resultMsg"></div>
-                <button class="retry-btn" id="retryBtn" style="display:none;">再来一次</button>
+                <button class="retry-btn" id="retryBtn" style="display:none;">返回重选</button>
             </div>
         </div>
     </div>
 
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
-        </div>
-    </footer>
-
     <script>
         window.API_BASE = window.API_BASE || '/api';
-        const token = localStorage.getItem('token');
+        var token = localStorage.getItem('token');
         if (!token) { window.location.href = '/login.html'; }
 
-        // ---------- 侧边栏 ----------
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('menuToggle');
-        const body = document.getElementById('appBody');
-        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
-        if (!isExpanded) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); }
-        else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); }
-        toggleBtn.addEventListener('click', () => {
-            const e = !sidebar.classList.contains('collapsed');
-            if (e) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); localStorage.setItem('sidebarExpanded', 'false'); }
-            else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); localStorage.setItem('sidebarExpanded', 'true'); }
+        // 通用侧边栏
+        var sidebar = document.getElementById('sidebar'), toggleBtn = document.getElementById('menuToggle'), body = document.getElementById('appBody');
+        if (localStorage.getItem('sidebarExpanded') !== 'false') { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); }
+        else { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); }
+        toggleBtn.addEventListener('click', function() {
+            var e = !sidebar.classList.contains('collapsed');
+            if (e) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); localStorage.setItem('sidebarExpanded','false'); }
+            else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); localStorage.setItem('sidebarExpanded','true'); }
         });
-
-        // ---------- 用户信息 ----------
-        const avatarDiv = document.getElementById('sidebarAvatar');
-        const nicknameSpan = document.getElementById('sidebarNickname');
-        const emailSpan = document.getElementById('sidebarEmail');
         async function updateSidebarUser() {
-            try {
-                const res = await fetch(window.API_BASE + '/me', { headers: { 'Authorization': 'Bearer ' + token } });
-                if (res.ok) {
-                    const user = await res.json();
-                    nicknameSpan.innerText = user.nickname || '用户';
-                    emailSpan.innerText = user.email || '';
-                    avatarDiv.innerHTML = user.avatar_url ? '<img src="' + user.avatar_url + '" alt="头像">' : '<i class="fas fa-user-circle"></i>';
-                }
-            } catch (e) { console.warn(e); }
+            try { var res = await fetch(window.API_BASE+'/me', { headers: { 'Authorization': 'Bearer '+token } }); if (res.ok) { var u = await res.json(); document.getElementById('sidebarNickname').innerText = u.nickname||'用户'; document.getElementById('sidebarEmail').innerText = u.email||''; document.getElementById('sidebarAvatar').innerHTML = u.avatar_url?'<img src="'+u.avatar_url+'" alt="头像">':'<i class="fas fa-user-circle"></i>'; } } catch(e) {}
         }
         updateSidebarUser();
-        document.getElementById('sidebarUserBtn').addEventListener('click', function() { window.location.href = '/profile.html'; });
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', function() { window.location.href='/profile.html'; });
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', function() { localStorage.removeItem('token'); window.location.href='/login.html'; });
+        document.getElementById('searchBtn')?.addEventListener('click', function() { var q = document.getElementById('searchInput').value.trim(); if(q) window.location.href='/search.html?q='+encodeURIComponent(q); else alert('请输入搜索关键词'); });
+        document.getElementById('searchInput')?.addEventListener('keypress', function(e) { if(e.key==='Enter') document.getElementById('searchBtn').click(); });
 
-        // ---------- 退出/搜索 ----------
-        document.getElementById('sidebarLogoutBtn').addEventListener('click', function() { localStorage.removeItem('token'); window.location.href = '/login.html'; });
-        document.getElementById('searchBtn').addEventListener('click', function() {
-            var q = document.getElementById('searchInput').value.trim();
-            if (q) window.location.href = '/search.html?q=' + encodeURIComponent(q); else alert('请输入搜索关键词');
-        });
-        document.getElementById('searchInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('searchBtn').click(); });
-
-        // ---------- 答题逻辑 ----------
+        // ---------- 考试逻辑 ----------
+        var currentLevel = null;
+        var currentType = null;
         var questions = [];
         var currentIndex = 0;
         var answers = {};
         var isSubmitting = false;
+        var statusData = null;
 
         function showSection(id) {
-            document.getElementById('quizIntro').style.display = id === 'intro' ? 'block' : 'none';
-            document.getElementById('quizQuestions').style.display = id === 'quiz' ? 'block' : 'none';
-            document.getElementById('quizResult').style.display = id === 'result' ? 'block' : 'none';
+            var sections = ['pageSelect', 'pageTypeSelect', 'quizQuestions', 'quizResult'];
+            sections.forEach(function(s) {
+                document.getElementById(s).style.display = s === id ? 'block' : 'none';
+            });
             document.getElementById('quizLoading').style.display = 'none';
         }
 
-        // 加载题目
-        async function loadQuestions() {
+        // 加载考试状态
+        async function loadStatus() {
             try {
-                var res = await fetch(window.API_BASE + '/quiz/questions', { headers: { 'Authorization': 'Bearer ' + token } });
-                if (res.status === 401) { localStorage.removeItem('token'); window.location.href = '/login.html'; return; }
-                var data = await res.json();
-                if (!data.questions || data.questions.length === 0) throw new Error('无题目');
-                questions = data.questions;
-                showSection('intro');
-            } catch (err) {
-                console.error(err);
-                document.getElementById('quizLoading').innerHTML = '<div style="color:#e53e3e;">加载题目失败，请刷新重试</div>';
+                var res = await fetch(window.API_BASE + '/quiz/status?level=1', { headers: { 'Authorization': 'Bearer '+token } });
+                if (res.status === 401) { localStorage.removeItem('token'); window.location.href='/login.html'; return; }
+                statusData = await res.json();
+                renderLevelSelect();
+            } catch(e) {
+                document.getElementById('quizLoading').innerHTML = '<div style="color:#e53e3e;">加载失败，请刷新重试</div>';
             }
+        }
+
+        function renderLevelSelect() {
+            var container = document.getElementById('levelCards');
+            var levels = [
+                { level: 1, icon: '📝', name: '第一级 · 基础考试', desc: '通过后可发帖、评论、点赞等', passKey: 'level1_passed', passing: '60分及格' },
+                { level: 2, icon: '🎯', name: '第二级 · 进阶考试', desc: '通过后可上传图片和视频', passKey: 'level2_passed', passing: '70分及格' }
+            ];
+
+            container.innerHTML = levels.map(function(l) {
+                var passed = statusData[l.passKey];
+                var disabled = (l.level === 2 && !statusData.level1_passed);
+                var cls = 'level-card';
+                if (passed) cls += ' disabled';
+                if (disabled) cls += ' disabled';
+                var statusHtml = '';
+                if (passed) statusHtml = '<div class="status passed">✅ 已通过</div>';
+                else if (disabled) statusHtml = '<div class="status locked">🔒 需先通过第一级</div>';
+
+                return '<div class="' + cls + '" data-level="' + l.level + '" ' + (passed || disabled ? '' : 'onclick="selectLevel(' + l.level + ')"') + '>' +
+                    '<div class="icon">' + l.icon + '</div>' +
+                    '<div class="name">' + l.name + '</div>' +
+                    '<div class="desc">' + l.desc + '</div>' +
+                    '<div class="desc">' + l.passing + ' · 每日限3次</div>' +
+                    statusHtml + '</div>';
+            }).join('');
+
+            // 更新剩余次数
+            var remaining = statusData.remaining !== undefined ? statusData.remaining : 3;
+            document.getElementById('remainingInfo').innerHTML = '今日剩余答题次数：<strong>' + remaining + '</strong> / ' + (statusData.max_attempts || 3);
+
+            showSection('pageSelect');
+
+            // 检查 URL 参数自动选择
+            var urlLevel = new URLSearchParams(window.location.search).get('level');
+            if (urlLevel === '2' && !statusData.level2_passed && statusData.level1_passed) {
+                selectLevel(2);
+            }
+        }
+
+        var selectedLevel = null;
+        function selectLevel(level) {
+            selectedLevel = level;
+            document.querySelectorAll('.level-card').forEach(function(c) { c.classList.remove('active'); });
+            document.querySelector('.level-card[data-level="' + level + '"]')?.classList.add('active');
+            var btn = document.getElementById('startLevelBtn');
+            btn.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = level === 1 ? '开始第一级考试 📝' : '选择考试类型 🔖';
+
+            if (level === 2) {
+                btn.onclick = function() { renderTypeSelect(); };
+            } else {
+                btn.onclick = function() { startQuiz(1); };
+            }
+        }
+
+        function renderTypeSelect() {
+            showSection('pageTypeSelect');
+            var grid = document.getElementById('typeGrid');
+            var types = QUIZ_BANK.level2;
+            var html = '';
+            for (var key in types) {
+                var t = types[key];
+                html += '<div class="type-card" data-type="' + key + '" onclick="selectType(\'' + key + '\')">' +
+                    '<div class="icon">' + t.icon + '</div>' +
+                    '<div class="name">' + t.name + '</div>' +
+                    '<div class="desc">' + t.description + '</div>' +
+                    '<div class="desc">' + t.questions.length + '道题</div></div>';
+            }
+            grid.innerHTML = html;
+        }
+
+        var selectedType = null;
+        function selectType(type) {
+            selectedType = type;
+            document.querySelectorAll('.type-card').forEach(function(c) { c.classList.remove('active'); });
+            document.querySelector('.type-card[data-type="' + type + '"]')?.classList.add('active');
+            var btn = document.getElementById('startTypeBtn');
+            btn.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = '开始考试 🚀';
+            btn.onclick = function() { startQuiz(2, type); };
+        }
+
+        // ---------- 开始答题 ----------
+        function shuffleArray(arr) {
+            for (var i = arr.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+            }
+            return arr;
+        }
+
+        function startQuiz(level, type) {
+            currentLevel = level;
+            currentType = type || null;
+            currentIndex = 0;
+            answers = {};
+            isSubmitting = false;
+
+            var pool;
+            if (level === 1) {
+                pool = QUIZ_BANK.level1;
+                questions = shuffleArray(pool).slice(0, 20);
+            } else if (level === 2 && type) {
+                pool = QUIZ_BANK.level2[type].questions;
+                questions = shuffleArray(pool).slice(0, 10);
+            }
+
+            showSection('quizQuestions');
+            renderQuestion();
         }
 
         function renderQuestion() {
             if (questions.length === 0) return;
             var q = questions[currentIndex];
-            document.getElementById('questionText').innerText = q.question;
+            document.getElementById('questionText').innerHTML = '<span style="font-size:0.8rem;color:#9CA3AF;font-weight:400;">[' + (q.category || '') + ']</span> ' + q.question;
             document.getElementById('progressText').innerText = (currentIndex + 1) + ' / ' + questions.length;
             document.getElementById('progressFill').style.width = ((currentIndex + 1) / questions.length * 100) + '%';
 
             var letters = ['A', 'B', 'C', 'D'];
             var html = '';
             for (var i = 0; i < 4; i++) {
-                var optKey = 'option_' + letters[i].toLowerCase();
-                var selected = answers[q.id] === letters[i] ? ' selected' : '';
-                html += '<button class="option-btn' + selected + '" data-option="' + letters[i] + '">' +
+                var selected = answers[q.id] === i ? ' selected' : '';
+                html += '<button class="option-btn' + selected + '" data-opt="' + i + '">' +
                     '<span class="option-letter">' + letters[i] + '</span>' +
-                    q[optKey] + '</button>';
+                    q.options[i] + '</button>';
             }
             document.getElementById('optionsContainer').innerHTML = html;
             document.querySelectorAll('.option-btn').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     document.querySelectorAll('.option-btn').forEach(function(b) { b.classList.remove('selected'); });
                     btn.classList.add('selected');
-                    answers[q.id] = btn.dataset.option;
+                    answers[q.id] = parseInt(btn.dataset.opt);
                 });
-                // 键盘快捷键：选中匹配的选项
             });
             updateNavButtons();
         }
@@ -385,24 +433,17 @@
             }
         }
 
-        function goToPrev() {
-            if (currentIndex > 0) { currentIndex--; renderQuestion(); }
-        }
+        function goToPrev() { if (currentIndex > 0) { currentIndex--; renderQuestion(); } }
 
         function goToNext() {
-            if (currentIndex < questions.length - 1) {
-                currentIndex++;
-                renderQuestion();
-            } else if (currentIndex === questions.length - 1) {
-                submitQuiz();
-            }
+            if (currentIndex < questions.length - 1) { currentIndex++; renderQuestion(); }
+            else if (currentIndex === questions.length - 1) { submitQuiz(); }
         }
 
         async function submitQuiz() {
             if (isSubmitting) return;
-            // 检查是否所有题目都已作答
             for (var i = 0; i < questions.length; i++) {
-                if (!answers[questions[i].id]) {
+                if (answers[questions[i].id] === undefined) {
                     alert('请回答第 ' + (i + 1) + ' 题');
                     currentIndex = i;
                     renderQuestion();
@@ -422,10 +463,31 @@
                 var res = await fetch(window.API_BASE + '/quiz/submit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ answers: ansList })
+                    body: JSON.stringify({ level: currentLevel, type: currentType, answers: ansList })
                 });
                 var data = await res.json();
-                showResult(data);
+
+                showSection('quizResult');
+                var maxScore = currentLevel === 1 ? 100 : 100;
+                document.getElementById('resultLabel').innerText = '/ ' + maxScore + ' 分';
+
+                if (data.passed) {
+                    document.getElementById('resultIcon').innerHTML = '✅';
+                    document.getElementById('resultScore').innerHTML = data.score;
+                    document.getElementById('resultScore').style.color = '#10B981';
+                    document.getElementById('resultMsg').className = 'result-msg pass';
+                    document.getElementById('resultMsg').innerHTML = data.message || '🎉 恭喜通过！';
+                    document.getElementById('retryBtn').style.display = 'none';
+                    setTimeout(function() { window.location.href = '/'; }, 3000);
+                } else {
+                    document.getElementById('resultIcon').innerHTML = '❌';
+                    document.getElementById('resultScore').innerHTML = data.score;
+                    document.getElementById('resultScore').style.color = '#e53e3e';
+                    document.getElementById('resultMsg').className = 'result-msg fail';
+                    document.getElementById('resultMsg').innerHTML = data.message || '未通过，继续加油！';
+                    document.getElementById('retryBtn').style.display = 'block';
+                    document.getElementById('retryBtn').onclick = function() { window.location.href = '/quiz.html'; };
+                }
             } catch (err) {
                 console.error(err);
                 alert('提交失败，请重试');
@@ -435,63 +497,25 @@
             }
         }
 
-        function showResult(data) {
-            showSection('result');
-            if (data.passed) {
-                document.getElementById('resultIcon').innerHTML = '✅';
-                document.getElementById('resultScore').innerHTML = data.score;
-                document.getElementById('resultScore').style.color = '#10B981';
-                document.getElementById('resultMsg').className = 'result-msg pass';
-                document.getElementById('resultMsg').innerHTML = '🎉 恭喜成为正式成员！LV1 新生报到';
-                document.getElementById('retryBtn').style.display = 'none';
-                // 3秒后跳转首页
-                setTimeout(function() { window.location.href = '/'; }, 3000);
-            } else {
-                document.getElementById('resultIcon').innerHTML = '❌';
-                document.getElementById('resultScore').innerHTML = data.score;
-                document.getElementById('resultScore').style.color = '#e53e3e';
-                document.getElementById('resultMsg').className = 'result-msg fail';
-                document.getElementById('resultMsg').innerHTML = '继续加油！60分即可通过';
-                document.getElementById('retryBtn').style.display = 'block';
-            }
-        }
-
         // 键盘快捷键
         document.addEventListener('keydown', function(e) {
             var quizSection = document.getElementById('quizQuestions');
             if (quizSection.style.display !== 'block') return;
-            var key = e.key.toUpperCase();
-            if (['A', 'B', 'C', 'D'].indexOf(key) !== -1) {
+            if (['A', 'B', 'C', 'D'].indexOf(e.key.toUpperCase()) !== -1) {
                 var btns = document.querySelectorAll('.option-btn');
-                for (var i = 0; i < btns.length; i++) {
-                    if (btns[i].dataset.option === key) { btns[i].click(); break; }
-                }
+                var idx = ['A', 'B', 'C', 'D'].indexOf(e.key.toUpperCase());
+                if (btns[idx]) btns[idx].click();
             }
-            if (e.key === 'Enter' || e.key === 'ArrowRight') {
-                e.preventDefault();
-                goToNext();
-            }
+            if (e.key === 'Enter' || e.key === 'ArrowRight') { e.preventDefault(); goToNext(); }
             if (e.key === 'ArrowLeft') { e.preventDefault(); goToPrev(); }
         });
 
-        // 事件绑定
-        document.getElementById('startQuizBtn').addEventListener('click', function() {
-            showSection('quiz');
-            currentIndex = 0;
-            answers = {};
-            renderQuestion();
-        });
+        document.getElementById('startQuizBtn')?.addEventListener('click', function() { startQuiz(1); });
         document.getElementById('prevBtn').addEventListener('click', goToPrev);
         document.getElementById('nextBtn').addEventListener('click', goToNext);
-        document.getElementById('retryBtn').addEventListener('click', function() {
-            showSection('intro');
-            currentIndex = 0;
-            answers = {};
-            isSubmitting = false;
-        });
 
-        // 初始化
-        loadQuestions();
+        // 开始加载
+        loadStatus();
     </script>
 </body>
 </html>

@@ -8,6 +8,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const QUIZ_ANSWERS = require('./quiz-bank-data.js');
 
 // 获取北京时间日期字符串 (YYYY-MM-DD)
 function getBeijingDate() {
@@ -135,6 +136,22 @@ const adminMiddleware = async (req, res, next) => {
         console.error(err);
         res.status(500).json({ error: '权限验证失败' });
     }
+};
+
+// 图片视频上传权限检查（需通过第二级考试）
+const mediaUploadRequired = async (req, res, next) => {
+    try {
+        const result = await pool.query('SELECT can_upload_media FROM users WHERE id = $1', [req.user.userId]);
+        if (!result.rows[0]?.can_upload_media) {
+            return res.status(403).json({
+                error: '请先通过第二级入站考试',
+                quiz_required: true,
+                level: 2,
+                quiz_url: '/quiz.html?level=2'
+            });
+        }
+        next();
+    } catch (err) { next(err); }
 };
 
 // LV0 权限检查（未通过答题的用户不能进行互动操作）
@@ -334,7 +351,7 @@ const generalUpload = multer({
     limits: { fileSize: 200 * 1024 * 1024 } // 200MB（图片/视频通用）
 });
 
-app.post('/api/upload/file', authMiddleware, generalUpload.single('file'), (req, res) => {
+app.post('/api/upload/file', authMiddleware, mediaUploadRequired, generalUpload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: '请选择文件' });
     const fileUrl = `/uploads/${req.file.filename}`;
     res.json({ url: fileUrl });
@@ -2056,15 +2073,54 @@ app.delete('/api/study-rooms/:id', authMiddleware, async (req, res) => {
 
 // ---------- 自习室 API 结束 ----------
 
-// ---------- 题库 API ----------
+// ---------- 题库 API（重构版）----------
 
-// 获取随机10道题目（不返回正确答案）
+const MAX_DAILY_ATTEMPTS = 3;
+
+// 获取题目信息（次数检查等，题目由前端提供）
 app.get('/api/quiz/questions', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const level = parseInt(req.query.level) || 1;
+    const type = req.query.type;
+
     try {
-        const result = await pool.query(
-            'SELECT id, question, option_a, option_b, option_c, option_d, category FROM quiz_questions ORDER BY RANDOM() LIMIT 10'
+        if (level === 1) {
+            const userRes = await pool.query('SELECT has_passed_quiz FROM users WHERE id = $1', [userId]);
+            if (userRes.rows[0]?.has_passed_quiz) {
+                return res.status(400).json({ error: '你已经通过了第一级考试，无需再考' });
+            }
+        } else if (level === 2) {
+            const userRes = await pool.query('SELECT can_upload_media FROM users WHERE id = $1', [userId]);
+            if (userRes.rows[0]?.can_upload_media) {
+                return res.status(400).json({ error: '你已经通过了第二级考试，无需再考' });
+            }
+            if (!type || !['shenzhen', 'subjects', 'tech', 'general'].includes(type)) {
+                return res.status(400).json({ error: '请选择有效的考试类型' });
+            }
+        }
+
+        const todayStart = getBeijingDate();
+        const countRes = await pool.query(
+            'SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND level = $2 AND created_at >= $3::date',
+            [userId, level, todayStart]
         );
-        res.json({ questions: result.rows });
+        const todayCount = parseInt(countRes.rows[0].cnt);
+
+        if (todayCount >= MAX_DAILY_ATTEMPTS) {
+            return res.status(403).json({
+                error: '今日答题次数已用完（' + MAX_DAILY_ATTEMPTS + '/' + MAX_DAILY_ATTEMPTS + '），请明天再来',
+                remaining: 0,
+                maxAttempts: MAX_DAILY_ATTEMPTS
+            });
+        }
+
+        res.json({
+            message: '题目已由前端题库提供',
+            level: level,
+            type: type || 'basic',
+            remaining: MAX_DAILY_ATTEMPTS - todayCount,
+            maxAttempts: MAX_DAILY_ATTEMPTS
+        });
     } catch (err) {
         console.error('获取题目失败:', err);
         res.status(500).json({ error: '获取题目失败' });
@@ -2074,68 +2130,104 @@ app.get('/api/quiz/questions', authMiddleware, async (req, res) => {
 // 提交答案
 app.post('/api/quiz/submit', authMiddleware, async (req, res) => {
     const userId = req.user.userId;
-    const { answers } = req.body; // [{question_id: 1, answer: 'A'}, ...]
+    const { level, type, answers } = req.body;
 
-    if (!answers || !Array.isArray(answers) || answers.length !== 10) {
-        return res.status(400).json({ error: '请回答全部10道题目' });
+    if (!level || !answers || !Array.isArray(answers)) {
+        return res.status(400).json({ error: '参数错误' });
     }
 
     try {
-        // 获取正确答案
-        const questionIds = answers.map(a => a.question_id);
-        const correctResult = await pool.query(
-            'SELECT id, correct_answer FROM quiz_questions WHERE id = ANY($1)',
-            [questionIds]
-        );
-        const correctMap = {};
-        correctResult.rows.forEach(row => {
-            correctMap[row.id] = row.correct_answer;
-        });
+        if (level === 1) {
+            const userRes = await pool.query('SELECT has_passed_quiz FROM users WHERE id = $1', [userId]);
+            if (userRes.rows[0]?.has_passed_quiz) {
+                return res.status(400).json({ error: '已通过第一级' });
+            }
+        } else if (level === 2) {
+            const userRes = await pool.query('SELECT can_upload_media FROM users WHERE id = $1', [userId]);
+            if (userRes.rows[0]?.can_upload_media) {
+                return res.status(400).json({ error: '已通过第二级' });
+            }
+        }
 
-        // 计算分数
+        let correctMap;
+        if (level === 1) {
+            correctMap = QUIZ_ANSWERS.level1;
+        } else if (level === 2 && type) {
+            correctMap = QUIZ_ANSWERS.level2[type];
+        } else {
+            return res.status(400).json({ error: '参数错误' });
+        }
+
         let score = 0;
-        answers.forEach(a => {
-            if (correctMap[a.question_id] === a.answer) {
-                score += 10;
+        const totalQuestions = answers.length;
+        answers.forEach(function(a) {
+            var correctAnswer = correctMap[a.question_id];
+            if (correctAnswer !== undefined && correctAnswer === a.answer) {
+                score += (level === 1) ? 5 : 10;
             }
         });
 
-        const passed = score >= 60;
+        const maxScore = totalQuestions * ((level === 1) ? 5 : 10);
+        const passLine = level === 1 ? 60 : 70;
+        const passed = score >= passLine;
 
-        // 记录答题结果
         await pool.query(
-            'INSERT INTO quiz_attempts (user_id, score, passed) VALUES ($1, $2, $3)',
-            [userId, score, passed]
+            'INSERT INTO quiz_attempts (user_id, score, passed, total_questions, level, quiz_type) VALUES ($1, $2, $3, $4, $5, $6)',
+            [userId, score, passed, totalQuestions, level, type || 'basic']
         );
 
-        // 如果通过，升级为 LV1
         if (passed) {
-            await pool.query('UPDATE users SET has_passed_quiz = true WHERE id = $1', [userId]);
+            if (level === 1) {
+                await pool.query('UPDATE users SET has_passed_quiz = true WHERE id = $1', [userId]);
+            } else if (level === 2) {
+                await pool.query('UPDATE users SET can_upload_media = true WHERE id = $1', [userId]);
+            }
         }
 
-        res.json({ score, passed, message: passed ? '恭喜通过入站答题！' : '很遗憾，未达到60分，请继续努力！' });
+        res.json({
+            score: score,
+            maxScore: maxScore,
+            passed: passed,
+            message: passed ? ('恭喜通过考试！（' + score + '/' + maxScore + '分）') : ('未通过（' + score + '/' + maxScore + '分，需要' + passLine + '分）'),
+            totalQuestions: totalQuestions
+        });
     } catch (err) {
         console.error('提交答题失败:', err);
         res.status(500).json({ error: '提交答题失败' });
     }
 });
 
-// 获取用户答题状态
+// 获取用户考试状态
 app.get('/api/quiz/status', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const level = parseInt(req.query.level) || 1;
+
     try {
-        const userResult = await pool.query('SELECT has_passed_quiz, exp FROM users WHERE id = $1', [req.user.userId]);
-        const attemptsResult = await pool.query(
-            'SELECT score, passed, created_at FROM quiz_attempts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5',
-            [req.user.userId]
+        const userRes = await pool.query('SELECT has_passed_quiz, can_upload_media, exp FROM users WHERE id = $1', [userId]);
+        const todayStart = getBeijingDate();
+        const countRes = await pool.query(
+            'SELECT COUNT(*) as cnt FROM quiz_attempts WHERE user_id = $1 AND level = $2 AND created_at >= $3::date',
+            [userId, level, todayStart]
         );
+        const todayCount = parseInt(countRes.rows[0].cnt);
+
+        const attemptsRes = await pool.query(
+            'SELECT score, passed, total_questions, quiz_type, level, created_at FROM quiz_attempts WHERE user_id = $1 AND level = $2 ORDER BY created_at DESC LIMIT 5',
+            [userId, level]
+        );
+
         res.json({
-            has_passed_quiz: userResult.rows[0].has_passed_quiz,
-            exp: userResult.rows[0].exp,
-            attempts: attemptsResult.rows
+            level1_passed: userRes.rows[0].has_passed_quiz,
+            level2_passed: userRes.rows[0].can_upload_media,
+            exp: userRes.rows[0].exp,
+            today_attempts: todayCount,
+            max_attempts: MAX_DAILY_ATTEMPTS,
+            remaining: Math.max(0, MAX_DAILY_ATTEMPTS - todayCount),
+            recent_attempts: attemptsRes.rows
         });
     } catch (err) {
-        console.error('获取答题状态失败:', err);
-        res.status(500).json({ error: '获取答题状态失败' });
+        console.error('获取考试状态失败:', err);
+        res.status(500).json({ error: '获取考试状态失败' });
     }
 });
 
