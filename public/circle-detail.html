@@ -511,6 +511,12 @@
             transition: background 0.2s;
         }
         .btn-event-leave:hover { background: #E5E7EB; }
+        .btn-event-delete {
+            background: none; border: 1px solid #FCA5A5; color: #EF4444;
+            padding: 6px 16px; border-radius: 20px; cursor: pointer;
+            font-size: 0.85rem; margin-left: 8px; transition: background 0.2s;
+        }
+        .btn-event-delete:hover { background: #FEF2F2; }
 
         /* 表单行 */
         .form-row { display: flex; gap: 12px; }
@@ -1030,7 +1036,7 @@
                 </div>
                 <div class="form-row">
                     <div class="mgmt-form-group" style="flex:1;">
-                        <label>地点</label>
+                        <label>地点（选填）</label>
                         <input type="text" id="eventLocation" placeholder="如：教学楼3楼机房">
                     </div>
                 </div>
@@ -1066,7 +1072,7 @@
             <button class="modal-close" onclick="closeModal('shareModal')">&times;</button>
             <div class="modal-title"><i class="fas fa-share-alt"></i> 分享圈子</div>
             <div class="poster-container" id="posterContainer">
-                <canvas id="posterCanvas"></canvas>
+                <canvas id="posterCanvas" width="750" height="1100" style="width:300px;height:440px;border-radius:12px;display:block;margin:0 auto;"></canvas>
                 <div class="poster-hint">长按图片保存，分享给好友</div>
             </div>
         </div>
@@ -1621,6 +1627,9 @@
                 }
             }
 
+            var canDelete = userRole === 'creator' || userRole === 'admin' || ev.created_by === currentUserId;
+            var deleteBtn = canDelete ? '<button class="btn-event-delete" onclick="event.stopPropagation();deleteEvent(' + ev.id + ')">🗑️ 删除</button>' : '';
+
             var descText = ev.description ? escapeHtml(ev.description).substring(0, 100) + (ev.description.length > 100 ? '...' : '') : '';
             var startTimeHtml = ev.start_time ? '<span>🕐 ' + formatDate(ev.start_time) + '</span>' : '';
             var endTimeHtml = ev.end_time ? '<span>→ ' + formatDate(ev.end_time) + '</span>' : '';
@@ -1642,8 +1651,25 @@
                 deadlineHtml +
                 '</div>' +
                 '</div>' +
-                '<div class="event-card-footer">' + actionBtn + '</div>' +
+                '<div class="event-card-footer">' + actionBtn + deleteBtn + '</div>' +
                 '</div>';
+        }
+
+        async function deleteEvent(eventId) {
+            if (!confirm('确定要删除这个活动吗？已报名的成员也会收到通知。此操作不可撤销。')) return;
+            try {
+                var res = await fetch(window.API_BASE + '/events/' + eventId, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    alert('活动已删除');
+                    loadPosts();
+                } else {
+                    var data = await res.json();
+                    alert(data.error || '删除失败');
+                }
+            } catch (err) { alert('网络错误'); }
         }
 
         async function joinEvent(eventId) {
@@ -2023,7 +2049,11 @@
             var max_participants = document.getElementById('eventMaxParticipants').value || null;
             var msgEl = document.getElementById('eventCreateMsg');
 
-            if (!title) { msgEl.innerText = '请输入活动标题'; msgEl.style.color = '#e53e3e'; return; }
+            if (!title) { alert('请输入活动名称'); return; }
+            if (!description) { alert('请输入活动描述'); return; }
+            if (!start_time) { alert('请选择开始时间'); return; }
+            if (!end_time) { alert('请选择结束时间'); return; }
+            if (new Date(start_time) >= new Date(end_time)) { alert('结束时间必须晚于开始时间'); return; }
 
             try {
                 var res = await fetch(window.API_BASE + '/circles/' + circleId + '/events', {
@@ -2219,6 +2249,8 @@
                     ctx.font = '16px -apple-system, "PingFang SC", sans-serif';
                     ctx.textAlign = 'center';
                     ctx.fillText('深圳高中生社区 · 一起成长', 375, 1060);
+
+                    canvasToImg();
                 };
                 qrImg.onerror = function() {
                     // 二维码加载失败时，画一个装饰占位
@@ -2239,8 +2271,29 @@
                     ctx.font = '16px sans-serif';
                     ctx.textAlign = 'center';
                     ctx.fillText('深圳高中生社区 · 一起成长', 375, 1060);
+
+                    canvasToImg();
                 };
                 qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + qrUrl;
+            }
+
+            // 将 Canvas 转为图片，支持移动端长按保存
+            function canvasToImg() {
+                try {
+                    var dataUrl = canvas.toDataURL('image/png');
+                    var img = document.createElement('img');
+                    img.src = dataUrl;
+                    img.style.width = '300px';
+                    img.style.height = '440px';
+                    img.style.borderRadius = '12px';
+                    img.style.display = 'block';
+                    img.style.margin = '0 auto';
+                    var container = document.getElementById('posterContainer');
+                    if (container) {
+                        container.innerHTML = '';
+                        container.appendChild(img);
+                    }
+                } catch (e) { console.warn('Canvas to Image 转换失败', e); }
             }
         }
 

@@ -3206,7 +3206,13 @@ app.post('/api/circles/:id/events', authMiddleware, async (req, res) => {
     const { title, description, location, start_time, end_time, signup_deadline, max_participants } = req.body;
 
     if (isNaN(circleId)) return res.status(400).json({ error: '无效的圈子ID' });
-    if (!title || !title.trim()) return res.status(400).json({ error: '活动标题不能为空' });
+    if (!title || !title.trim()) return res.status(400).json({ error: '活动名称不能为空' });
+    if (!description || !description.trim()) return res.status(400).json({ error: '活动描述不能为空' });
+    if (!start_time) return res.status(400).json({ error: '请选择开始时间' });
+    if (!end_time) return res.status(400).json({ error: '请选择结束时间' });
+    if (new Date(start_time) >= new Date(end_time)) {
+        return res.status(400).json({ error: '结束时间必须晚于开始时间' });
+    }
 
     try {
         const memberCheck = await pool.query(
@@ -3233,7 +3239,7 @@ app.post('/api/circles/:id/events', authMiddleware, async (req, res) => {
             await createNotification(
                 member.user_id,
                 'circle_event',
-                result.rows[0].id,
+                circleId,
                 userId,
                 `圈子发布了新活动：《${title.trim()}》`
             );
@@ -3364,6 +3370,45 @@ app.post('/api/events/:id/leave', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('取消报名失败:', err);
         res.status(500).json({ error: '取消报名失败' });
+    }
+});
+
+// 删除活动（圈主/管理员专用）
+app.delete('/api/events/:id', authMiddleware, async (req, res) => {
+    const eventId = parseInt(req.params.id);
+    const userId = req.user.userId;
+
+    if (isNaN(eventId)) return res.status(400).json({ error: '无效的活动ID' });
+
+    try {
+        const eventCheck = await pool.query(
+            'SELECT e.*, c.creator_id FROM circle_events e JOIN circles c ON e.circle_id = c.id WHERE e.id = $1',
+            [eventId]
+        );
+        if (eventCheck.rows.length === 0) return res.status(404).json({ error: '活动不存在' });
+
+        const event = eventCheck.rows[0];
+
+        let hasPermission = false;
+        if (event.created_by === userId) hasPermission = true;
+        if (event.creator_id === userId) hasPermission = true;
+
+        if (!hasPermission) {
+            const memberCheck = await pool.query(
+                "SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2 AND role IN ('creator', 'admin')",
+                [event.circle_id, userId]
+            );
+            if (memberCheck.rows.length > 0) hasPermission = true;
+        }
+
+        if (!hasPermission) return res.status(403).json({ error: '无权删除此活动' });
+
+        await pool.query('DELETE FROM circle_events WHERE id = $1', [eventId]);
+
+        res.json({ message: '活动已删除' });
+    } catch (err) {
+        console.error('删除活动失败:', err);
+        res.status(500).json({ error: '删除活动失败' });
     }
 });
 
