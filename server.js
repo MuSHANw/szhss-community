@@ -2966,13 +2966,48 @@ app.get('/api/circles', async (req, res) => {
         const countResult = await pool.query(countQuery, params);
         const total = parseInt(countResult.rows[0].total);
 
-        res.json({
-            circles: result.rows,
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit)
-        });
+        // 获取最近的圈子动态
+        try {
+            const activitiesQuery = `
+                (SELECT e.circle_id, c.name as circle_name, c.icon_url as circle_icon,
+                        'event' as activity_type,
+                        e.title as activity_title, e.created_at as created_at
+                 FROM circle_events e
+                 JOIN circles c ON e.circle_id = c.id
+                 ORDER BY e.created_at DESC LIMIT 5)
+                UNION ALL
+                (SELECT p.circle_id, c.name as circle_name, c.icon_url as circle_icon,
+                        'essence' as activity_type,
+                        p.title as activity_title, p.created_at as created_at
+                 FROM posts p
+                 JOIN circles c ON p.circle_id = c.id
+                 WHERE p.is_essence = true
+                 ORDER BY p.created_at DESC LIMIT 5)
+                UNION ALL
+                (SELECT id as circle_id, name as circle_name, icon_url as circle_icon,
+                        'new_circle' as activity_type,
+                        name as activity_title, created_at as created_at
+                 FROM circles
+                 ORDER BY created_at DESC LIMIT 5)
+                ORDER BY created_at DESC LIMIT 10
+            `;
+            const activitiesResult = await pool.query(activitiesQuery);
+
+            res.json({
+                circles: result.rows,
+                recent_activities: activitiesResult.rows,
+                page, limit, total,
+                totalPages: Math.ceil(total / limit)
+            });
+        } catch (err) {
+            console.error('获取动态失败(降级):', err);
+            res.json({
+                circles: result.rows,
+                recent_activities: [],
+                page, limit, total,
+                totalPages: Math.ceil(total / limit)
+            });
+        }
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: '获取圈子列表失败' });

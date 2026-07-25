@@ -1,629 +1,168 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>圈子广场 - 深圳高中生社区</title>
     <link rel="stylesheet" href="/css/style.css">
-    <!-- 移动端适配 -->
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
     <script src="/js/mobile.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* ========== 全局样式（与 index 一致） ========== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
-            background-color: #F5F7FA;
-            color: #1f2d3d;
-            line-height: 1.5;
-            padding-top: 60px;
-            margin-left: 260px;
-            transition: margin-left 0.3s ease;
-            min-height: 100vh;
-            position: relative;
+            background-color: #F5F7FA; color: #1f2d3d; line-height: 1.5;
+            padding-top: 60px; margin-left: 260px; transition: margin-left 0.3s ease; min-height: 100vh; position: relative;
         }
+        body.sidebar-collapsed { margin-left: 70px; }
 
-        body.sidebar-collapsed {
-            margin-left: 70px;
-        }
-
-        /* 背景装饰 */
-        .bg-decorations {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-            pointer-events: none;
-        }
-
+        .bg-decorations { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none; }
         .bg-decorations .wave {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 120px;
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 120px;
             background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
-            background-size: cover;
-            opacity: 0.5;
+            background-size: cover; opacity: 0.5;
         }
+        .bg-decorations .circle { position: absolute; border-radius: 50%; background: rgba(30, 136, 229, 0.05); }
+        .bg-decorations .circle1 { width: 300px; height: 300px; top: -100px; left: -100px; }
+        .bg-decorations .circle2 { width: 200px; height: 200px; bottom: -50px; right: -50px; }
+        .bg-decorations .circle3 { width: 150px; height: 150px; top: 30%; right: 10%; }
 
-        .bg-decorations .circle {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(30, 136, 229, 0.05);
-        }
-
-        .bg-decorations .circle1 {
-            width: 300px;
-            height: 300px;
-            top: -100px;
-            left: -100px;
-        }
-
-        .bg-decorations .circle2 {
-            width: 200px;
-            height: 200px;
-            bottom: -50px;
-            right: -50px;
-        }
-
-        .bg-decorations .circle3 {
-            width: 150px;
-            height: 150px;
-            top: 30%;
-            right: 10%;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
         /* ========== 顶部栏 ========== */
-        .top-bar-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: white;
-            border-bottom: 1px solid #e9ecef;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-        }
-
-        .top-bar {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .menu-toggle {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            margin-right: 20px;
-            color: #4a5568;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1E88E5;
-            text-decoration: none;
-            margin-right: auto;
-        }
-
-        .search-area {
-            display: flex;
-            align-items: center;
-            background: #f1f3f5;
-            border-radius: 24px;
-            padding: 4px 12px;
-            width: 260px;
-        }
-
-        .search-area input {
-            border: none;
-            background: transparent;
-            outline: none;
-            width: 100%;
-            padding: 8px 0;
-        }
-
-        .search-area button {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            color: #6c757d;
-        }
-
-        .about-link {
-            margin-left: 16px;
-            color: #4a5568;
-            text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: 500;
-            transition: color 0.2s;
-            white-space: nowrap;
-        }
-
-        .about-link:hover {
-            color: #1E88E5;
-        }
-
-        .about-link i {
-            margin-right: 4px;
-        }
-
-        .notifications-icon {
-            position: relative;
-            margin-left: 16px;
-            font-size: 1.4rem;
-            color: #6c757d;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .notif-badge {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #e53e3e;
-            color: white;
-            font-size: 0.7rem;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .top-bar-container { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; border-bottom: 1px solid #e9ecef; z-index: 100; display: flex; align-items: center; padding: 0 20px; }
+        .top-bar { display: flex; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto; }
+        .menu-toggle { background: none; border: none; font-size: 1.5rem; cursor: pointer; margin-right: 20px; color: #4a5568; }
+        .logo { font-size: 1.5rem; font-weight: 700; color: #1E88E5; text-decoration: none; margin-right: auto; }
+        .search-area { display: flex; align-items: center; background: #f1f3f5; border-radius: 24px; padding: 4px 12px; width: 260px; }
+        .search-area input { border: none; background: transparent; outline: none; width: 100%; padding: 8px 0; }
+        .search-area button { background: transparent; border: none; cursor: pointer; color: #6c757d; }
+        .about-link { margin-left: 16px; color: #4a5568; text-decoration: none; font-size: 0.95rem; transition: color 0.2s; white-space: nowrap; }
+        .about-link:hover { color: #1E88E5; }
+        .about-link i { margin-right: 4px; }
+        .notifications-icon { position: relative; margin-left: 16px; font-size: 1.4rem; color: #6c757d; text-decoration: none; display: inline-flex; align-items: center; }
+        .notif-badge { position: absolute; top: -8px; right: -8px; background: #e53e3e; color: white; font-size: 0.7rem; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
 
         /* ========== 侧边栏 ========== */
-        #sidebar {
-            position: fixed;
-            top: 60px;
-            left: 0;
-            bottom: 0;
-            width: 260px;
-            background: white;
-            border-right: 1px solid #eef2f6;
-            display: flex;
-            flex-direction: column;
-            transition: width 0.3s ease;
-            z-index: 99;
-            overflow-x: hidden;
-        }
+        #sidebar { position: fixed; top: 60px; left: 0; bottom: 0; width: 260px; background: white; border-right: 1px solid #eef2f6; display: flex; flex-direction: column; transition: width 0.3s ease; z-index: 99; overflow-x: hidden; }
+        #sidebar.collapsed { width: 70px; }
+        #sidebar.collapsed .sidebar-user-info, #sidebar.collapsed .sidebar-link span { display: none; }
+        .sidebar-user { display: flex; align-items: center; padding: 20px 16px; border-bottom: 1px solid #eef2f6; cursor: pointer; }
+        .sidebar-avatar { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex-shrink: 0; margin-right: 12px; }
+        .sidebar-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .sidebar-avatar i { font-size: 48px; color: #1E88E5; }
+        .sidebar-user-info { flex: 1; overflow: hidden; white-space: nowrap; }
+        .sidebar-nickname { font-weight: 600; font-size: 1rem; }
+        .sidebar-email { font-size: 0.7rem; color: #6c757d; }
+        .sidebar-nav { flex: 1; display: flex; flex-direction: column; padding: 16px 0; }
+        .sidebar-link { display: flex; align-items: center; padding: 12px 16px; text-decoration: none; color: #4a5568; transition: background 0.2s; white-space: nowrap; }
+        .sidebar-link i { width: 28px; font-size: 1.2rem; text-align: center; }
+        .sidebar-link span { margin-left: 12px; }
+        .sidebar-link:hover { background: #f0f2f5; }
+        .sidebar-link.active { background: #e9f0fe; color: #1E88E5; }
+        .notif-dot { color: #e53e3e; font-size: 0.7rem; margin-left: 4px; }
+        .sidebar-footer { padding: 16px; border-top: 1px solid #eef2f6; }
+        .sidebar-logout { width: 100%; background: none; border: none; padding: 8px; cursor: pointer; color: #e53e3e; border-radius: 8px; text-align: center; }
+        .sidebar-logout:hover { background: #ffe5e5; }
 
-        #sidebar.collapsed {
-            width: 70px;
-        }
+        /* ========== 轮播 ========== */
+        .circle-carousel { position: relative; width: 100%; height: 280px; border-radius: 20px; overflow: hidden; margin: 24px 0; background: #1E88E5; }
+        .carousel-track { display: flex; height: 100%; transition: transform 0.5s ease; }
+        .carousel-slide { min-width: 100%; height: 100%; position: relative; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .carousel-slide::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.45); }
+        .carousel-content { position: relative; z-index: 1; text-align: center; color: white; padding: 0 40px; }
+        .carousel-logo { width: 60px; height: 60px; border-radius: 16px; border: 3px solid white; object-fit: cover; margin-bottom: 12px; display: inline-block; }
+        .carousel-name { font-size: 1.6rem; font-weight: 700; margin-bottom: 6px; }
+        .carousel-desc { font-size: 0.9rem; opacity: 0.9; margin-bottom: 12px; max-width: 400px; margin: 0 auto 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .carousel-stats { font-size: 0.85rem; opacity: 0.85; margin-bottom: 16px; }
+        .carousel-stats span { margin: 0 10px; }
+        .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; transition: background 0.2s; z-index: 2; line-height: 40px; text-align: center; }
+        .carousel-btn:hover { background: rgba(255,255,255,0.4); }
+        .carousel-prev { left: 12px; }
+        .carousel-next { right: 12px; }
+        .carousel-dots { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 2; }
+        .carousel-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; transition: background 0.2s; }
+        .carousel-dot.active { background: white; }
 
-        #sidebar.collapsed .sidebar-user-info,
-        #sidebar.collapsed .sidebar-link span {
-            display: none;
-        }
+        /* ========== 动态流 ========== */
+        .circle-activities { background: white; border-radius: 16px; padding: 20px; margin-bottom: 24px; border: 1px solid #eef2f6; }
+        .circle-activities h3 { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; }
+        .activities-list { margin-top: 12px; }
+        .activity-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F3F4F6; cursor: pointer; transition: background 0.15s; border-radius: 8px; }
+        .activity-item:hover { background: #F9FAFB; padding: 10px 12px; margin: 0 -12px; }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-icon { font-size: 1.3rem; flex-shrink: 0; width: 32px; text-align: center; }
+        .activity-info { flex: 1; min-width: 0; }
+        .activity-circle-name { font-weight: 600; font-size: 0.9rem; }
+        .activity-circle-name img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 4px; }
+        .activity-text { font-size: 0.85rem; color: #6B7280; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .activity-time { font-size: 0.75rem; color: #9CA3AF; flex-shrink: 0; }
 
-        #sidebar.collapsed .sidebar-logout {
-            font-size: 0;
-            padding: 8px;
-        }
+        /* ========== 搜索与分类 ========== */
+        .search-sort-bar { margin-bottom: 24px; }
+        .search-box { display: flex; margin-bottom: 12px; }
+        .search-box input { flex: 1; padding: 10px 16px; border: 1px solid #e2e8f0; border-radius: 40px 0 0 40px; font-size: 0.95rem; background: white; outline: none; }
+        .search-box input:focus { border-color: #1E88E5; }
+        .search-box button { background: #1E88E5; color: white; border: none; padding: 0 20px; border-radius: 0 40px 40px 0; cursor: pointer; transition: background 0.2s; }
+        .search-box button:hover { background: #0b5e8a; }
 
-        #sidebar.collapsed .sidebar-logout::before {
-            content: "🚪";
-            font-size: 1.2rem;
-        }
+        .category-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .category-tab { padding: 6px 14px; border-radius: 20px; border: 1px solid #E5E7EB; background: white; cursor: pointer; font-size: 0.85rem; color: #6B7280; transition: all 0.2s; }
+        .category-tab:hover { border-color: #1E88E5; color: #1E88E5; }
+        .category-tab.active { background: #1E88E5; color: white; border-color: #1E88E5; }
 
-        .sidebar-user {
-            display: flex;
-            align-items: center;
-            padding: 20px 16px;
-            border-bottom: 1px solid #eef2f6;
-            cursor: pointer;
-        }
+        .sort-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+        .sort-btn { background: #f0f2f5; border: none; padding: 6px 14px; border-radius: 30px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+        .sort-btn.active { background: #1E88E5; color: white; }
+        .sort-btn:hover { background: #e2e6ea; }
 
-        .sidebar-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
-            margin-right: 12px;
-        }
+        /* ========== 圈子卡片 ========== */
+        .circles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px; }
 
-        .sidebar-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        .circle-card-new { background: white; border-radius: 20px; overflow: hidden; border: 1px solid #eef2f6; cursor: pointer; transition: all 0.3s; position: relative; }
+        .circle-card-new:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-4px); }
+        .card-cover { height: 100px; background-size: cover; background-position: center; position: relative; }
+        .card-cover.no-cover { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .active-dot { position: absolute; top: 10px; left: 10px; width: 10px; height: 10px; background: #10B981; border-radius: 50%; border: 2px solid white; }
+        .active-badge { position: absolute; top: 10px; left: 26px; font-size: 0.7rem; color: #10B981; font-weight: 600; }
+        .card-logo { width: 50px; height: 50px; border-radius: 14px; object-fit: cover; position: absolute; bottom: -25px; left: 16px; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .card-body { padding: 30px 16px 16px; }
+        .card-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; }
+        .card-desc { font-size: 0.8rem; color: #6B7280; margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .card-stats { display: flex; gap: 12px; font-size: 0.8rem; color: #9CA3AF; }
 
-        .sidebar-avatar i {
-            font-size: 48px;
-            color: #1E88E5;
-        }
+        /* ========== 创建圈子的横幅 ========== */
+        .create-circle-banner { background: linear-gradient(135deg, #EFF6FF, #DBEAFE); border-radius: 20px; padding: 24px 32px; display: flex; align-items: center; justify-content: space-between; margin-top: 0; margin-bottom: 32px; border: 2px dashed #BFDBFE; }
+        .banner-text h3 { margin-bottom: 4px; font-size: 1.1rem; }
+        .banner-text p { color: #6B7280; font-size: 0.9rem; }
+        .btn-primary { background: #1E88E5; color: white; border: none; padding: 10px 24px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; }
+        .btn-primary:hover { background: #1565C0; }
 
-        .sidebar-user-info {
-            flex: 1;
-            overflow: hidden;
-            white-space: nowrap;
-        }
+        .pagination { display: flex; justify-content: center; gap: 8px; margin: 32px 0; }
+        .pagination button { background: #f0f2f5; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: 0.2s; }
+        .pagination button:hover { background: #e2e6ea; }
+        .pagination button.active { background: #1E88E5; color: white; }
 
-        .sidebar-nickname {
-            font-weight: 600;
-            font-size: 1rem;
-        }
+        .loading, .error, .no-circles { text-align: center; padding: 60px 20px; background: white; border-radius: 16px; color: #6c757d; }
 
-        .sidebar-email {
-            font-size: 0.7rem;
-            color: #6c757d;
-        }
+        .footer { background: white; border-top: 1px solid #e9ecef; padding: 20px 0; text-align: center; font-size: 0.75rem; color: #6c757d; }
 
-        .sidebar-nav {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 16px 0;
-        }
-
-        .sidebar-link {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            text-decoration: none;
-            color: #4a5568;
-            transition: background 0.2s;
-            white-space: nowrap;
-        }
-
-        .sidebar-link i {
-            width: 28px;
-            font-size: 1.2rem;
-            text-align: center;
-        }
-
-        .sidebar-link span {
-            margin-left: 12px;
-        }
-
-        .sidebar-link:hover {
-            background: #f0f2f5;
-        }
-
-        .sidebar-link.active {
-            background: #e9f0fe;
-            color: #1E88E5;
-        }
-
-        .notif-dot {
-            color: #e53e3e;
-            font-size: 0.7rem;
-            margin-left: 4px;
-        }
-
-        .sidebar-footer {
-            padding: 16px;
-            border-top: 1px solid #eef2f6;
-        }
-
-        .sidebar-logout {
-            width: 100%;
-            background: none;
-            border: none;
-            padding: 8px;
-            cursor: pointer;
-            color: #e53e3e;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .sidebar-logout:hover {
-            background: #ffe5e5;
-        }
-
-        /* ========== 圈子广场特有样式 ========== */
-        .circles-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 24px 0 20px;
-        }
-
-        .circles-header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .create-circle-btn {
-            background: #1E88E5;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 40px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: background 0.2s;
-        }
-
-        .create-circle-btn:hover {
-            background: #0b5e8a;
-        }
-
-        .search-sort-bar {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-
-        .search-box {
-            flex: 1;
-            min-width: 250px;
-            display: flex;
-        }
-
-        .search-box input {
-            flex: 1;
-            padding: 10px 16px;
-            border: 1px solid #e2e8f0;
-            border-radius: 40px 0 0 40px;
-            font-size: 0.95rem;
-            background: white;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: #1E88E5;
-        }
-
-        .search-box button {
-            background: #1E88E5;
-            color: white;
-            border: none;
-            padding: 0 20px;
-            border-radius: 0 40px 40px 0;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .search-box button:hover {
-            background: #0b5e8a;
-        }
-
-        .sort-btns {
-            display: flex;
-            gap: 8px;
-        }
-
-        .sort-btn {
-            background: #f0f2f5;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: 0.2s;
-            font-weight: 500;
-        }
-
-        .sort-btn.active {
-            background: #1E88E5;
-            color: white;
-        }
-
-        .sort-btn:hover {
-            background: #e2e6ea;
-        }
-
-        .circles-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .circle-card {
-            background: white;
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px solid #eef2f6;
-            transition: box-shadow 0.2s, transform 0.1s;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-            cursor: pointer;
-        }
-
-        .circle-card:hover {
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-        }
-
-        .circle-cover {
-            height: 100px;
-            background-size: cover;
-            background-position: center;
-            border-radius: 12px;
-            margin-bottom: 16px;
-            background-color: #e9f0fe;
-        }
-
-        .circle-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .circle-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            background: #1E88E5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            background-size: cover;
-            background-position: center;
-        }
-
-        .circle-name {
-            font-weight: 700;
-            font-size: 1.1rem;
-            flex: 1;
-        }
-
-        .circle-desc {
-            color: #6c757d;
-            font-size: 0.85rem;
-            margin-bottom: 16px;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .circle-stats {
-            display: flex;
-            gap: 16px;
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-
-        .circle-stats i {
-            margin-right: 4px;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin: 32px 0;
-        }
-
-        .pagination button {
-            background: #f0f2f5;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .pagination button:hover {
-            background: #e2e6ea;
-        }
-
-        .pagination button.active {
-            background: #1E88E5;
-            color: white;
-        }
-
-        .loading,
-        .error,
-        .no-posts {
-            text-align: center;
-            padding: 60px 20px;
-            background: white;
-            border-radius: 16px;
-            color: #6c757d;
-            border: 1px solid #eef2f6;
-            grid-column: 1 / -1;
-        }
-
-        .footer {
-            background: white;
-            border-top: 1px solid #e9ecef;
-            padding: 20px 0;
-            text-align: center;
-            font-size: 0.75rem;
-            color: #6c757d;
-            margin-top: 40px;
-        }
-
+        /* ========== 移动端 ========== */
         @media (max-width: 768px) {
-            body {
-                margin-left: 0;
-            }
-
-            #sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                width: 260px !important;
-            }
-
-            #sidebar.open-mobile {
-                transform: translateX(0);
-            }
-
-            .search-area {
-                width: 180px;
-            }
-
-            .circles-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 16px;
-            }
-
-            .search-sort-bar {
-                flex-direction: column;
-            }
-
-            .search-box {
-                min-width: 100%;
-            }
-
-            .sort-btns {
-                justify-content: flex-start;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .search-area {
-                width: 150px;
-            }
-
-            .about-link span {
-                display: none;
-            }
-
-            .about-link i {
-                margin-right: 0;
-                font-size: 1.2rem;
-            }
+            body { margin-left: 0; }
+            #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; width: 260px !important; }
+            #sidebar.open-mobile { transform: translateX(0); }
+            .circle-carousel { height: 220px; border-radius: 12px; }
+            .carousel-logo { width: 48px; height: 48px; }
+            .carousel-name { font-size: 1.3rem; }
+            .circles-grid { grid-template-columns: 1fr; }
+            .create-circle-banner { flex-direction: column; text-align: center; gap: 12px; }
+            .search-area { width: 140px; }
+            .category-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
         }
     </style>
 </head>
-
 <body id="appBody">
     <!-- 背景装饰 -->
     <div class="bg-decorations">
@@ -636,17 +175,13 @@
     <!-- 顶部栏 -->
     <div class="top-bar-container">
         <div class="top-bar">
-            <button class="menu-toggle" id="menuToggle">
-                <i class="fas fa-bars"></i>
-            </button>
+            <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
             <a href="/" class="logo">深圳高中生社区</a>
             <div class="search-area">
                 <input type="text" placeholder="搜索帖子、用户..." id="topSearchInput">
                 <button id="topSearchBtn"><i class="fas fa-search"></i></button>
             </div>
-            <a href="/about.html" class="about-link" id="aboutLink">
-                <i class="fas fa-info-circle"></i> <span>关于</span>
-            </a>
+            <a href="/about.html" class="about-link" id="aboutLink"><i class="fas fa-info-circle"></i> <span>关于</span></a>
             <a href="/notifications.html" class="notifications-icon" id="notifLink">
                 <i class="fas fa-bell"></i>
                 <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
@@ -657,9 +192,7 @@
     <!-- 侧边栏 -->
     <div id="sidebar">
         <div class="sidebar-user" id="sidebarUserBtn">
-            <div class="sidebar-avatar" id="sidebarAvatar">
-                <i class="fas fa-user-circle"></i>
-            </div>
+            <div class="sidebar-avatar" id="sidebarAvatar"><i class="fas fa-user-circle"></i></div>
             <div class="sidebar-user-info">
                 <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
                 <div class="sidebar-email" id="sidebarEmail"></div>
@@ -667,33 +200,19 @@
         </div>
         <nav class="sidebar-nav">
             <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
-            <a href="learning.html" class="sidebar-link" title="学习"><i
-                    class="fas fa-graduation-cap"></i><span>学习</span></a>
-            <a href="circles.html" class="sidebar-link active" title="圈子"><i
-                    class="fas fa-users"></i><span>圈子</span></a>
-            <a href="/study.html" class="sidebar-link" title="自习室">
-                <i class="fas fa-clock"></i><span>自习室</span>
-            </a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link active" title="圈子"><i class="fas fa-users"></i><span>圈子</span></a>
+            <a href="/study.html" class="sidebar-link" title="自习室"><i class="fas fa-clock"></i><span>自习室</span></a>
             <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
             <a href="life.html" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
             <a href="gaokao.html" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
             <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
             <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
-            <a href="admin.html" class="sidebar-link" title="管理后台"><i
-                    class="fas fa-shield-alt"></i><span>管理后台</span></a>
-            <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信">
-                <i class="fas fa-envelope"></i><span>私信</span>
-            </a>
-            <a href="drafts.html" class="sidebar-link" title="草稿箱">
-                <i class="fas fa-edit"></i><span>草稿箱</span>
-            </a>
-            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
-                <i class="fas fa-comment-dots"></i><span>反馈</span>
-            </a>
-            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
-                <i class="fas fa-bell"></i><span>通知</span>
-                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
-            </a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信"><i class="fas fa-envelope"></i><span>私信</span></a>
+            <a href="drafts.html" class="sidebar-link" title="草稿箱"><i class="fas fa-edit"></i><span>草稿箱</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈"><i class="fas fa-comment-dots"></i><span>反馈</span></a>
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知"><i class="fas fa-bell"></i><span>通知</span><span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span></a>
         </nav>
         <div class="sidebar-footer">
             <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
@@ -701,255 +220,355 @@
     </div>
 
     <main class="container">
-        <div class="circles-header">
-            <h1><i class="fas fa-users" style="color: #1E88E5;"></i> 圈子广场</h1>
-            <a href="/create-circle.html" class="create-circle-btn">
-                <i class="fas fa-plus"></i> 创建圈子
-            </a>
+        <!-- 轮播 -->
+        <div class="circle-carousel" id="circleCarousel">
+            <div class="carousel-track" id="carouselTrack"></div>
+            <div class="carousel-dots" id="carouselDots"></div>
+            <button class="carousel-btn carousel-prev" onclick="moveCarousel(-1)">❮</button>
+            <button class="carousel-btn carousel-next" onclick="moveCarousel(1)">❯</button>
         </div>
 
+        <!-- 圈子动态 -->
+        <div class="circle-activities">
+            <h3><i class="fas fa-bolt" style="color:#F59E0B;"></i> 圈子动态</h3>
+            <div class="activities-list" id="activitiesList">加载中...</div>
+        </div>
+
+        <!-- 搜索与分类 -->
         <div class="search-sort-bar">
             <div class="search-box">
-                <input type="text" id="circleSearchInput" placeholder="搜索圈子...">
+                <input type="text" id="circleSearchInput" placeholder="搜索圈子名称或简介..." maxlength="50">
                 <button id="circleSearchBtn"><i class="fas fa-search"></i></button>
             </div>
-            <div class="sort-btns">
+            <div class="category-tabs" id="categoryTabs">
+                <button class="category-tab active" data-category="all">全部</button>
+                <button class="category-tab" data-category="学术科技">🔬 学术科技</button>
+                <button class="category-tab" data-category="文化艺术">🎨 文化艺术</button>
+                <button class="category-tab" data-category="体育竞技">⚽ 体育竞技</button>
+                <button class="category-tab" data-category="志愿服务">🤝 志愿服务</button>
+                <button class="category-tab" data-category="其他">📦 其他</button>
+            </div>
+            <div class="sort-bar">
                 <button class="sort-btn active" data-sort="member_count">👥 成员最多</button>
                 <button class="sort-btn" data-sort="post_count">📝 帖子最多</button>
                 <button class="sort-btn" data-sort="created_at">🆕 最新创建</button>
             </div>
         </div>
 
-        <div id="circlesList" class="circles-grid">
-            <div class="loading">加载中...</div>
-        </div>
+        <!-- 圈子列表 -->
+        <div class="circles-grid" id="circlesList"><div class="loading" style="grid-column:1/-1;">加载中...</div></div>
 
-        <div id="pagination" class="pagination"></div>
+        <!-- 分页 -->
+        <div class="pagination" id="pagination"></div>
+
+        <!-- 创建圈子 -->
+        <div class="create-circle-banner">
+            <div class="banner-text">
+                <h3>还没有找到感兴趣的圈子？</h3>
+                <p>创建一个属于你自己的圈子，邀请同学加入！</p>
+            </div>
+            <a href="/create-circle.html" class="btn-primary">✨ 创建圈子</a>
+        </div>
     </main>
 
     <footer class="footer">
         <div class="container">
-            <p>© 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
+            <p>&copy; 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | 粤ICP备xxxxxxxx号 | 帮助中心</p>
         </div>
     </footer>
 
     <script>
         window.API_BASE = window.API_BASE || '/api';
 
-        // ---------- 侧边栏展开/收起 ----------
+        // ===================== 通用初始化 =====================
+
+        const token = localStorage.getItem('token');
+
+        // 侧边栏
         const sidebar = document.getElementById('sidebar');
         const toggleBtn = document.getElementById('menuToggle');
         const body = document.getElementById('appBody');
         const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
-        if (!isExpanded) {
-            sidebar.classList.add('collapsed');
-            body.classList.add('sidebar-collapsed');
-        } else {
-            sidebar.classList.remove('collapsed');
-            body.classList.remove('sidebar-collapsed');
-        }
+        if (!isExpanded) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); }
         toggleBtn.addEventListener('click', () => {
-            const currentlyExpanded = !sidebar.classList.contains('collapsed');
-            if (currentlyExpanded) {
-                sidebar.classList.add('collapsed');
-                body.classList.add('sidebar-collapsed');
-                localStorage.setItem('sidebarExpanded', 'false');
-            } else {
-                sidebar.classList.remove('collapsed');
-                body.classList.remove('sidebar-collapsed');
-                localStorage.setItem('sidebarExpanded', 'true');
-            }
+            const c = !sidebar.classList.contains('collapsed');
+            if (c) { sidebar.classList.add('collapsed'); body.classList.add('sidebar-collapsed'); localStorage.setItem('sidebarExpanded', 'false'); }
+            else { sidebar.classList.remove('collapsed'); body.classList.remove('sidebar-collapsed'); localStorage.setItem('sidebarExpanded', 'true'); }
         });
 
-        // ---------- 用户信息 ----------
-        const token = localStorage.getItem('token');
-        const avatarDiv = document.getElementById('sidebarAvatar');
-        const nicknameSpan = document.getElementById('sidebarNickname');
-        const emailSpan = document.getElementById('sidebarEmail');
+        // 用户信息
         async function updateSidebarUser() {
-            if (!token) {
-                nicknameSpan.innerText = '未登录';
-                emailSpan.innerText = '';
-                avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
-                return;
-            }
+            const av = document.getElementById('sidebarAvatar'), nn = document.getElementById('sidebarNickname'), em = document.getElementById('sidebarEmail');
+            if (!token) { nn.innerText = '未登录'; em.innerText = ''; av.innerHTML = '<i class="fas fa-user-circle"></i>'; return; }
             try {
-                const res = await fetch(`${window.API_BASE}/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const user = await res.json();
-                    nicknameSpan.innerText = user.nickname || '用户';
-                    emailSpan.innerText = user.email || '';
-                    if (user.avatar_url) {
-                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
-                    } else {
-                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
-                    }
-                }
+                const r = await fetch(window.API_BASE + '/me', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (r.ok) { const u = await r.json(); nn.innerText = u.nickname || '用户'; em.innerText = u.email || ''; av.innerHTML = u.avatar_url ? '<img src="' + u.avatar_url + '" alt="头像">' : '<i class="fas fa-user-circle"></i>'; }
             } catch (e) { console.warn(e); }
         }
         updateSidebarUser();
-        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
-            window.location.href = '/profile.html';
-        });
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => { window.location.href = '/profile.html'; });
 
-        // ---------- 未读小红点 ----------
+        // 小红点
         async function updateNotifDot() {
             if (!token) return;
             try {
-                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await res.json();
-                const unreadCount = data.unreadCount || 0;
-                const topBadge = document.getElementById('notifBadge');
-                const sidebarDot = document.getElementById('sidebarNotifDot');
-                if (topBadge) {
-                    if (unreadCount > 0) {
-                        topBadge.style.display = 'flex';
-                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
-                    } else {
-                        topBadge.style.display = 'none';
-                    }
-                }
-                if (sidebarDot) {
-                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
-                }
+                const r = await fetch(window.API_BASE + '/notifications?page=1&limit=1', { headers: { 'Authorization': 'Bearer ' + token } });
+                const d = await r.json(); const uc = d.unreadCount || 0;
+                const tb = document.getElementById('notifBadge'), sd = document.getElementById('sidebarNotifDot');
+                if (tb) { tb.style.display = uc > 0 ? 'flex' : 'none'; tb.innerText = uc > 99 ? '99+' : uc; }
+                if (sd) sd.style.display = uc > 0 ? 'inline-block' : 'none';
             } catch (e) { }
         }
-        updateNotifDot();
-        if (token) setInterval(updateNotifDot, 30000);
+        updateNotifDot(); if (token) setInterval(updateNotifDot, 30000);
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => { localStorage.removeItem('token'); window.location.href = '/login.html'; });
 
-        // ---------- 退出登录 ----------
-        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
-            localStorage.removeItem('token');
-            window.location.href = '/login.html';
-        });
-
-        // ---------- 顶部搜索 ----------
         const topSearchBtn = document.getElementById('topSearchBtn');
         const topSearchInput = document.getElementById('topSearchInput');
-        topSearchBtn?.addEventListener('click', () => {
-            const keyword = topSearchInput.value.trim();
-            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
-            else alert('请输入搜索关键词');
-        });
-        topSearchInput?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') topSearchBtn.click();
-        });
+        topSearchBtn?.addEventListener('click', () => { const q = topSearchInput.value.trim(); if (q) window.location.href = '/search.html?q=' + encodeURIComponent(q); });
+        topSearchInput?.addEventListener('keypress', (e) => { if (e.key === 'Enter') topSearchBtn.click(); });
 
-        // ---------- 圈子列表逻辑 ----------
+        // ===================== 圈子广场逻辑 =====================
+
+        let allCircles = [];
+        let filteredCircles = [];
         let currentPage = 1;
-        let currentSort = 'member_count';
-        let currentSearch = '';
         let totalPages = 1;
+        let currentCategory = 'all';
+        let currentSort = 'member_count';
+        const PAGE_SIZE = 18;
 
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        // 轮播
+        let currentSlide = 0;
+        let carouselInterval = null;
+
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m; }); }
+
+        function formatDate(iso) {
+            if (!iso) return '';
+            var d = new Date(iso);
+            return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
         }
 
-        async function loadCircles() {
-            const container = document.getElementById('circlesList');
-            container.innerHTML = '<div class="loading">加载中...</div>';
+        function formatRelativeTime(iso) {
+            if (!iso) return '';
+            var now = new Date(), d = new Date(iso), diff = Math.floor((now - d) / 1000);
+            if (diff < 60) return '刚刚';
+            if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
+            if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+            if (diff < 604800) return Math.floor(diff / 86400) + '天前';
+            return formatDate(iso);
+        }
+
+        // ===================== 加载数据 =====================
+
+        async function loadCircles(search, sort) {
+            var url = window.API_BASE + '/circles?limit=50&sort=' + (sort || currentSort);
+            if (search) url += '&search=' + encodeURIComponent(search);
             try {
-                let url = `${window.API_BASE}/circles?page=${currentPage}&limit=12&sort=${currentSort}`;
-                if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
-                const res = await fetch(url);
-                if (!res.ok) throw new Error('加载失败');
-                const data = await res.json();
-                const circles = data.circles;
-                totalPages = data.totalPages;
-
-                if (!circles.length) {
-                    container.innerHTML = '<div class="no-posts">暂无圈子，快来创建一个吧~</div>';
-                    document.getElementById('pagination').innerHTML = '';
-                    return;
-                }
-
-                container.innerHTML = circles.map(c => {
-                    const iconHtml = c.icon_url
-                        ? `<div class="circle-icon" style="background-image:url('${escapeHtml(c.icon_url)}'); background-size:cover;"></div>`
-                        : `<div class="circle-icon" style="background:#1E88E5;"><i class="fas fa-users"></i></div>`;
-                    const coverStyle = c.banner_url
-                        ? `style="background-image:url('${escapeHtml(c.banner_url)}')"`
-                        : 'style="background: linear-gradient(135deg, #1E88E5, #64B5F6);"';
-                    return `
-                        <a href="/circle-detail.html?id=${c.id}" class="circle-card">
-                            <div class="circle-cover" ${coverStyle}></div>
-                            <div class="circle-info">
-                                ${iconHtml}
-                                <div class="circle-name">${escapeHtml(c.name)}</div>
-                            </div>
-                            <div class="circle-desc">${escapeHtml(c.description || '暂无简介')}</div>
-                            <div class="circle-stats">
-                                <span><i class="fas fa-user"></i> ${c.member_count || 0} 成员</span>
-                                <span><i class="fas fa-file-alt"></i> ${c.post_count || 0} 帖子</span>
-                            </div>
-                        </a>
-                    `;
-                }).join('');
-
-                renderPagination();
+                var res = await fetch(url);
+                var data = await res.json();
+                allCircles = data.circles || [];
+                // 渲染动态
+                renderActivities(data.recent_activities || []);
+                // 初始化轮播
+                initCarousel(allCircles);
+                // 应用分类过滤
+                applyFilters();
             } catch (err) {
-                container.innerHTML = '<div class="error">加载失败，请刷新重试</div>';
+                document.getElementById('circlesList').innerHTML = '<div class="error" style="grid-column:1/-1;">加载失败，请刷新重试</div>';
             }
         }
 
-        function renderPagination() {
-            const container = document.getElementById('pagination');
-            if (totalPages <= 1) {
-                container.innerHTML = '';
+        // ===================== 动态流 =====================
+
+        function renderActivities(activities) {
+            var container = document.getElementById('activitiesList');
+            if (!activities || activities.length === 0) {
+                container.innerHTML = '<div class="activity-item"><span style="color:#999;padding:8px 0;">暂无圈子动态，快去创建或加入圈子吧~</span></div>';
                 return;
             }
-            let html = '';
-            for (let i = 1; i <= totalPages; i++) {
-                html += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            var icons = { event: '🎉', essence: '⭐', new_circle: '🆕' };
+            var texts = { event: '发布了新活动', essence: '有篇精华帖被推荐', new_circle: '新圈子成立' };
+
+            container.innerHTML = activities.map(function(a) {
+                return '<div class="activity-item" onclick="location.href=\'/circle-detail.html?id=' + a.circle_id + '\'">' +
+                    '<div class="activity-icon">' + (icons[a.activity_type] || '📣') + '</div>' +
+                    '<div class="activity-info">' +
+                    '<div class="activity-circle-name">' +
+                    (a.circle_icon ? '<img src="' + escapeHtml(a.circle_icon) + '" alt="">' : '') +
+                    escapeHtml(a.circle_name) +
+                    '</div>' +
+                    '<div class="activity-text">' + (texts[a.activity_type] || '') + '：' + escapeHtml(a.activity_title) + '</div>' +
+                    '</div>' +
+                    '<div class="activity-time">' + formatRelativeTime(a.created_at) + '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        // ===================== 轮播 =====================
+
+        function initCarousel(circles) {
+            var top = circles.slice(0, 3);
+            var track = document.getElementById('carouselTrack');
+            var dots = document.getElementById('carouselDots');
+
+            if (top.length === 0) {
+                track.innerHTML = '<div class="carousel-slide" style="background:linear-gradient(135deg,#1E88E5,#64B5F6)"><div class="carousel-content"><div class="carousel-name">暂无圈子</div><div class="carousel-desc">快来创建第一个圈子吧！</div></div></div>';
+                dots.innerHTML = '';
+                return;
             }
-            container.innerHTML = html;
-            container.querySelectorAll('button').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const page = parseInt(btn.dataset.page);
-                    if (page && page !== currentPage) {
-                        currentPage = page;
-                        loadCircles();
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
+
+            track.innerHTML = top.map(function(c, i) {
+                var cs = c.banner_url ? 'background-image:url(\'' + escapeHtml(c.banner_url) + '\')' : 'background:linear-gradient(135deg,#667eea,#764ba2)';
+                var lh = c.icon_url ? '<img src="' + escapeHtml(c.icon_url) + '" class="carousel-logo" alt="' + escapeHtml(c.name) + '">' : '<div class="carousel-logo" style="background:rgba(255,255,255,0.2);display:inline-flex;align-items:center;justify-content:center;font-size:2rem;">👥</div>';
+                return '<div class="carousel-slide" style="' + cs + '" onclick="location.href=\'/circle-detail.html?id=' + c.id + '\'">' +
+                    '<div class="carousel-content">' + lh +
+                    '<div class="carousel-name">' + escapeHtml(c.name) + '</div>' +
+                    '<div class="carousel-desc">' + escapeHtml(c.description || '加入圈子，一起交流讨论！') + '</div>' +
+                    '<div class="carousel-stats"><span>👤 ' + (c.member_count || 0) + ' 成员</span><span>📝 ' + (c.post_count || 0) + ' 帖子</span></div>' +
+                    '<button class="btn-primary" style="display:inline-block;padding:8px 20px;border-radius:20px;font-size:0.9rem;">查看详情 →</button>' +
+                    '</div></div>';
+            }).join('');
+
+            if (top.length > 1) {
+                dots.innerHTML = top.map(function(_, i) {
+                    return '<div class="carousel-dot' + (i === 0 ? ' active' : '') + '" onclick="goToSlide(' + i + ')"></div>';
+                }).join('');
+                startAutoPlay();
+            } else {
+                dots.innerHTML = '';
+            }
+        }
+
+        function moveCarousel(dir) {
+            var slides = document.querySelectorAll('.carousel-slide');
+            if (slides.length <= 1) return;
+            currentSlide = (currentSlide + dir + slides.length) % slides.length;
+            updateCarousel();
+        }
+
+        function goToSlide(index) { currentSlide = index; updateCarousel(); }
+
+        function updateCarousel() {
+            document.getElementById('carouselTrack').style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
+            document.querySelectorAll('.carousel-dot').forEach(function(d, i) { d.classList.toggle('active', i === currentSlide); });
+            resetAutoPlay();
+        }
+
+        function startAutoPlay() { if (carouselInterval) clearInterval(carouselInterval); carouselInterval = setInterval(function() { moveCarousel(1); }, 5000); }
+        function resetAutoPlay() { if (carouselInterval) { clearInterval(carouselInterval); startAutoPlay(); } }
+
+        // ===================== 分类过滤与渲染 =====================
+
+        function applyFilters() {
+            var keyword = document.getElementById('circleSearchInput').value.trim().toLowerCase();
+            filteredCircles = allCircles.filter(function(c) {
+                // 分类过滤
+                if (currentCategory !== 'all') {
+                    var cat = (c.category || c.description || '').toLowerCase();
+                    if (cat.indexOf(currentCategory.toLowerCase()) === -1) return false;
+                }
+                // 搜索过滤
+                if (keyword) {
+                    var name = (c.name || '').toLowerCase();
+                    var desc = (c.description || '').toLowerCase();
+                    if (name.indexOf(keyword) === -1 && desc.indexOf(keyword) === -1) return false;
+                }
+                return true;
+            });
+
+            // 排序
+            if (currentSort === 'post_count') {
+                filteredCircles.sort(function(a, b) { return (b.post_count || 0) - (a.post_count || 0); });
+            } else if (currentSort === 'created_at') {
+                filteredCircles.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+            } else {
+                filteredCircles.sort(function(a, b) { return (b.member_count || 0) - (a.member_count || 0); });
+            }
+
+            currentPage = 1;
+            renderPage();
+        }
+
+        function renderPage() {
+            var container = document.getElementById('circlesList');
+            var pagination = document.getElementById('pagination');
+            totalPages = Math.ceil(filteredCircles.length / PAGE_SIZE) || 1;
+
+            if (filteredCircles.length === 0) {
+                container.innerHTML = '<div class="no-circles" style="grid-column:1/-1;">暂无匹配的圈子</div>';
+                pagination.innerHTML = '';
+                return;
+            }
+
+            var start = (currentPage - 1) * PAGE_SIZE;
+            var pageCircles = filteredCircles.slice(start, start + PAGE_SIZE);
+
+            container.innerHTML = pageCircles.map(function(c) {
+                var cs = c.banner_url ? 'background-image:url(\'' + escapeHtml(c.banner_url) + '\')' : '';
+                var cc = c.banner_url ? '' : 'no-cover';
+                var lh = c.icon_url ? '<img src="' + escapeHtml(c.icon_url) + '" class="card-logo" alt="' + escapeHtml(c.name) + '">' : '<div class="card-logo" style="background:#1E88E5;display:flex;align-items:center;justify-content:center;color:white;font-size:1.5rem;">👥</div>';
+
+                // 判断是否活跃（24小时内有新帖——简化处理，默认不显示，可根据需要修改）
+                var activeHtml = c.member_count > 5 ? '<div class="active-dot"></div><div class="active-badge">活跃</div>' : '';
+
+                return '<div class="circle-card-new" onclick="location.href=\'/circle-detail.html?id=' + c.id + '\'">' +
+                    '<div class="card-cover ' + cc + '" style="' + cs + '">' + activeHtml + lh + '</div>' +
+                    '<div class="card-body">' +
+                    '<div class="card-name">' + escapeHtml(c.name) + '</div>' +
+                    '<div class="card-desc">' + escapeHtml(c.description || '暂无简介') + '</div>' +
+                    '<div class="card-stats">' +
+                    '<span>👤 ' + (c.member_count || 0) + ' 成员</span>' +
+                    '<span>📝 ' + (c.post_count || 0) + ' 帖子</span>' +
+                    '</div></div></div>';
+            }).join('');
+
+            // 分页
+            if (totalPages <= 1) { pagination.innerHTML = ''; return; }
+            var ph = '';
+            for (var i = 1; i <= totalPages; i++) {
+                ph += '<button class="' + (i === currentPage ? 'active' : '') + '" data-page="' + i + '">' + i + '</button>';
+            }
+            pagination.innerHTML = ph;
+            pagination.querySelectorAll('button').forEach(function(b) {
+                b.addEventListener('click', function() {
+                    var p = parseInt(b.dataset.page);
+                    if (p && p !== currentPage) { currentPage = p; renderPage(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
                 });
             });
         }
 
-        // 搜索圈子
-        document.getElementById('circleSearchBtn').addEventListener('click', () => {
-            currentSearch = document.getElementById('circleSearchInput').value.trim();
-            currentPage = 1;
-            loadCircles();
-        });
-        document.getElementById('circleSearchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                currentSearch = e.target.value.trim();
-                currentPage = 1;
-                loadCircles();
-            }
-        });
+        // ===================== 事件绑定 =====================
 
-        // 排序切换
-        document.querySelectorAll('.sort-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const sort = btn.dataset.sort;
-                if (sort === currentSort) return;
-                currentSort = sort;
-                currentPage = 1;
-                document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                loadCircles();
+        // 分类标签
+        document.querySelectorAll('.category-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.category-tab').forEach(function(t) { t.classList.remove('active'); });
+                tab.classList.add('active');
+                currentCategory = tab.dataset.category;
+                applyFilters();
             });
         });
 
-        // 初始加载
+        // 排序按钮
+        document.querySelectorAll('.sort-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.sort-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                currentSort = btn.dataset.sort;
+                applyFilters();
+            });
+        });
+
+        // 搜索
+        document.getElementById('circleSearchBtn').addEventListener('click', applyFilters);
+        document.getElementById('circleSearchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') applyFilters();
+        });
+
+        // ===================== 初始化 =====================
+
         loadCircles();
     </script>
 </body>
-
 </html>
