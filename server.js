@@ -3224,7 +3224,22 @@ app.post('/api/circles/:id/events', authMiddleware, async (req, res) => {
              signup_deadline || null, max_participants || null, userId]
         );
 
-        res.json({ id: result.rows[0].id, message: '活动创建成功' });
+        // 向所有圈子成员发送活动通知
+        const membersResult = await pool.query(
+            'SELECT user_id FROM circle_members WHERE circle_id = $1 AND user_id != $2',
+            [circleId, userId]
+        );
+        for (const member of membersResult.rows) {
+            await createNotification(
+                member.user_id,
+                'circle_event',
+                result.rows[0].id,
+                userId,
+                `圈子发布了新活动：《${title.trim()}》`
+            );
+        }
+
+        res.json({ id: result.rows[0].id, message: '活动创建成功，已向成员发送通知' });
     } catch (err) {
         console.error('创建活动失败:', err);
         res.status(500).json({ error: '创建活动失败' });

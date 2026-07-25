@@ -740,6 +740,7 @@
                 case 'circle_invite': return '👥';
                 case 'circle_approved': return '✅';
                 case 'circle_rejected': return '❌';
+                case 'circle_event': return '📅';
                 case 'follow': return '👤';
                 default: return '🔔';
             }
@@ -755,6 +756,7 @@
                 case 'circle_invite': return notif.content || `${sourceName} 邀请你参与创建圈子`;
                 case 'circle_approved': return notif.content || '你参与的圈子已通过审核';
                 case 'circle_rejected': return notif.content || '你的圈子申请已被拒绝';
+                case 'circle_event': return notif.content || `${sourceName} 在圈子里发布了新活动`;
                 case 'follow': return `${sourceName} 关注了你`;
                 default: return '新通知';
             }
@@ -838,7 +840,7 @@
                         window.location.href = `/post-detail.html?id=${sourceId}`;
                     } else if (type === 'report_resolved') {
                         window.location.href = '/feedback.html';
-                    } else if (type === 'circle_invite' || type === 'circle_approved') {
+                    } else if (type === 'circle_invite' || type === 'circle_approved' || type === 'circle_event') {
                         window.location.href = `/circle-detail.html?id=${sourceId}`;
                     } else if (type === 'follow') {
                         window.location.href = `/user-profile.html?uid=${sourceUserId}`;

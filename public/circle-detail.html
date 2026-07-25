@@ -2039,7 +2039,7 @@
                 });
                 var data = await res.json();
                 if (res.ok) {
-                    msgEl.innerText = '活动创建成功！'; msgEl.style.color = '#059669';
+                    msgEl.innerText = '活动创建成功！已向所有圈子成员发送通知。'; msgEl.style.color = '#059669';
                     // 清空表单
                     document.getElementById('eventTitle').value = '';
                     document.getElementById('eventDescription').value = '';
@@ -2072,174 +2072,208 @@
 
         async function openShare() {
             openModal('shareModal');
-            // 延迟等待模态框渲染
             setTimeout(function() {
-                generatePoster();
+                generateSharePoster();
             }, 300);
         }
 
-        async function generatePoster() {
+        function generateSharePoster() {
             var canvas = document.getElementById('posterCanvas');
             var ctx = canvas.getContext('2d');
 
-            var width = 400;
-            var height = 560;
-            canvas.width = width * 2;
-            canvas.height = height * 2;
-            canvas.style.width = width + 'px';
-            canvas.style.height = height + 'px';
+            var cw = 750, ch = 1100;
+            canvas.width = cw * 2;
+            canvas.height = ch * 2;
+            canvas.style.width = cw + 'px';
+            canvas.style.height = ch + 'px';
             ctx.scale(2, 2);
 
+            var circleName = circleData.name || '未命名圈子';
+            var circleDesc = circleData.description || '加入我们的圈子，一起交流讨论！';
+            var memberCount = circleData.member_count || 0;
+            var postCount = circleData.post_count || 0;
+
             // 背景渐变
-            var grad = ctx.createLinearGradient(0, 0, width, height);
-            if (circleData.banner_url) {
-                // 使用主要蓝色渐变
-                grad.addColorStop(0, '#1E88E5');
-                grad.addColorStop(0.5, '#7C4DFF');
-                grad.addColorStop(1, '#1E88E5');
-            } else {
-                grad.addColorStop(0, '#1E88E5');
-                grad.addColorStop(0.5, '#64B5F6');
-                grad.addColorStop(1, '#7C4DFF');
-            }
+            var grad = ctx.createLinearGradient(0, 0, 0, ch);
+            grad.addColorStop(0, '#1E88E5');
+            grad.addColorStop(0.4, '#1565C0');
+            grad.addColorStop(1, '#0D47A1');
             ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillRect(0, 0, cw, ch);
 
-            // 装饰圆
-            ctx.globalAlpha = 0.1;
-            ctx.fillStyle = 'white';
-            ctx.beginPath(); ctx.arc(350, 80, 120, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(50, 450, 80, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(200, 500, 100, 0, Math.PI * 2); ctx.fill();
-            ctx.globalAlpha = 1;
-
-            // 加载背景图片
-            if (circleData.banner_url) {
-                try {
-                    var img = new Image();
-                    img.crossOrigin = 'anonymous';
-                    await new Promise(function(resolve, reject) {
-                        img.onload = resolve;
-                        img.onerror = resolve; // 失败时忽略
-                        img.src = circleData.banner_url;
-                    });
-                    ctx.globalAlpha = 0.3;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    ctx.globalAlpha = 1;
-                } catch (e) { }
+            // 装饰圆点
+            ctx.fillStyle = 'rgba(255,255,255,0.08)';
+            var dotPositions = [
+                [650, 120, 100], [80, 900, 80], [400, 50, 60],
+                [120, 300, 40], [600, 700, 70], [300, 1000, 50]
+            ];
+            for (var d = 0; d < dotPositions.length; d++) {
+                ctx.beginPath();
+                ctx.arc(dotPositions[d][0], dotPositions[d][1], dotPositions[d][2], 0, Math.PI * 2);
+                ctx.fill();
             }
 
-            // Logo
+            // 白色内容卡片
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            roundRect(ctx, 40, 200, 670, 750, 24);
+            ctx.fill();
+
+            // 加载 Logo 图片
+            var logoLoaded = false;
             if (circleData.icon_url) {
                 try {
                     var logoImg = new Image();
                     logoImg.crossOrigin = 'anonymous';
-                    await new Promise(function(resolve, reject) {
-                        logoImg.onload = resolve;
-                        logoImg.onerror = resolve;
-                        logoImg.src = circleData.icon_url;
-                    });
-                    // 圆角剪裁
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(width / 2, 100, 45, 0, Math.PI * 2);
-                    ctx.closePath();
-                    ctx.clip();
-                    ctx.drawImage(logoImg, width / 2 - 45, 55, 90, 90);
-                    ctx.restore();
-                    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.arc(width / 2, 100, 45, 0, Math.PI * 2);
-                    ctx.stroke();
-                } catch (e) {
-                    drawDefaultLogo(ctx, width);
-                }
+                    logoImg.onload = function() {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(375, 155, 50, 0, Math.PI * 2);
+                        ctx.closePath();
+                        ctx.clip();
+                        ctx.drawImage(logoImg, 325, 105, 100, 100);
+                        ctx.restore();
+                        ctx.strokeStyle = '#1E88E5';
+                        ctx.lineWidth = 4;
+                        ctx.beginPath();
+                        ctx.arc(375, 155, 50, 0, Math.PI * 2);
+                        ctx.stroke();
+                        logoLoaded = true;
+                        drawPosterContent();
+                    };
+                    logoImg.onerror = function() { drawDefaultPosterIcon(); drawPosterContent(); };
+                    var iconSrc = circleData.icon_url;
+                    if (!iconSrc.startsWith('http')) iconSrc = window.location.origin + iconSrc;
+                    logoImg.src = iconSrc;
+                } catch (e) { drawDefaultPosterIcon(); drawPosterContent(); }
             } else {
-                drawDefaultLogo(ctx, width);
+                drawDefaultPosterIcon();
+                drawPosterContent();
             }
 
-            // 圈子名称
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 26px -apple-system, "PingFang SC", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.shadowColor = 'rgba(0,0,0,0.3)';
-            ctx.shadowBlur = 8;
-            ctx.fillText(circleData.name || '圈子', width / 2, 175);
-            ctx.shadowBlur = 0;
-
-            // 简介
-            ctx.font = '14px -apple-system, "PingFang SC", sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.85)';
-            var desc = (circleData.description || '暂无简介').substring(0, 40);
-            if ((circleData.description || '').length > 40) desc += '...';
-            ctx.fillText(desc, width / 2, 210);
-
-            // 分隔线
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(60, 240);
-            ctx.lineTo(width - 60, 240);
-            ctx.stroke();
-
-            // 统计数据
-            ctx.font = 'bold 18px -apple-system, sans-serif';
-            ctx.fillStyle = 'white';
-            ctx.fillText('👤 ' + (circleData.member_count || 0) + ' 成员', width / 2 - 80, 275);
-            ctx.fillText('📝 ' + (circleData.post_count || 0) + ' 帖子', width / 2 + 80, 275);
-
-            // 底部二维码区域文字
-            ctx.font = '14px -apple-system, "PingFang SC", sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.9)';
-            ctx.fillText('扫码加入我们的圈子！', width / 2, 360);
-
-            // 模拟二维码（装饰用正方形）
-            var qrSize = 80;
-            var qrX = (width - qrSize) / 2;
-            var qrY = 380;
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.roundRect(qrX, qrY, qrSize, qrSize, 8);
-            ctx.fill();
-
-            // 二维码装饰 - 绘制简单的图案
-            ctx.fillStyle = '#1E88E5';
-            var cellSize = qrSize / 7;
-            var pattern = [
-                [1, 1, 1, 0, 1, 0, 1],
-                [1, 0, 1, 0, 0, 1, 0],
-                [1, 0, 1, 0, 1, 0, 0],
-                [0, 1, 0, 0, 0, 1, 0],
-                [0, 1, 0, 1, 0, 0, 1],
-                [1, 0, 1, 0, 0, 1, 1],
-                [1, 0, 1, 0, 0, 0, 1]
-            ];
-            for (var r = 0; r < 7; r++) {
-                for (var c = 0; c < 7; c++) {
-                    if (pattern[r][c]) {
-                        ctx.fillRect(qrX + c * cellSize + 2, qrY + r * cellSize + 2, cellSize - 4, cellSize - 4);
-                    }
-                }
+            function drawDefaultPosterIcon() {
+                ctx.fillStyle = '#EFF6FF';
+                ctx.beginPath();
+                ctx.arc(375, 155, 50, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#1E88E5';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(375, 155, 50, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.fillStyle = '#1E88E5';
+                ctx.font = 'bold 40px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('👥', 375, 172);
+                drawPosterContent();
             }
 
-            // 底部品牌
-            ctx.font = '12px -apple-system, "PingFang SC", sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.5)';
-            ctx.fillText('深圳高中生社区 · 一起成长', width / 2, 500);
+            function drawPosterContent() {
+                // 圈子名称
+                ctx.fillStyle = '#1F2937';
+                ctx.font = 'bold 32px -apple-system, "PingFang SC", sans-serif';
+                ctx.textAlign = 'center';
+                var nameLines = wrapText(ctx, circleName, 580);
+                nameLines.forEach(function(line, i) {
+                    ctx.fillText(line, 375, 280 + i * 44);
+                });
+                var nameBottom = 280 + nameLines.length * 44;
+
+                // 简介
+                ctx.fillStyle = '#6B7280';
+                ctx.font = '20px -apple-system, "PingFang SC", sans-serif';
+                var descLines = wrapText(ctx, circleDesc, 550);
+                descLines.forEach(function(line, i) {
+                    ctx.fillText(line, 375, nameBottom + 20 + i * 30);
+                });
+                var descBottom = nameBottom + 20 + descLines.length * 30;
+
+                // 分隔线
+                var lineY = descBottom + 30;
+                ctx.strokeStyle = '#E5E7EB';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(100, lineY);
+                ctx.lineTo(650, lineY);
+                ctx.stroke();
+
+                // 统计
+                var statsY = lineY + 50;
+                ctx.fillStyle = '#1E88E5';
+                ctx.font = 'bold 26px -apple-system, sans-serif';
+                ctx.fillText('👤 ' + memberCount + ' 位成员    📝 ' + postCount + ' 篇帖子', 375, statsY);
+
+                // 二维码区域
+                var qrY = statsY + 80;
+                var qrUrl = encodeURIComponent(window.location.href);
+                var qrImg = new Image();
+                qrImg.crossOrigin = 'anonymous';
+                qrImg.onload = function() {
+                    ctx.drawImage(qrImg, 295, qrY, 160, 160);
+                    ctx.fillStyle = '#6B7280';
+                    ctx.font = '18px -apple-system, "PingFang SC", sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('扫码加入我们的圈子', 375, qrY + 190);
+
+                    // 底部水印
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    ctx.font = '16px -apple-system, "PingFang SC", sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('深圳高中生社区 · 一起成长', 375, 1060);
+                };
+                qrImg.onerror = function() {
+                    // 二维码加载失败时，画一个装饰占位
+                    ctx.fillStyle = '#F3F4F6';
+                    roundRect(ctx, 295, qrY, 160, 160, 12);
+                    ctx.fill();
+                    ctx.fillStyle = '#9CA3AF';
+                    ctx.font = '14px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('QR Code', 375, qrY + 85);
+
+                    ctx.fillStyle = '#6B7280';
+                    ctx.font = '18px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('扫码加入我们的圈子', 375, qrY + 190);
+
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    ctx.font = '16px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('深圳高中生社区 · 一起成长', 375, 1060);
+                };
+                qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + qrUrl;
+            }
         }
 
-        function drawDefaultLogo(ctx, width) {
-            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        // 辅助函数：圆角矩形
+        function roundRect(ctx, x, y, w, h, r) {
             ctx.beginPath();
-            ctx.arc(width / 2, 100, 45, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = 'white';
-            ctx.font = '36px "Font Awesome 6 Free"';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('👥', width / 2, 102);
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        // 辅助函数：文字换行
+        function wrapText(ctx, text, maxWidth) {
+            var lines = [];
+            var currentLine = '';
+            for (var i = 0; i < text.length; i++) {
+                var testLine = currentLine + text[i];
+                if (ctx.measureText(testLine).width > maxWidth && currentLine.length > 0) {
+                    lines.push(currentLine);
+                    currentLine = text[i];
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            if (currentLine) lines.push(currentLine);
+            return lines.length > 0 ? lines : [text];
         }
 
         // ===================== 初始化完成 =====================
