@@ -1357,6 +1357,48 @@ app.put('/api/posts/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// 切换帖子精华状态（管理员/圈主专用）
+app.patch('/api/posts/:id/essence', authMiddleware, async (req, res) => {
+    const postId = parseInt(req.params.id);
+    const userId = req.user.userId;
+
+    if (isNaN(postId)) return res.status(400).json({ error: '无效的帖子ID' });
+
+    try {
+        const postRes = await pool.query('SELECT circle_id FROM posts WHERE id = $1', [postId]);
+        if (postRes.rows.length === 0) return res.status(404).json({ error: '帖子不存在' });
+
+        const circleId = postRes.rows[0].circle_id;
+
+        let hasPermission = false;
+
+        const adminCheck = await pool.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+        if (adminCheck.rows[0]?.is_admin) hasPermission = true;
+
+        if (!hasPermission && circleId) {
+            const memberCheck = await pool.query(
+                'SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2',
+                [circleId, userId]
+            );
+            if (memberCheck.rows.length > 0 && ['creator', 'admin'].includes(memberCheck.rows[0].role)) {
+                hasPermission = true;
+            }
+        }
+
+        if (!hasPermission) return res.status(403).json({ error: '无权操作' });
+
+        const result = await pool.query(
+            'UPDATE posts SET is_essence = NOT is_essence WHERE id = $1 RETURNING is_essence',
+            [postId]
+        );
+
+        res.json({ is_essence: result.rows[0].is_essence, message: result.rows[0].is_essence ? '已设为精华' : '已取消精华' });
+    } catch (err) {
+        console.error('切换精华状态失败:', err);
+        res.status(500).json({ error: '操作失败' });
+    }
+});
+
 app.delete('/api/posts/:id', authMiddleware, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: '无效的帖子ID' });
@@ -2954,11 +2996,14 @@ app.get('/api/circles/:id', async (req, res) => {
         const circle = circleResult.rows[0];
 
         const membersQuery = `
-            SELECT cm.*, u.nickname, u.avatar_url
+            SELECT cm.*, u.nickname, u.avatar_url,
+                   (SELECT COUNT(*) FROM posts WHERE circle_id = $1 AND user_id = cm.user_id) as post_count
             FROM circle_members cm
             JOIN users u ON cm.user_id = u.id
             WHERE cm.circle_id = $1
-            ORDER BY cm.joined_at ASC
+            ORDER BY
+                CASE cm.role WHEN 'creator' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,
+                cm.joined_at ASC
             LIMIT 20
         `;
         const membersResult = await pool.query(membersQuery, [circleId]);
@@ -3001,10 +3046,12 @@ app.get('/api/circles/:id/posts', async (req, res) => {
         let orderBy = 'ORDER BY p.created_at DESC';
         if (sort === 'hot') {
             orderBy = 'ORDER BY (p.likes * 3 + p.view_count * 1 + (SELECT COUNT(*) FROM replies WHERE post_id = p.id) * 2) DESC';
+        } else if (sort === 'essence') {
+            orderBy = 'AND p.is_essence = true ORDER BY p.created_at DESC';
         }
 
         const query = `
-            SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at, p.likes,
+            SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at, p.likes, p.is_essence,
                    u.nickname, u.id as user_id, u.avatar_url, u.exp, u.has_passed_quiz,
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM posts p
@@ -3013,7 +3060,9 @@ app.get('/api/circles/:id/posts', async (req, res) => {
             ${orderBy}
             LIMIT $2 OFFSET $3
         `;
-        const countQuery = `SELECT COUNT(*) as total FROM posts WHERE circle_id = $1`;
+        const countQuery = sort === 'essence'
+            ? `SELECT COUNT(*) as total FROM posts WHERE circle_id = $1 AND is_essence = true`
+            : `SELECT COUNT(*) as total FROM posts WHERE circle_id = $1`;
 
         const result = await pool.query(query, [circleId, limit, offset]);
         const countResult = await pool.query(countQuery, [circleId]);
@@ -3096,6 +3145,159 @@ app.post('/api/circles/:id/leave', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: '退出失败' });
+    }
+});
+
+// 创建圈子公告（圈主/管理员专用）
+app.post('/api/circles/:id/announcements', authMiddleware, async (req, res) => {
+    const circleId = parseInt(req.params.id);
+    const userId = req.user.userId;
+    const { content } = req.body;
+
+    if (isNaN(circleId)) return res.status(400).json({ error: '无效的圈子ID' });
+    if (!content || content.trim().length === 0) return res.status(400).json({ error: '公告内容不能为空' });
+
+    try {
+        const memberCheck = await pool.query(
+            'SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2',
+            [circleId, userId]
+        );
+        if (memberCheck.rows.length === 0 || !['creator', 'admin'].includes(memberCheck.rows[0].role)) {
+            return res.status(403).json({ error: '只有圈主或管理员才能发布公告' });
+        }
+
+        await pool.query('DELETE FROM circle_announcements WHERE circle_id = $1', [circleId]);
+
+        await pool.query(
+            'INSERT INTO circle_announcements (circle_id, content) VALUES ($1, $2)',
+            [circleId, content.trim()]
+        );
+
+        res.json({ message: '公告发布成功' });
+    } catch (err) {
+        console.error('发布公告失败:', err);
+        res.status(500).json({ error: '发布公告失败' });
+    }
+});
+
+// 获取圈子最新公告
+app.get('/api/circles/:id/announcements', async (req, res) => {
+    const circleId = parseInt(req.params.id);
+    if (isNaN(circleId)) return res.status(400).json({ error: '无效的圈子ID' });
+
+    try {
+        const result = await pool.query(
+            'SELECT * FROM circle_announcements WHERE circle_id = $1 ORDER BY created_at DESC LIMIT 1',
+            [circleId]
+        );
+        res.json({ announcement: result.rows[0] || null });
+    } catch (err) {
+        console.error('获取公告失败:', err);
+        res.status(500).json({ error: '获取公告失败' });
+    }
+});
+
+// 更新圈子信息（圈主专用）
+app.put('/api/circles/:id', authMiddleware, async (req, res) => {
+    const circleId = parseInt(req.params.id);
+    const userId = req.user.userId;
+    const { name, description, icon_url, banner_url } = req.body;
+
+    if (isNaN(circleId)) return res.status(400).json({ error: '无效的圈子ID' });
+
+    try {
+        const circleCheck = await pool.query('SELECT creator_id FROM circles WHERE id = $1', [circleId]);
+        if (circleCheck.rows.length === 0) return res.status(404).json({ error: '圈子不存在' });
+        if (circleCheck.rows[0].creator_id !== userId) return res.status(403).json({ error: '只有圈主才能编辑圈子信息' });
+
+        await pool.query(
+            'UPDATE circles SET name = COALESCE($1, name), description = COALESCE($2, description), icon_url = COALESCE($3, icon_url), banner_url = COALESCE($4, banner_url) WHERE id = $5',
+            [name || null, description || null, icon_url || null, banner_url || null, circleId]
+        );
+
+        res.json({ message: '更新成功' });
+    } catch (err) {
+        console.error('更新圈子信息失败:', err);
+        res.status(500).json({ error: '更新失败' });
+    }
+});
+
+// 管理圈子成员（圈主/管理员专用）
+app.patch('/api/circles/:id/members/:userId', authMiddleware, async (req, res) => {
+    const circleId = parseInt(req.params.id);
+    const targetUserId = parseInt(req.params.userId);
+    const currentUserId = req.user.userId;
+    const { action } = req.body;
+
+    if (isNaN(circleId) || isNaN(targetUserId)) return res.status(400).json({ error: '无效的参数' });
+
+    try {
+        const myRole = await pool.query(
+            'SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2',
+            [circleId, currentUserId]
+        );
+        if (myRole.rows.length === 0) return res.status(403).json({ error: '您不是该圈子的成员' });
+
+        const myRoleName = myRole.rows[0].role;
+
+        if (action === 'set_admin' || action === 'remove_admin') {
+            if (myRoleName !== 'creator') return res.status(403).json({ error: '只有圈主才能管理管理员' });
+
+            if (action === 'set_admin') {
+                await pool.query('UPDATE circle_members SET role = $1 WHERE circle_id = $2 AND user_id = $3', ['admin', circleId, targetUserId]);
+            } else {
+                await pool.query('UPDATE circle_members SET role = $1 WHERE circle_id = $2 AND user_id = $3', ['member', circleId, targetUserId]);
+            }
+            res.json({ message: action === 'set_admin' ? '已设为管理员' : '已取消管理员' });
+        } else if (action === 'kick') {
+            if (myRoleName === 'member') return res.status(403).json({ error: '无权操作' });
+            if (myRoleName === 'admin') {
+                const targetRole = await pool.query('SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2', [circleId, targetUserId]);
+                if (targetRole.rows.length === 0) return res.status(404).json({ error: '成员不存在' });
+                if (targetRole.rows[0].role !== 'member') return res.status(403).json({ error: '管理员不能踢出其他管理员或圈主' });
+            }
+
+            await pool.query('DELETE FROM circle_members WHERE circle_id = $1 AND user_id = $2', [circleId, targetUserId]);
+            await pool.query('UPDATE circles SET member_count = member_count - 1 WHERE id = $1', [circleId]);
+            res.json({ message: '已踢出圈子' });
+        } else {
+            res.status(400).json({ error: '无效的操作' });
+        }
+    } catch (err) {
+        console.error('管理成员失败:', err);
+        res.status(500).json({ error: '操作失败' });
+    }
+});
+
+// 转让圈主
+app.post('/api/circles/:id/transfer', authMiddleware, async (req, res) => {
+    const circleId = parseInt(req.params.id);
+    const currentUserId = req.user.userId;
+    const { new_owner_id } = req.body;
+
+    if (isNaN(circleId) || !new_owner_id) return res.status(400).json({ error: '无效的参数' });
+
+    try {
+        const circleCheck = await pool.query('SELECT creator_id FROM circles WHERE id = $1', [circleId]);
+        if (circleCheck.rows.length === 0) return res.status(404).json({ error: '圈子不存在' });
+        if (circleCheck.rows[0].creator_id !== currentUserId) return res.status(403).json({ error: '只有圈主才能转让' });
+
+        const targetCheck = await pool.query(
+            'SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2',
+            [circleId, new_owner_id]
+        );
+        if (targetCheck.rows.length === 0) return res.status(400).json({ error: '目标用户不是圈子成员' });
+        if (targetCheck.rows[0].role !== 'admin') return res.status(400).json({ error: '只能转让给管理员' });
+
+        // 转让圈主：原圈主降为管理员，目标管理员升为圈主
+        await pool.query('UPDATE circle_members SET role = $1 WHERE circle_id = $2 AND user_id = $3', ['admin', circleId, currentUserId]);
+        await pool.query('UPDATE circle_members SET role = $1 WHERE circle_id = $2 AND user_id = $3', ['creator', circleId, new_owner_id]);
+        await pool.query('UPDATE circles SET creator_id = $1 WHERE id = $2', [new_owner_id, circleId]);
+
+        res.json({ message: '圈主转让成功' });
+    } catch (err) {
+        console.error('转让圈主失败:', err);
+        res.status(500).json({ error: '转让失败' });
     }
 });
 
