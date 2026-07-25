@@ -2350,6 +2350,13 @@ app.get('/api/user/coins', authMiddleware, async (req, res) => {
             [userId, today]
         );
 
+        // 今日是否已签到
+        const checkinRes = await pool.query(
+            `SELECT id FROM coin_transactions
+             WHERE user_id = $1 AND source = 'daily_login' AND created_at >= $2::date`,
+            [userId, today]
+        );
+
         // 最近流水
         const recentRes = await pool.query(
             `SELECT amount, source, description, created_at FROM coin_transactions
@@ -2360,6 +2367,7 @@ app.get('/api/user/coins', authMiddleware, async (req, res) => {
         res.json({
             coins,
             today_coins: parseInt(todayRes.rows[0].today_coins),
+            checked_in_today: checkinRes.rows.length > 0,
             recent_transactions: recentRes.rows
         });
     } catch (err) {

@@ -1718,7 +1718,7 @@
 
                     // 签到按钮状态
                     const checkinBtn = document.getElementById('checkinBtn');
-                    if (data.recent_transactions.some(t => t.source === 'daily_login' && new Date(t.created_at).toDateString() === new Date().toDateString())) {
+                    if (data.checked_in_today) {
                         checkinBtn.textContent = '✅ 已签到';
                         checkinBtn.classList.add('checked');
                         checkinBtn.onclick = null;
