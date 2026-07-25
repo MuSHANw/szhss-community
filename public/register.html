@@ -511,7 +511,7 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-                errorMsgDiv.innerText = '验证码已发送，请查看控制台或邮箱';
+                errorMsgDiv.innerHTML = '验证码已发送<br>如果没收到邮件，请先检查一下垃圾箱';
                 // 倒计时60秒
                 countdown = 60;
                 sendCodeBtn.disabled = true;
