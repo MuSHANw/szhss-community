@@ -221,19 +221,26 @@ app.post('/api/forgot-password', async (req, res) => {
             [email, resetToken, expiresAt]
         );
         const resetLink = 'https://szhss-community.top/reset-password.html?token=' + resetToken + '&email=' + encodeURIComponent(email);
-        await transporter.sendMail({
-            from: '"深圳高中生社区" <' + (process.env.EMAIL_USER || 'your_email@outlook.com') + '>',
-            to: email,
-            subject: '深圳高中生社区 - 重置密码',
-            html: '<div style="max-width:600px;margin:0 auto;padding:20px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">' +
-                '<div style="background:#1E88E5;padding:16px 20px;border-radius:12px 12px 0 0;"><h2 style="color:white;margin:0;font-size:18px;">🔐 深圳高中生社区 · 重置密码</h2></div>' +
-                '<div style="background:#F8FAFC;padding:24px 20px;border:1px solid #E5E7EB;border-top:none;border-radius:0 0 12px 12px;">' +
-                '<p style="font-size:15px;color:#333;margin-bottom:16px;">点击下方按钮重置你的密码（30分钟内有效）：</p>' +
-                '<div style="text-align:center;margin:24px 0;"><a href="' + resetLink + '" style="display:inline-block;background:#1E88E5;color:white;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">重置密码</a></div>' +
-                '<p style="font-size:13px;color:#999;margin-bottom:4px;">如果按钮无法点击，请复制以下链接到浏览器：</p>' +
-                '<p style="font-size:12px;color:#999;word-break:break-all;">' + resetLink + '</p>' +
-                '<p style="font-size:13px;color:#999;margin-top:16px;">如果这不是你本人操作，请忽略此邮件。</p></div></div>',
-        });
+        try {
+            const emailUser = process.env.EMAIL_USER || 'your_email@qq.com';
+            await transporter.sendMail({
+                from: '"深圳高中生社区" <' + emailUser + '>',
+                to: email,
+                subject: '深圳高中生社区 - 重置密码',
+                html: '<div style="max-width:600px;margin:0 auto;padding:20px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">'
+                    + '<div style="background:#1E88E5;padding:16px 20px;border-radius:12px 12px 0 0;"><h2 style="color:white;margin:0;font-size:18px;">🔐 深圳高中生社区 · 重置密码</h2></div>'
+                    + '<div style="background:#F8FAFC;padding:24px 20px;border:1px solid #E5E7EB;border-top:none;border-radius:0 0 12px 12px;">'
+                    + '<p style="font-size:15px;color:#333;margin-bottom:16px;">点击下方按钮重置你的密码（30分钟内有效）：</p>'
+                    + '<div style="text-align:center;margin:24px 0;"><a href="' + resetLink + '" style="display:inline-block;background:#1E88E5;color:white;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">重置密码</a></div>'
+                    + '<p style="font-size:13px;color:#999;margin-bottom:4px;">如果按钮无法点击，请复制以下链接到浏览器：</p>'
+                    + '<p style="font-size:12px;color:#999;word-break:break-all;">' + resetLink + '</p>'
+                    + '<p style="font-size:13px;color:#999;margin-top:16px;">如果这不是你本人操作，请忽略此邮件。</p></div></div>',
+            });
+            console.log('📧 重置密码邮件已发送至 ' + email);
+        } catch (mailErr) {
+            console.error('邮件发送失败（令牌已保存，可重试发送）:', mailErr.message);
+            // 即使邮件发送失败，令牌已存储，用户可稍后重试
+        }
         res.json({ message: '如果该邮箱已注册，重置链接已发送至你的邮箱' });
     } catch (err) {
         console.error('发送重置邮件失败:', err);
