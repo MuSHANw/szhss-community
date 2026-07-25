@@ -3197,6 +3197,161 @@ app.get('/api/circles/:id/announcements', async (req, res) => {
     }
 });
 
+// ---------- 圈子活动 API ----------
+
+// 创建圈子活动（圈主/管理员专用）
+app.post('/api/circles/:id/events', authMiddleware, async (req, res) => {
+    const circleId = parseInt(req.params.id);
+    const userId = req.user.userId;
+    const { title, description, location, start_time, end_time, signup_deadline, max_participants } = req.body;
+
+    if (isNaN(circleId)) return res.status(400).json({ error: '无效的圈子ID' });
+    if (!title || !title.trim()) return res.status(400).json({ error: '活动标题不能为空' });
+
+    try {
+        const memberCheck = await pool.query(
+            'SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2',
+            [circleId, userId]
+        );
+        if (memberCheck.rows.length === 0 || !['creator', 'admin'].includes(memberCheck.rows[0].role)) {
+            return res.status(403).json({ error: '只有圈主或管理员才能创建活动' });
+        }
+
+        const result = await pool.query(
+            `INSERT INTO circle_events (circle_id, title, description, location, start_time, end_time, signup_deadline, max_participants, created_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+            [circleId, title.trim(), description || '', location || null, start_time || null, end_time || null,
+             signup_deadline || null, max_participants || null, userId]
+        );
+
+        res.json({ id: result.rows[0].id, message: '活动创建成功' });
+    } catch (err) {
+        console.error('创建活动失败:', err);
+        res.status(500).json({ error: '创建活动失败' });
+    }
+});
+
+// 获取圈子活动列表
+app.get('/api/circles/:id/events', async (req, res) => {
+    const circleId = parseInt(req.params.id);
+    if (isNaN(circleId)) return res.status(400).json({ error: '无效的圈子ID' });
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    try {
+        const query = `
+            SELECT e.*, u.nickname as creator_nickname, u.avatar_url as creator_avatar,
+                   (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count
+            FROM circle_events e
+            JOIN users u ON e.created_by = u.id
+            WHERE e.circle_id = $1
+            ORDER BY e.created_at DESC
+            LIMIT $2 OFFSET $3
+        `;
+        const countQuery = 'SELECT COUNT(*) as total FROM circle_events WHERE circle_id = $1';
+
+        const result = await pool.query(query, [circleId, limit, offset]);
+        const countResult = await pool.query(countQuery, [circleId]);
+        const total = parseInt(countResult.rows[0].total);
+
+        const events = result.rows;
+        const token = req.headers.authorization?.split(' ')[1];
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                const userId = decoded.userId;
+                for (const event of events) {
+                    const joinCheck = await pool.query(
+                        'SELECT id FROM event_participants WHERE event_id = $1 AND user_id = $2',
+                        [event.id, userId]
+                    );
+                    event.is_joined = joinCheck.rows.length > 0;
+                }
+            } catch (e) {}
+        }
+
+        res.json({
+            events,
+            page, limit, total,
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (err) {
+        console.error('获取活动列表失败:', err);
+        res.status(500).json({ error: '获取活动列表失败' });
+    }
+});
+
+// 报名活动
+app.post('/api/events/:id/join', authMiddleware, async (req, res) => {
+    const eventId = parseInt(req.params.id);
+    const userId = req.user.userId;
+
+    if (isNaN(eventId)) return res.status(400).json({ error: '无效的活动ID' });
+
+    try {
+        const eventCheck = await pool.query('SELECT * FROM circle_events WHERE id = $1', [eventId]);
+        if (eventCheck.rows.length === 0) return res.status(404).json({ error: '活动不存在' });
+
+        const event = eventCheck.rows[0];
+
+        if (event.signup_deadline && new Date(event.signup_deadline) < new Date()) {
+            return res.status(400).json({ error: '报名已截止' });
+        }
+
+        if (event.max_participants) {
+            const countRes = await pool.query(
+                'SELECT COUNT(*) as cnt FROM event_participants WHERE event_id = $1',
+                [eventId]
+            );
+            if (parseInt(countRes.rows[0].cnt) >= event.max_participants) {
+                return res.status(400).json({ error: '报名人数已满' });
+            }
+        }
+
+        const existing = await pool.query(
+            'SELECT id FROM event_participants WHERE event_id = $1 AND user_id = $2',
+            [eventId, userId]
+        );
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ error: '你已经报过名了' });
+        }
+
+        await pool.query(
+            'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [eventId, userId]
+        );
+
+        res.json({ message: '报名成功' });
+    } catch (err) {
+        console.error('报名失败:', err);
+        res.status(500).json({ error: '报名失败' });
+    }
+});
+
+// 取消报名
+app.post('/api/events/:id/leave', authMiddleware, async (req, res) => {
+    const eventId = parseInt(req.params.id);
+    const userId = req.user.userId;
+
+    if (isNaN(eventId)) return res.status(400).json({ error: '无效的活动ID' });
+
+    try {
+        const result = await pool.query(
+            'DELETE FROM event_participants WHERE event_id = $1 AND user_id = $2 RETURNING id',
+            [eventId, userId]
+        );
+        if (result.rows.length === 0) {
+            return res.status(400).json({ error: '你还没有报名' });
+        }
+        res.json({ message: '已取消报名' });
+    } catch (err) {
+        console.error('取消报名失败:', err);
+        res.status(500).json({ error: '取消报名失败' });
+    }
+});
+
 // ---------- 圈子管理 API ----------
 
 // 删除圈子公告（圈主/管理员专用）
