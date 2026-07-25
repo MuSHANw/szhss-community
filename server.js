@@ -56,6 +56,93 @@ async function createNotification(userId, type, sourceId, sourceUserId = null, c
     }
 }
 
+// ---------- 鹏城币系统 ----------
+
+// 每日任务奖励规则
+const DAILY_TASKS = {
+    daily_login: { reward: 5, max: 1, description: '每日签到' },
+    post: { reward: 10, max: 3, description: '发表帖子' },
+    reply: { reward: 3, max: 5, description: '回复帖子' },
+    like_given: { reward: 1, max: 10, description: '点赞帖子' },
+    study_session: { reward: 15, max: 2, description: '完成自习' }
+};
+
+// 成就任务定义
+const ACHIEVEMENTS = {
+    first_post: { reward: 20, description: '首次发帖' },
+    first_reply: { reward: 10, description: '首次回复' },
+    first_like_received: { reward: 15, description: '首次获得点赞' },
+    quiz_passed: { reward: 30, description: '通过入站答题' },
+    profile_completed: { reward: 10, description: '完善个人资料' },
+    first_circle: { reward: 50, description: '创建第一个圈子' },
+    hundred_likes: { reward: 100, description: '累计获得100赞' },
+    fifty_posts: { reward: 200, description: '累计发帖50篇' }
+};
+
+// 发放金币（更新余额 + 记录流水）
+async function awardCoin(userId, amount, source, description) {
+    if (amount <= 0) return;
+    try {
+        await pool.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [amount, userId]);
+        await pool.query(
+            'INSERT INTO coin_transactions (user_id, amount, type, source, description) VALUES ($1, $2, $3, $4, $5)',
+            [userId, amount, 'earn', source, description]
+        );
+    } catch (err) {
+        console.error('发放金币失败:', err);
+    }
+}
+
+// 检查并完成成就任务
+async function checkAchievement(userId, taskId) {
+    try {
+        const existing = await pool.query(
+            'SELECT id FROM task_completions WHERE user_id = $1 AND task_id = $2',
+            [userId, taskId]
+        );
+        if (existing.rows.length > 0) return; // 已完成
+
+        const achievement = ACHIEVEMENTS[taskId];
+        if (!achievement) return;
+
+        // 标记完成
+        await pool.query(
+            'INSERT INTO task_completions (user_id, task_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [userId, taskId]
+        );
+
+        // 发放奖励
+        await awardCoin(userId, achievement.reward, 'achievement', achievement.description);
+    } catch (err) {
+        console.error('检查成就任务失败:', err);
+    }
+}
+
+// 发放每日任务奖励（带上限检查）
+async function awardDailyTask(userId, taskType) {
+    const task = DAILY_TASKS[taskType];
+    if (!task) return;
+
+    const today = getBeijingDate();
+
+    try {
+        // 检查今日已完成次数
+        const countRes = await pool.query(
+            `SELECT COUNT(*) as cnt FROM coin_transactions
+             WHERE user_id = $1 AND source = $2
+             AND created_at >= $3::date`,
+            [userId, taskType, today]
+        );
+        const todayCount = parseInt(countRes.rows[0].cnt);
+
+        if (todayCount >= task.max) return; // 已达上限
+
+        await awardCoin(userId, task.reward, taskType, task.description);
+    } catch (err) {
+        console.error('发放每日任务奖励失败:', err);
+    }
+}
+
 // ---------- 经验值系统 ----------
 const EXP_RULES = {
     post: { exp: 10, dailyMax: 50 },
@@ -373,6 +460,7 @@ app.post('/api/login', async (req, res) => {
         if (!valid) return res.status(401).json({ error: '邮箱或密码错误' });
         const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
         addExp(user.id, 'login');
+        await awardDailyTask(user.id, 'daily_login');
         res.json({ token, user: { id: user.id, email: user.email, nickname: user.nickname } });
     } catch (err) {
         console.error(err);
@@ -411,7 +499,7 @@ app.get('/api/me', authMiddleware, async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT id, email, nickname, school, district, hobby, avatar_url, is_admin, nickname_last_updated,
-                    show_activity, show_replies, show_favorites, allow_messages, u.exp, u.has_passed_quiz,
+                    show_activity, show_replies, show_favorites, allow_messages, u.exp, u.has_passed_quiz, u.coins,
                     (SELECT COUNT(*) FROM user_follows WHERE follower_id = u.id) as following_count,
                     (SELECT COUNT(*) FROM user_follows WHERE followee_id = u.id) as follower_count
              FROM users u WHERE u.id = $1`,
@@ -465,6 +553,7 @@ app.put('/api/me/profile', authMiddleware, async (req, res) => {
         }
 
         await client.query('COMMIT');
+        await checkAchievement(userId, 'profile_completed');
         res.json({ message: '更新成功' });
     } catch (err) {
         await client.query('ROLLBACK');
@@ -816,7 +905,7 @@ app.get('/api/users/:id', async (req, res) => {
     try {
         const query = `
             SELECT id, email, nickname, school, district, hobby, avatar_url, allow_messages,
-                   exp, has_passed_quiz, created_at,
+                   exp, has_passed_quiz, created_at, coins,
                    total_likes_received, total_favorites_received, total_replies_received,
                    (SELECT COUNT(*) FROM user_follows WHERE follower_id = $1) as following_count,
                    (SELECT COUNT(*) FROM user_follows WHERE followee_id = $1) as follower_count,
@@ -1130,6 +1219,13 @@ app.post('/api/posts', authMiddleware, quizRequired, async (req, res) => {
             await pool.query('UPDATE circles SET post_count = post_count + 1 WHERE id = $1', [circle_id]);
         }
         addExp(req.user.userId, 'post');
+        await awardDailyTask(req.user.userId, 'post');
+        await checkAchievement(req.user.userId, 'first_post');
+        // 检查累计发帖成就
+        const postCount = await pool.query('SELECT COUNT(*) as cnt FROM posts WHERE user_id = $1', [req.user.userId]);
+        if (parseInt(postCount.rows[0].cnt) >= 50) {
+            await checkAchievement(req.user.userId, 'fifty_posts');
+        }
         res.json({ id: result.rows[0].id, message: '发布成功' });
     } catch (err) {
         console.error(err);
@@ -1302,6 +1398,8 @@ app.post('/api/posts/:id/replies', authMiddleware, quizRequired, async (req, res
             addExp(ownerId, 'replied');
         }
         addExp(req.user.userId, 'reply');
+        await awardDailyTask(req.user.userId, 'reply');
+        await checkAchievement(req.user.userId, 'first_reply');
         // 更新帖子作者的被回复计数器
         if (ownerId !== req.user.userId) {
             await pool.query('UPDATE users SET total_replies_received = total_replies_received + 1 WHERE id = $1', [ownerId]);
@@ -1354,6 +1452,12 @@ app.post('/api/posts/:id/like', authMiddleware, quizRequired, async (req, res) =
             await pool.query('UPDATE posts SET likes = likes + 1 WHERE id = $1', [postId]);
             await pool.query('UPDATE users SET total_likes_received = total_likes_received + 1 WHERE id = $1', [ownerId]);
             const likesResult = await pool.query('SELECT likes FROM posts WHERE id = $1', [postId]);
+            await awardDailyTask(userId, 'like_given');
+            await checkAchievement(ownerId, 'first_like_received');
+            const totalLikes = await pool.query('SELECT total_likes_received FROM users WHERE id = $1', [ownerId]);
+            if (parseInt(totalLikes.rows[0].total_likes_received) >= 100) {
+                await checkAchievement(ownerId, 'hundred_likes');
+            }
             res.json({ liked: true, likes: likesResult.rows[0].likes });
             if (ownerId !== userId) {
                 await createNotification(ownerId, 'like', postId, userId);
@@ -1648,6 +1752,8 @@ app.put('/api/admin/reports/:id', authMiddleware, adminMiddleware, async (req, r
             const content = `您的举报已通过处理，违规${report.target_type === 'post' ? '帖子' : report.target_type === 'reply' ? '回复' : '内容'}已被删除。`;
             await createNotification(report.reporter_id, 'report_resolved', reportId, null, content);
 
+            await awardCoin(report.reporter_id, 20, 'report_accepted', '举报被采纳');
+
             await client.query('COMMIT');
             res.json({ message: content });
         } else {
@@ -1694,10 +1800,18 @@ app.put('/api/admin/feedbacks/:id', authMiddleware, adminMiddleware, async (req,
     if (!reply && action !== 'read') return res.status(400).json({ error: '回复内容不能为空' });
     const status = action === 'resolve' ? 'resolved' : 'read';
     try {
+        const fbResult = await pool.query('SELECT user_id FROM feedbacks WHERE id = $1', [feedbackId]);
+        const feedbackUserId = fbResult.rows[0]?.user_id;
+
         await pool.query(
             `UPDATE feedbacks SET status = $1, reply = $2, resolved_at = NOW(), resolved_by = $3 WHERE id = $4`,
             [status, reply || null, req.user.userId, feedbackId]
         );
+
+        if (action === 'resolve' && feedbackUserId) {
+            await awardCoin(feedbackUserId, 30, 'feedback_accepted', '反馈被采纳');
+        }
+
         res.json({ message: '反馈已处理' });
     } catch (err) {
         console.error(err);
@@ -2170,6 +2284,10 @@ app.patch('/api/study-rooms/:id/status', authMiddleware, async (req, res) => {
         // 如果状态变为 idle 或 resting，并且之前是 studying，可以在这里插入一条学习记录（可选）
         // 为将来统计做准备，简单起见 Phase 1 先不做
 
+        if (status === 'studying') {
+            await awardDailyTask(userId, 'study_session');
+        }
+
         res.json({ message: '状态更新成功' });
     } catch (err) {
         console.error('更新自习状态失败:', err);
@@ -2214,6 +2332,140 @@ app.delete('/api/study-rooms/:id', authMiddleware, async (req, res) => {
 });
 
 // ---------- 自习室 API 结束 ----------
+
+// ---------- 任务与金币 API ----------
+
+// 获取用户金币信息
+app.get('/api/user/coins', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    try {
+        const userRes = await pool.query('SELECT coins FROM users WHERE id = $1', [userId]);
+        const coins = userRes.rows[0]?.coins || 0;
+
+        // 今日获得的金币
+        const today = getBeijingDate();
+        const todayRes = await pool.query(
+            `SELECT COALESCE(SUM(amount), 0) as today_coins FROM coin_transactions
+             WHERE user_id = $1 AND type = 'earn' AND created_at >= $2::date`,
+            [userId, today]
+        );
+
+        // 最近流水
+        const recentRes = await pool.query(
+            `SELECT amount, source, description, created_at FROM coin_transactions
+             WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10`,
+            [userId]
+        );
+
+        res.json({
+            coins,
+            today_coins: parseInt(todayRes.rows[0].today_coins),
+            recent_transactions: recentRes.rows
+        });
+    } catch (err) {
+        console.error('获取金币信息失败:', err);
+        res.status(500).json({ error: '获取金币信息失败' });
+    }
+});
+
+// 获取任务列表（含进度）
+app.get('/api/tasks', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const today = getBeijingDate();
+
+    try {
+        // 每日任务进度
+        const dailyTasks = [];
+        for (const [taskType, task] of Object.entries(DAILY_TASKS)) {
+            const countRes = await pool.query(
+                `SELECT COUNT(*) as cnt FROM coin_transactions
+                 WHERE user_id = $1 AND source = $2 AND created_at >= $3::date`,
+                [userId, taskType, today]
+            );
+            dailyTasks.push({
+                type: taskType,
+                description: task.description,
+                reward: task.reward,
+                current: parseInt(countRes.rows[0].cnt),
+                max: task.max
+            });
+        }
+
+        // 成就任务进度
+        const completedRes = await pool.query(
+            'SELECT task_id FROM task_completions WHERE user_id = $1',
+            [userId]
+        );
+        const completedSet = new Set(completedRes.rows.map(r => r.task_id));
+
+        // 检查需要统计的特殊成就进度
+        const likesRes = await pool.query('SELECT COALESCE(total_likes_received, 0) as cnt FROM users WHERE id = $1', [userId]);
+        const likesCount = parseInt(likesRes.rows[0].cnt);
+
+        const postsRes = await pool.query('SELECT COUNT(*) as cnt FROM posts WHERE user_id = $1', [userId]);
+        const postsCount = parseInt(postsRes.rows[0].cnt);
+
+        const achievements = Object.entries(ACHIEVEMENTS).map(([id, ach]) => {
+            let progress = completedSet.has(id) ? 100 : 0;
+            let progressText = completedSet.has(id) ? '已完成' : '';
+
+            if (id === 'hundred_likes' && !completedSet.has(id)) {
+                progress = Math.min(100, Math.floor(likesCount / 100 * 100));
+                progressText = `${likesCount}/100`;
+            }
+            if (id === 'fifty_posts' && !completedSet.has(id)) {
+                progress = Math.min(100, Math.floor(postsCount / 50 * 100));
+                progressText = `${postsCount}/50`;
+            }
+
+            return {
+                id,
+                description: ach.description,
+                reward: ach.reward,
+                completed: completedSet.has(id),
+                progress,
+                progressText
+            };
+        });
+
+        res.json({ dailyTasks, achievements });
+    } catch (err) {
+        console.error('获取任务列表失败:', err);
+        res.status(500).json({ error: '获取任务列表失败' });
+    }
+});
+
+// 每日签到
+app.post('/api/daily-checkin', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const today = getBeijingDate();
+
+    try {
+        // 检查今日是否已签到
+        const existing = await pool.query(
+            `SELECT id FROM coin_transactions
+             WHERE user_id = $1 AND source = 'daily_login' AND created_at >= $2::date`,
+            [userId, today]
+        );
+
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ error: '今日已签到' });
+        }
+
+        await awardCoin(userId, 5, 'daily_login', '每日签到');
+        res.json({ message: '签到成功！+5 鹏城币' });
+    } catch (err) {
+        console.error('签到失败:', err);
+        res.status(500).json({ error: '签到失败' });
+    }
+});
+
+// 兑换接口（预留）
+app.post('/api/user/redeem', authMiddleware, async (req, res) => {
+    return res.status(400).json({ error: '兑换中心即将上线，敬请期待' });
+});
+
+// ---------- 任务与金币 API 结束 ----------
 
 // ---------- 题库 API（重构版）----------
 
@@ -2369,6 +2621,10 @@ app.post('/api/quiz/submit', authMiddleware, async (req, res) => {
             } else if (level === 2) {
                 try { await pool.query('UPDATE users SET can_upload_media = true WHERE id = $1', [userId]); } catch (e) {} // 旧表无此列，忽略
             }
+        }
+
+        if (passed && level === 1) {
+            await checkAchievement(userId, 'quiz_passed');
         }
 
         res.json({
@@ -3125,6 +3381,8 @@ app.put('/api/admin/circle-applications/:id', authMiddleware, adminMiddleware, a
             for (const pid of participantIds) {
                 await createNotification(pid, 'circle_approved', circleId, null, `您参与的圈子 "${app.name}" 已通过审核`);
             }
+
+            await checkAchievement(app.initiator_id, 'first_circle');
         } else {
             await client.query(
                 `UPDATE circle_creation_applications SET status = 'rejected', approver_id = $1, updated_at = NOW() WHERE id = $2`,

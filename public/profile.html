@@ -643,6 +643,9 @@
                 <div class="user-name" id="nickname">加载中...</div>
                 <div id="levelBadgeArea" style="text-align:center;margin:6px 0;"></div>
                 <div id="expBarArea" style="margin:0 0 12px 0;"></div>
+                <div style="text-align:center;font-size:0.95rem;color:#F59E0B;font-weight:600;margin-bottom:8px;">
+                    🪙 <span id="profileCoins">--</span> 鹏城币
+                </div>
                 <div class="user-email" id="email">-</div>
                 <div class="info-item"><i class="fas fa-school"></i> <span id="school">未填写</span></div>
                 <div class="info-item"><i class="fas fa-map-marker-alt"></i> <span id="district">未填写</span></div>
@@ -682,6 +685,13 @@
                     <div class="section-title"><i class="fas fa-calendar-alt"></i> 活跃度日历</div>
                     <div class="calendar" id="calendarContainer">
                         <!-- 动态生成日历 -->
+                    </div>
+                    <!-- 最近金币流水 -->
+                    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f5;">
+                        <div style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">🪙 最近获得</div>
+                        <div id="recentCoinFlow" style="font-size:0.8rem;color:#6B7280;">
+                            <div class="task-item">暂无记录</div>
+                        </div>
                     </div>
                 </div>
 
@@ -1174,6 +1184,28 @@
             });
         }
 
+        // 加载金币信息
+        async function loadCoins() {
+            try {
+                const res = await fetch('/api/user/coins', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('profileCoins').textContent = data.coins;
+                    // 渲染最近金币流水
+                    const flowHtml = data.recent_transactions.slice(0, 5).map(t => {
+                        const time = new Date(t.created_at);
+                        const timeStr = time.toDateString() === new Date().toDateString() ? '今天' : formatDate(t.created_at);
+                        return `<div class="task-item">+${t.amount} ${t.description} · ${timeStr}</div>`;
+                    }).join('');
+                    document.getElementById('recentCoinFlow').innerHTML = flowHtml || '<div class="task-item">暂无记录</div>';
+                }
+            } catch (e) {
+                console.warn('加载金币信息失败', e);
+            }
+        }
+
         async function init() {
             try {
                 currentUser = await fetchMe();
@@ -1270,6 +1302,7 @@
                 return d;
             })();
             renderCalendar(activity);
+            loadCoins();
             initTabs();
             await renderMyPosts(1);
         }

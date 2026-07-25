@@ -878,6 +878,37 @@
             display: none;
         }
 
+        /* 签到按钮 */
+        .checkin-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #F59E0B, #F97316);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .checkin-btn:active { transform: scale(0.95); }
+        .checkin-btn.checked {
+            background: #D1D5DB;
+            cursor: default;
+        }
+
+        /* 任务条目 */
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #F3F4F6;
+            font-size: 0.85rem;
+        }
+        .task-progress { color: #9CA3AF; font-size: 0.8rem; }
+
         @media (max-width: 768px) {
             body {
                 margin-left: 0;
@@ -1148,6 +1179,40 @@
                         <p><strong>摄影大赛</strong> - 4月10日截止</p>
                         <p><strong>校园辩论赛</strong> - 4月15日报名</p>
                     </div>
+                </div>
+
+                <!-- 每日任务卡片 -->
+                <div class="sidebar-card" id="dailyTasksCard">
+                    <h3><i class="fas fa-tasks"></i> 每日任务</h3>
+                    <div id="coinsDisplay" style="text-align:center;margin-bottom:12px;">
+                        <span style="font-size:1.2rem;font-weight:700;color:#F59E0B;">🪙 <span id="coinsBalance">--</span></span>
+                    </div>
+                    <button id="checkinBtn" class="checkin-btn" onclick="dailyCheckin()">
+                        📋 签到 +5
+                    </button>
+                    <div id="dailyTasksList" style="margin-top:12px;">
+                        <div class="task-item">📝 发帖 <span class="task-progress">--/3</span></div>
+                        <div class="task-item">💬 回复 <span class="task-progress">--/5</span></div>
+                        <div class="task-item">❤️ 点赞 <span class="task-progress">--/10</span></div>
+                        <div class="task-item">⏱️ 自习 <span class="task-progress">--/2</span></div>
+                    </div>
+                </div>
+
+                <!-- 成就进度卡片 -->
+                <div class="sidebar-card" id="achievementsCard">
+                    <h3><i class="fas fa-trophy"></i> 成就进度</h3>
+                    <div id="achievementsList" style="font-size:0.85rem;">
+                        <div class="task-item">✅ 首次发帖</div>
+                        <div class="task-item">⬜ 百赞达人 <span class="task-progress">45/100</span></div>
+                        <div class="task-item">⬜ 创建圈子</div>
+                    </div>
+                </div>
+
+                <!-- 兑换中心入口 -->
+                <div class="sidebar-card" style="text-align:center;opacity:0.7;">
+                    <h3>🛒 鹏城币兑换中心</h3>
+                    <p style="font-size:0.8rem;color:#999;">即将上线，敬请期待</p>
+                    <p style="font-size:0.75rem;color:#ccc;">头像框 · 试卷资料 · 自定义称号</p>
                 </div>
             </aside>
         </div>
@@ -1606,6 +1671,87 @@
                 });
             }
         })();
+
+        // ---------- 任务与金币系统 ----------
+        async function loadTasksAndCoins() {
+            if (!token) return;
+
+            try {
+                const [coinsRes, tasksRes] = await Promise.all([
+                    fetch('/api/user/coins', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/tasks', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+
+                if (coinsRes.ok) {
+                    const data = await coinsRes.json();
+                    document.getElementById('coinsBalance').textContent = data.coins;
+
+                    // 签到按钮状态
+                    const checkinBtn = document.getElementById('checkinBtn');
+                    if (data.recent_transactions.some(t => t.source === 'daily_login' && new Date(t.created_at).toDateString() === new Date().toDateString())) {
+                        checkinBtn.textContent = '✅ 已签到';
+                        checkinBtn.classList.add('checked');
+                        checkinBtn.onclick = null;
+                    }
+                }
+
+                if (tasksRes.ok) {
+                    const data = await tasksRes.json();
+                    // 更新每日任务进度
+                    const taskMap = {};
+                    data.dailyTasks.forEach(t => { taskMap[t.type] = t; });
+
+                    updateTaskItem('📝 发帖', taskMap['post']);
+                    updateTaskItem('💬 回复', taskMap['reply']);
+                    updateTaskItem('❤️ 点赞', taskMap['like_given']);
+                    updateTaskItem('⏱️ 自习', taskMap['study_session']);
+
+                    // 更新成就列表
+                    const achievementsHtml = data.achievements.slice(0, 5).map(a => {
+                        const icon = a.completed ? '✅' : (a.progress > 0 ? '⏳' : '⬜');
+                        const progress = a.progressText ? ` <span class="task-progress">${a.progressText}</span>` : '';
+                        return `<div class="task-item">${icon} ${a.description}${progress}</div>`;
+                    }).join('');
+                    document.getElementById('achievementsList').innerHTML = achievementsHtml;
+                }
+            } catch (e) {
+                console.warn('加载任务数据失败:', e);
+            }
+        }
+
+        function updateTaskItem(label, task) {
+            const items = document.querySelectorAll('.task-item');
+            items.forEach(item => {
+                if (item.textContent.includes(label)) {
+                    const progress = task ? `${task.current}/${task.max}` : '--/--';
+                    const progressEl = item.querySelector('.task-progress');
+                    if (progressEl) progressEl.textContent = progress;
+                    item.style.color = task && task.current >= task.max ? '#10B981' : '';
+                }
+            });
+        }
+
+        async function dailyCheckin() {
+            try {
+                const res = await fetch('/api/daily-checkin', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert(data.message);
+                    loadTasksAndCoins(); // 刷新数据
+                } else {
+                    alert(data.error || '签到失败');
+                }
+            } catch (e) {
+                alert('签到失败，请检查网络');
+            }
+        }
+
+        // 页面加载时调用
+        loadTasksAndCoins();
 
         // ---------- 入站考试提醒弹窗 ----------
         (function() {

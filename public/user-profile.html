@@ -1319,6 +1319,9 @@
                 <div class="user-name">${escapeHtml(user.nickname)}</div>
                 <div style="text-align:center;margin:6px 0;">${typeof renderLevelBadge === 'function' ? renderLevelBadge(user.exp, user.has_passed_quiz) : ''}</div>
                 <div style="margin:0 12px 12px 12px;">${typeof renderExpBar === 'function' ? renderExpBar(user.exp, user.has_passed_quiz) : ''}</div>
+                <div style="text-align:center;font-size:0.95rem;color:#F59E0B;font-weight:600;margin-bottom:8px;">
+                    🪙 <span id="profileCoins">${user.coins ?? '--'}</span> 鹏城币
+                </div>
                 <div class="user-email">${escapeHtml(user.email)}</div>
                 <div class="info-item"><i class="fas fa-school"></i> ${escapeHtml(user.school || '未填写')}</div>
                 <div class="info-item"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(user.district || '未填写')}</div>
