@@ -31,16 +31,15 @@ pool.query('SELECT NOW()', (err, res) => {
     else console.log('✅ 数据库连接成功，服务器时间:', res.rows[0].now);
 });
 
-// ---------- 邮件配置 ----------
-const transporter = nodemailer.createTransport({
-    host: 'smtp-mail.outlook.com',
-    port: 587,
-    secure: false,
-    auth: {
-        user: process.env.EMAIL_USER || 'your_email@outlook.com',
-        pass: process.env.EMAIL_PASS || 'your_application_password',
-    },
-});
+// ---------- 邮件配置（支持 QQ / Outlook 切换）----------
+const mailService = process.env.EMAIL_SERVICE || 'qq';
+const transporter = nodemailer.createTransport(
+    mailService === 'outlook'
+        ? { host: 'smtp-mail.outlook.com', port: 587, secure: false,
+            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } }
+        : { service: 'qq',
+            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } }
+);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
 
@@ -274,11 +273,26 @@ app.post('/api/send-code', async (req, res) => {
     try {
         await pool.query("DELETE FROM email_verifications WHERE email = $1 AND type = 'register'", [email]);
         await pool.query("INSERT INTO email_verifications (email, code, expires_at, type) VALUES ($1, $2, $3, 'register')", [email, code, expiresAt]);
-        console.log(`📧 验证码 for ${email}: ${code}`);
-        res.json({ message: '验证码已发送（开发模式：请查看控制台）' });
+
+        // 发送邮件
+        const emailUser = process.env.EMAIL_USER || 'your_email@qq.com';
+        await transporter.sendMail({
+            from: '"深圳高中生社区" <' + emailUser + '>',
+            to: email,
+            subject: '深圳高中生社区 - 注册验证码',
+            html: '<div style="max-width:480px;margin:0 auto;padding:20px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">'
+                + '<div style="background:#1E88E5;padding:16px 20px;border-radius:12px 12px 0 0;"><h2 style="color:white;margin:0;font-size:18px;">📧 深圳高中生社区 · 注册验证</h2></div>'
+                + '<div style="background:#F8FAFC;padding:24px 20px;border:1px solid #E5E7EB;border-top:none;border-radius:0 0 12px 12px;">'
+                + '<p style="font-size:15px;color:#333;">你的注册验证码为：</p>'
+                + '<div style="text-align:center;margin:20px 0;"><span style="display:inline-block;background:#EFF6FF;color:#1E88E5;padding:12px 32px;border-radius:8px;font-size:28px;font-weight:700;letter-spacing:8px;">' + code + '</span></div>'
+                + '<p style="font-size:14px;color:#666;">验证码10分钟内有效，请勿泄露给他人。</p>'
+                + '<p style="font-size:13px;color:#999;margin-top:16px;">如果这不是你本人操作，请忽略此邮件。</p></div></div>',
+        });
+        console.log('📧 验证码已发送至 ' + email + ': ' + code);
+        res.json({ message: '验证码已发送，请查收邮箱' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: '发送失败' });
+        console.error('发送验证码邮件失败:', err);
+        res.status(500).json({ error: '发送失败，请检查邮箱配置或稍后重试' });
     }
 });
 
