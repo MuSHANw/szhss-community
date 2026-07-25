@@ -33,10 +33,12 @@ pool.query('SELECT NOW()', (err, res) => {
 
 // ---------- 邮件配置 ----------
 const transporter = nodemailer.createTransport({
-    service: 'qq',
+    host: 'smtp-mail.outlook.com',
+    port: 587,
+    secure: false,
     auth: {
-        user: process.env.EMAIL_USER || 'your_email@qq.com',
-        pass: process.env.EMAIL_PASS || 'your_authorization_code',
+        user: process.env.EMAIL_USER || 'your_email@outlook.com',
+        pass: process.env.EMAIL_PASS || 'your_application_password',
     },
 });
 
@@ -200,15 +202,78 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 2 * 1024 * 1024 } });
 
+// 发送密码重置邮件
+app.post('/api/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: '邮箱不能为空' });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return res.status(400).json({ error: '邮箱格式不正确' });
+    try {
+        const userCheck = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+        if (userCheck.rows.length === 0) {
+            return res.json({ message: '如果该邮箱已注册，重置链接已发送至你的邮箱' });
+        }
+        const userId = userCheck.rows[0].id;
+        const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+        await pool.query("DELETE FROM email_verifications WHERE email = $1 AND type = 'password_reset'", [email]);
+        await pool.query(
+            "INSERT INTO email_verifications (email, code, type, expires_at) VALUES ($1, $2, 'password_reset', $3)",
+            [email, resetToken, expiresAt]
+        );
+        const resetLink = 'https://szhss-community.top/reset-password.html?token=' + resetToken + '&email=' + encodeURIComponent(email);
+        await transporter.sendMail({
+            from: '"深圳高中生社区" <' + (process.env.EMAIL_USER || 'your_email@outlook.com') + '>',
+            to: email,
+            subject: '深圳高中生社区 - 重置密码',
+            html: '<div style="max-width:600px;margin:0 auto;padding:20px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">' +
+                '<div style="background:#1E88E5;padding:16px 20px;border-radius:12px 12px 0 0;"><h2 style="color:white;margin:0;font-size:18px;">🔐 深圳高中生社区 · 重置密码</h2></div>' +
+                '<div style="background:#F8FAFC;padding:24px 20px;border:1px solid #E5E7EB;border-top:none;border-radius:0 0 12px 12px;">' +
+                '<p style="font-size:15px;color:#333;margin-bottom:16px;">点击下方按钮重置你的密码（30分钟内有效）：</p>' +
+                '<div style="text-align:center;margin:24px 0;"><a href="' + resetLink + '" style="display:inline-block;background:#1E88E5;color:white;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">重置密码</a></div>' +
+                '<p style="font-size:13px;color:#999;margin-bottom:4px;">如果按钮无法点击，请复制以下链接到浏览器：</p>' +
+                '<p style="font-size:12px;color:#999;word-break:break-all;">' + resetLink + '</p>' +
+                '<p style="font-size:13px;color:#999;margin-top:16px;">如果这不是你本人操作，请忽略此邮件。</p></div></div>',
+        });
+        res.json({ message: '如果该邮箱已注册，重置链接已发送至你的邮箱' });
+    } catch (err) {
+        console.error('发送重置邮件失败:', err);
+        res.status(500).json({ error: '发送失败，请稍后重试' });
+    }
+});
+
+// 验证重置令牌并修改密码
+app.post('/api/reset-password', async (req, res) => {
+    const { email, token, password } = req.body;
+    if (!email || !token || !password) return res.status(400).json({ error: '请填写完整信息' });
+    if (password.length < 6) return res.status(400).json({ error: '密码至少6位' });
+    try {
+        const verifyRes = await pool.query(
+            "SELECT * FROM email_verifications WHERE email = $1 AND code = $2 AND type = 'password_reset' AND expires_at > NOW()",
+            [email, token]
+        );
+        if (verifyRes.rows.length === 0) return res.status(400).json({ error: '重置链接无效或已过期，请重新申请' });
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await pool.query('UPDATE users SET password_hash = $1 WHERE email = $2', [hashedPassword, email]);
+        await pool.query("DELETE FROM email_verifications WHERE email = $1 AND type = 'password_reset'", [email]);
+        res.json({ message: '密码重置成功，请返回登录' });
+    } catch (err) {
+        console.error('重置密码失败:', err);
+        res.status(500).json({ error: '重置密码失败' });
+    }
+});
+
 // ---------- 用户相关 API ----------
 app.post('/api/send-code', async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: '邮箱不能为空' });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return res.status(400).json({ error: '邮箱格式不正确' });
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     try {
-        await pool.query('DELETE FROM email_verifications WHERE email = $1', [email]);
-        await pool.query('INSERT INTO email_verifications (email, code, expires_at) VALUES ($1, $2, $3)', [email, code, expiresAt]);
+        await pool.query("DELETE FROM email_verifications WHERE email = $1 AND type = 'register'", [email]);
+        await pool.query("INSERT INTO email_verifications (email, code, expires_at, type) VALUES ($1, $2, $3, 'register')", [email, code, expiresAt]);
         console.log(`📧 验证码 for ${email}: ${code}`);
         res.json({ message: '验证码已发送（开发模式：请查看控制台）' });
     } catch (err) {
@@ -220,16 +285,22 @@ app.post('/api/send-code', async (req, res) => {
 app.post('/api/register', async (req, res) => {
     const { email, code, password, nickname } = req.body;
     if (!email || !code || !password) return res.status(400).json({ error: '请填写完整信息' });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return res.status(400).json({ error: '邮箱格式不正确' });
+    if (password.length < 6) return res.status(400).json({ error: '密码至少6位' });
     try {
-        const verifyRes = await pool.query('SELECT * FROM email_verifications WHERE email = $1 AND code = $2 AND expires_at > NOW()', [email, code]);
+        const verifyRes = await pool.query(
+            "SELECT * FROM email_verifications WHERE email = $1 AND code = $2 AND type = 'register' AND expires_at > NOW()",
+            [email, code]
+        );
         if (verifyRes.rows.length === 0) return res.status(400).json({ error: '验证码无效或已过期' });
-        const userExist = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-        if (userExist.rows.length > 0) return res.status(400).json({ error: '该邮箱已注册' });
+        const userExist = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+        if (userExist.rows.length > 0) return res.status(400).json({ error: '该邮箱已注册，请直接登录' });
         const hashedPassword = await bcrypt.hash(password, 10);
         const result = await pool.query('INSERT INTO users (email, password_hash, nickname) VALUES ($1, $2, $3) RETURNING id', [email, hashedPassword, nickname || email.split('@')[0]]);
         const userId = result.rows[0].id;
         const token = jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: '7d' });
-        await pool.query('DELETE FROM email_verifications WHERE email = $1', [email]);
+        await pool.query("DELETE FROM email_verifications WHERE email = $1 AND type = 'register'", [email]);
         res.json({ token, user: { id: userId, email, nickname: nickname || email.split('@')[0] } });
     } catch (err) {
         console.error(err);
