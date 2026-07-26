@@ -393,6 +393,20 @@
             }
         })();
 
+        // ---------- 从 HTML 内容中提取图片和视频 URL ----------
+        function extractMedia(content) {
+            var images = [], videos = [];
+            var temp = document.createElement('div');
+            temp.innerHTML = content;
+            temp.querySelectorAll('img').forEach(function(img) {
+                if (img.src) images.push(img.src);
+            });
+            temp.querySelectorAll('video').forEach(function(video) {
+                if (video.src) videos.push(video.src);
+            });
+            return { images: images, videos: videos };
+        }
+
         // ---------- 提交修改 ----------
         document.getElementById('submitBtn').addEventListener('click', async function() {
             var title = document.getElementById('postTitle').value.trim();
@@ -402,6 +416,8 @@
             if (!title) { alert('请输入标题'); return; }
             if (!content || content === '<p><br></p>' || content === '<p></p>') { alert('请输入内容'); return; }
 
+            var media = extractMedia(content);
+
             this.disabled = true;
             this.textContent = '⏳ 保存中...';
 
@@ -409,7 +425,14 @@
                 var res = await fetch(window.API_BASE + '/posts/' + postId, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ title: title, content: content, category: category, tags: selectedTags })
+                    body: JSON.stringify({
+                        title: title,
+                        content: content,
+                        category: category,
+                        tags: selectedTags,
+                        images: media.images,
+                        videos: media.videos
+                    })
                 });
                 var data = await res.json();
                 if (res.ok) {

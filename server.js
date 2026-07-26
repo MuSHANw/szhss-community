@@ -659,7 +659,7 @@ app.get('/api/my-favorites', authMiddleware, async (req, res) => {
     const offset = (page - 1) * limit;
     try {
         const query = `
-            SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at,
+            SELECT p.id, p.title, p.content, p.category, p.tags, p.images, p.videos, p.view_count, p.created_at,
                    u.nickname, u.id as user_id,
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM post_favorites f
@@ -852,7 +852,7 @@ app.get('/api/following-posts', authMiddleware, async (req, res) => {
 
     try {
         const query = `
-            SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at, p.likes,
+            SELECT p.id, p.title, p.content, p.category, p.tags, p.images, p.videos, p.view_count, p.created_at, p.likes,
                    u.nickname, u.id as user_id, u.avatar_url, u.exp, u.has_passed_quiz,
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM posts p
@@ -1178,7 +1178,7 @@ app.get('/api/users/:id/favorites', async (req, res) => {
         const priv = await pool.query('SELECT show_favorites FROM users WHERE id = $1', [userId]);
         if (!priv.rows[0]?.show_favorites) return res.json({ hidden: true, posts: [], totalPages: 0 });
         const query = `
-            SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at,
+            SELECT p.id, p.title, p.content, p.category, p.tags, p.images, p.videos, p.view_count, p.created_at,
                    u.nickname, u.id as user_id,
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM post_favorites f
@@ -1208,13 +1208,25 @@ app.get('/api/users/:id/favorites', async (req, res) => {
 
 // ---------- 帖子相关 API ----------
 app.post('/api/posts', authMiddleware, quizRequired, async (req, res) => {
-    const { title, content, category, tags, circle_id } = req.body;
+    const { title, content, category, tags, circle_id, images, videos } = req.body;
     if (!title || !content) return res.status(400).json({ error: '标题和内容不能为空' });
     try {
         const result = await pool.query(
-            'INSERT INTO posts (user_id, title, content, category, tags, circle_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-            [req.user.userId, title, content, category || '综合', tags || [], circle_id || null]
+            'INSERT INTO posts (user_id, title, content, category, tags, circle_id, images, videos) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+            [req.user.userId, title, content, category || '综合', tags || [], circle_id || null, images || [], videos || []]
         );
+        const postId = result.rows[0].id;
+        // 将图片/视频 URL 写入 post_media 表
+        if (images && images.length > 0) {
+            for (const url of images) {
+                await pool.query('INSERT INTO post_media (post_id, media_url, media_type) VALUES ($1, $2, $3)', [postId, url, 'image']);
+            }
+        }
+        if (videos && videos.length > 0) {
+            for (const url of videos) {
+                await pool.query('INSERT INTO post_media (post_id, media_url, media_type) VALUES ($1, $2, $3)', [postId, url, 'video']);
+            }
+        }
         if (circle_id) {
             await pool.query('UPDATE circles SET post_count = post_count + 1 WHERE id = $1', [circle_id]);
         }
@@ -1226,7 +1238,7 @@ app.post('/api/posts', authMiddleware, quizRequired, async (req, res) => {
         if (parseInt(postCount.rows[0].cnt) >= 50) {
             await checkAchievement(req.user.userId, 'fifty_posts');
         }
-        res.json({ id: result.rows[0].id, message: '发布成功' });
+        res.json({ id: postId, message: '发布成功' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: '发布失败' });
@@ -1253,7 +1265,7 @@ app.get('/api/posts', async (req, res) => {
         const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
         let listQuery = `
-            SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at, p.likes,
+            SELECT p.id, p.title, p.content, p.category, p.tags, p.images, p.videos, p.view_count, p.created_at, p.likes,
                    u.nickname, u.id as user_id, u.avatar_url, u.exp, u.has_passed_quiz,
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM posts p
@@ -1337,7 +1349,7 @@ app.put('/api/posts/:id/view', async (req, res) => {
 app.put('/api/posts/:id', authMiddleware, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: '无效的帖子ID' });
-    const { title, content, category, tags } = req.body;
+    const { title, content, category, tags, images, videos } = req.body;
     if (!title || !content) return res.status(400).json({ error: '标题和内容不能为空' });
     try {
         const postCheck = await pool.query('SELECT user_id FROM posts WHERE id = $1', [id]);
@@ -1347,9 +1359,21 @@ app.put('/api/posts/:id', authMiddleware, async (req, res) => {
         const isAdmin = userCheck.rows[0]?.is_admin || false;
         if (post.user_id !== req.user.userId && !isAdmin) return res.status(403).json({ error: '无权编辑此帖子' });
         await pool.query(
-            'UPDATE posts SET title = $1, content = $2, category = $3, tags = $4, updated_at = NOW() WHERE id = $5',
-            [title, content, category || '综合', tags || [], id]
+            'UPDATE posts SET title = $1, content = $2, category = $3, tags = $4, images = $5, videos = $6, updated_at = NOW() WHERE id = $7',
+            [title, content, category || '综合', tags || [], images || [], videos || [], id]
         );
+        // 同步更新 post_media 表（删除旧记录，插入新记录）
+        await pool.query('DELETE FROM post_media WHERE post_id = $1', [id]);
+        if (images && images.length > 0) {
+            for (const url of images) {
+                await pool.query('INSERT INTO post_media (post_id, media_url, media_type) VALUES ($1, $2, $3)', [id, url, 'image']);
+            }
+        }
+        if (videos && videos.length > 0) {
+            for (const url of videos) {
+                await pool.query('INSERT INTO post_media (post_id, media_url, media_type) VALUES ($1, $2, $3)', [id, url, 'video']);
+            }
+        }
         res.json({ message: '更新成功' });
     } catch (err) {
         console.error(err);
@@ -1929,7 +1953,7 @@ app.get('/api/search', async (req, res) => {
     const searchPattern = `%${q}%`;
     try {
         const query = `
-            SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at,
+            SELECT p.id, p.title, p.content, p.category, p.tags, p.images, p.videos, p.view_count, p.created_at,
                    u.nickname, u.id as user_id, u.avatar_url, u.exp, u.has_passed_quiz,
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM posts p
@@ -1979,7 +2003,7 @@ app.get('/api/search/all', async (req, res) => {
     try {
         if (type === 'posts') {
             const query = `
-                SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at,
+                SELECT p.id, p.title, p.content, p.category, p.tags, p.images, p.videos, p.view_count, p.created_at,
                        u.nickname, u.id as user_id, u.avatar_url,
                        (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
                 FROM posts p
@@ -3286,7 +3310,7 @@ app.get('/api/circles/:id/posts', async (req, res) => {
         }
 
         const query = `
-            SELECT p.id, p.title, p.content, p.category, p.tags, p.view_count, p.created_at, p.likes, p.is_essence,
+            SELECT p.id, p.title, p.content, p.category, p.tags, p.images, p.videos, p.view_count, p.created_at, p.likes, p.is_essence,
                    u.nickname, u.id as user_id, u.avatar_url, u.exp, u.has_passed_quiz,
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM posts p
