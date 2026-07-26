@@ -935,6 +935,24 @@
             background: #e2e6ea;
         }
 
+        /* ========== 个人统计模态框卡片 ========== */
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 16px 12px;
+            text-align: center;
+        }
+        .stat-card .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1E88E5;
+        }
+        .stat-card .stat-label {
+            font-size: 0.8rem;
+            color: #8a9aa8;
+            margin-top: 4px;
+        }
+
         /* ========== 排行榜模态框 ========== */
         .leaderboard-tabs {
             display: flex;
@@ -1244,9 +1262,14 @@
         <div id="studyLobby">
             <div class="study-header">
                 <h1>📚 自习室</h1>
-                <button class="leaderboard-header-btn" onclick="openLeaderboard()">
-                    🏆 排行榜
-                </button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="leaderboard-header-btn" style="border-color:#1E88E5;color:#1E88E5;" onclick="showMyStats()">
+                        📊 我的统计
+                    </button>
+                    <button class="leaderboard-header-btn" onclick="openLeaderboard()">
+                        🏆 排行榜
+                    </button>
+                </div>
             </div>
             <div class="study-tabs">
                 <button class="study-tab active-tab" data-type="district">🏙️ 区域自习室</button>
@@ -1414,6 +1437,37 @@
         </div>
     </div>
 
+    <!-- ===== 个人统计模态框 ===== -->
+    <div id="myStatsModal" class="modal-overlay" style="display:none;">
+        <div class="modal-dialog" style="max-width:420px;text-align:center;">
+            <button class="modal-close-btn" onclick="closeMyStats()">&times;</button>
+            <div class="modal-icon">📊</div>
+            <div class="modal-title">我的自习统计</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;">
+                <div class="stat-card">
+                    <div class="stat-number" id="statTodayMinutes">--</div>
+                    <div class="stat-label">今日专注</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statWeekMinutes">--</div>
+                    <div class="stat-label">本周专注</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statMonthMinutes">--</div>
+                    <div class="stat-label">本月专注</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statRank">--</div>
+                    <div class="stat-label">本周排名</div>
+                </div>
+            </div>
+            <div class="stat-card" style="margin-bottom:8px;">
+                <div class="stat-label">累计专注</div>
+                <div class="stat-number" id="statTotalHours" style="font-size:1.5rem;">--</div>
+            </div>
+        </div>
+    </div>
+
     <script>
         window.API_BASE = window.API_BASE || '/api';
         const token = localStorage.getItem('token');
@@ -1440,6 +1494,11 @@
         // 今日统计（本地累计）
         let todayPomodoros = 0;
         let todayMinutes = 0;
+
+        // 加油剩余次数
+        let cheersRemaining = 3;
+        // 是否已处理页面离开（防止重复发送）
+        let leaveHandled = false;
 
         // ========== 侧边栏 ==========
         const sidebar = document.getElementById('sidebar');
@@ -1678,6 +1737,7 @@
             } catch (err) { alert('加入失败'); return; }
 
             currentRoomId = roomId;
+            leaveHandled = false;
             document.getElementById('studyLobby').style.display = 'none';
             document.getElementById('studyRoom').style.display = 'block';
 
@@ -1692,6 +1752,7 @@
 
         document.getElementById('leaveRoomBtn').addEventListener('click', async () => {
             if (!currentRoomId) return;
+            leaveHandled = true;
             // 停止计时和白噪音
             stopTimer();
             stopAllSound();
@@ -1707,6 +1768,44 @@
             document.getElementById('studyRoom').style.display = 'none';
             document.getElementById('studyLobby').style.display = 'block';
             loadRooms(currentTab);
+        });
+
+        // ========== 页面离开自动退出自习室（Bug 修复：在线人数不准）==========
+        function leaveCurrentRoom() {
+            if (leaveHandled || !currentRoomId) return;
+            leaveHandled = true;
+            try {
+                // 使用 keepalive 确保请求在页面卸载时也能发出
+                fetch(`/api/study-rooms/${currentRoomId}/leave`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    keepalive: true
+                });
+            } catch(e) {}
+        }
+
+        // 关闭标签页/刷新/跳转页面时自动退出
+        window.addEventListener('beforeunload', leaveCurrentRoom);
+
+        // 页面隐藏时退出（移动端切换App、锁屏等）
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && currentRoomId && !leaveHandled) {
+                leaveCurrentRoom();
+            }
+        });
+
+        // 用户离开此页面（点击侧栏链接等）时，link 点击事件会触发 beforeunload
+        // 额外处理：侧栏链接点击时触发离开
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href && href !== '#' && currentRoomId) {
+                    leaveCurrentRoom();
+                }
+            });
         });
 
         // ========== 刷新房间详情 ==========
@@ -1734,6 +1833,13 @@
                 // 检测是否收到加油（通过通知系统，这里简化处理）
                 // 实际加油通知走 notification 系统
 
+                // 同步当前用户的加油剩余次数
+                const me = members.find(m => m.user_id === currentUserId);
+                if (me && me.cheers_today !== undefined) {
+                    cheersRemaining = Math.max(0, 3 - (parseInt(me.cheers_today) || 0));
+                    updateCheerButtons();
+                }
+
             } catch (err) {
                 console.error('刷新房间失败:', err);
             }
@@ -1756,7 +1862,7 @@
                 <div class="seat-level" style="color:${levelInfo.color};">LV${levelInfo.level} ${levelInfo.name}</div>
                 ${goal ? `<div class="seat-goal" title="${escapeHtml(goal)}">📝 ${escapeHtml(goal).substring(0, 18)}${goal.length > 18 ? '…' : ''}</div>` : ''}
                 <div class="seat-time">⏱ ${formatMinutes(m.focus_today || 0)}</div>
-                ${isMe ? '' : `<button class="cheer-btn" onclick="sendCheer(${m.user_id}, this)">👏 加油</button>`}
+                ${isMe ? '' : `<button class="cheer-btn" onclick="sendCheer(${m.user_id}, this)" ${cheersRemaining <= 0 ? 'disabled style="opacity:0.5;"' : ''}>${cheersRemaining <= 0 ? '已用完' : `👏 加油（${cheersRemaining}/3）`}</button>`}
             </div>`;
         }
 
@@ -2091,11 +2197,27 @@
         }
 
         // ========== 加油功能 ==========
-        let cheerCooldown = false;
+
+        function updateCheerButtons() {
+            document.querySelectorAll('.cheer-btn').forEach(btn => {
+                if (cheersRemaining <= 0) {
+                    btn.textContent = '已用完';
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                } else {
+                    btn.textContent = `👏 加油（${cheersRemaining}/3）`;
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }
+            });
+        }
 
         async function sendCheer(targetUserId, btn) {
             if (!token) { alert('请先登录'); return; }
-            if (cheerCooldown) return;
+            if (cheersRemaining <= 0) {
+                alert('今日加油次数已用完（3/3）');
+                return;
+            }
             if (!currentRoomId) return;
 
             btn.disabled = true;
@@ -2110,20 +2232,17 @@
                 const data = await res.json();
 
                 if (res.ok) {
+                    // 更新剩余次数
+                    cheersRemaining = data.cheers_remaining !== undefined ? data.cheers_remaining : (cheersRemaining - 1);
+                    updateCheerButtons();
                     // 在目标座位上显示加油动画
                     showCheerAnimation(targetUserId);
-                    btn.textContent = `👏 已加油 (${data.cheers_remaining}/3)`;
-                    cheerCooldown = true;
-                    setTimeout(() => { cheerCooldown = false; }, 2000);
                 } else {
-                    btn.textContent = '👏 加油';
                     alert(data.error || '加油失败');
                 }
             } catch (err) {
-                btn.textContent = '👏 加油';
                 alert('网络错误');
             }
-            setTimeout(() => { if (btn) btn.disabled = false; }, 2000);
         }
 
         function showCheerAnimation(targetUserId) {
@@ -2243,6 +2362,55 @@
             }
         }
 
+        // ========== 个人自习统计 ==========
+
+        function formatMinutesShort(mins) {
+            if (!mins || mins === 0) return '0 分钟';
+            if (mins < 60) return `${mins} 分钟`;
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return m > 0 ? `${h}h ${m}m` : `${h} 小时`;
+        }
+
+        async function loadMyStats() {
+            if (!token) return;
+            const els = {
+                today: document.getElementById('statTodayMinutes'),
+                week: document.getElementById('statWeekMinutes'),
+                month: document.getElementById('statMonthMinutes'),
+                rank: document.getElementById('statRank'),
+                total: document.getElementById('statTotalHours')
+            };
+
+            try {
+                const res = await fetch(`${window.API_BASE}/study-stats/my`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    els.today.textContent = formatMinutesShort(data.today_minutes || 0);
+                    els.week.textContent = formatMinutesShort(data.week_minutes || 0);
+                    els.month.textContent = formatMinutesShort(data.month_minutes || 0);
+                    els.rank.textContent = data.week_rank ? `第 ${data.week_rank} 名` : '未上榜';
+                    els.total.textContent = (data.total_hours || 0).toFixed(1) + ' 小时';
+                }
+            } catch (e) {
+                console.warn('获取自习统计失败:', e);
+                Object.values(els).forEach(el => el.textContent = '--');
+            }
+        }
+
+        function showMyStats() {
+            if (!token) { alert('请先登录'); return; }
+            document.getElementById('myStatsModal').style.display = 'flex';
+            loadMyStats();
+        }
+
+        function closeMyStats() {
+            document.getElementById('myStatsModal').style.display = 'none';
+        }
+
         // 点模态框外部关闭
         document.getElementById('leaderboardModal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) closeLeaderboard();
@@ -2251,6 +2419,9 @@
             if (e.target === e.currentTarget) {
                 document.getElementById('createRoomModal').style.display = 'none';
             }
+        });
+        document.getElementById('myStatsModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeMyStats();
         });
 
         // ========== 初始化 ==========

@@ -2185,7 +2185,7 @@ app.get('/api/study-rooms/:id', async (req, res) => {
         // 成员列表（含状态、番茄钟设置、学习目标、今日专注时长）
         const membersQuery = `
             SELECT m.user_id, m.status, m.session_start, m.joined_at,
-                   m.focus_duration, m.rest_duration, m.study_goal,
+                   m.focus_duration, m.rest_duration, m.study_goal, m.cheers_today,
                    u.nickname, u.avatar_url, u.exp,
                    COALESCE(ss.focus_today, 0) as focus_today
             FROM study_room_members m
@@ -2510,6 +2510,66 @@ app.get('/api/study-leaderboard', async (req, res) => {
     } catch (err) {
         console.error('获取排行榜失败:', err);
         res.status(500).json({ error: '获取排行榜失败' });
+    }
+});
+
+// 个人自习统计
+app.get('/api/study-stats/my', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+
+    try {
+        const today = getBeijingDate();
+
+        // 今日专注分钟数
+        const todayRes = await pool.query(
+            "SELECT COALESCE(SUM(focus_minutes), 0) as total FROM study_stats WHERE user_id = $1 AND completed_at >= $2::date",
+            [userId, today]
+        );
+
+        // 本周专注分钟数
+        const weekRes = await pool.query(
+            "SELECT COALESCE(SUM(focus_minutes), 0) as total FROM study_stats WHERE user_id = $1 AND completed_at >= DATE_TRUNC('week', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai'))",
+            [userId]
+        );
+
+        // 本月专注分钟数
+        const monthRes = await pool.query(
+            "SELECT COALESCE(SUM(focus_minutes), 0) as total FROM study_stats WHERE user_id = $1 AND completed_at >= DATE_TRUNC('month', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai'))",
+            [userId]
+        );
+
+        // 累计专注小时数
+        const totalRes = await pool.query(
+            'SELECT COALESCE(SUM(focus_minutes), 0) as total FROM study_stats WHERE user_id = $1',
+            [userId]
+        );
+
+        // 本周排名
+        const rankRes = await pool.query(
+            `SELECT user_id, SUM(focus_minutes) as total
+             FROM study_stats
+             WHERE completed_at >= DATE_TRUNC('week', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai'))
+             GROUP BY user_id
+             ORDER BY total DESC`,
+        );
+
+        let weekRank = null;
+        rankRes.rows.forEach((row, index) => {
+            if (row.user_id === userId) {
+                weekRank = index + 1;
+            }
+        });
+
+        res.json({
+            today_minutes: parseInt(todayRes.rows[0].total),
+            week_minutes: parseInt(weekRes.rows[0].total),
+            month_minutes: parseInt(monthRes.rows[0].total),
+            total_hours: parseFloat((parseInt(totalRes.rows[0].total) / 60).toFixed(1)),
+            week_rank: weekRank
+        });
+    } catch (err) {
+        console.error('获取自习统计失败:', err);
+        res.status(500).json({ error: '获取自习统计失败' });
     }
 });
 

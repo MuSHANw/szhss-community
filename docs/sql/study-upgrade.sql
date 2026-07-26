@@ -16,3 +16,9 @@ CREATE TABLE IF NOT EXISTS study_stats (
 );
 CREATE INDEX IF NOT EXISTS idx_study_stats_user ON study_stats(user_id);
 CREATE INDEX IF NOT EXISTS idx_study_stats_completed ON study_stats(completed_at);
+
+-- 修复 session_start 时区问题：改为带时区类型
+-- 执行前建议先清空进行中的自习记录：DELETE FROM study_room_members;
+ALTER TABLE study_room_members
+ALTER COLUMN session_start TYPE TIMESTAMPTZ
+USING session_start AT TIME ZONE 'UTC';
