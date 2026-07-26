@@ -11,7 +11,7 @@
     <script src="/js/level-utils.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* ========== 全局样式（与 index 一致） ========== */
+        /* ========== 全局 ========== */
         * {
             margin: 0;
             padding: 0;
@@ -34,7 +34,6 @@
             margin-left: 70px;
         }
 
-        /* 背景装饰 */
         .bg-decorations {
             position: fixed;
             top: 0;
@@ -45,7 +44,6 @@
             overflow: hidden;
             pointer-events: none;
         }
-
         .bg-decorations .wave {
             position: absolute;
             bottom: 0;
@@ -56,27 +54,23 @@
             background-size: cover;
             opacity: 0.5;
         }
-
         .bg-decorations .circle {
             position: absolute;
             border-radius: 50%;
             background: rgba(30, 136, 229, 0.05);
         }
-
         .bg-decorations .circle1 {
             width: 300px;
             height: 300px;
             top: -100px;
             left: -100px;
         }
-
         .bg-decorations .circle2 {
             width: 200px;
             height: 200px;
             bottom: -50px;
             right: -50px;
         }
-
         .bg-decorations .circle3 {
             width: 150px;
             height: 150px;
@@ -90,7 +84,6 @@
             padding: 0 20px;
         }
 
-        /* ========== 顶部栏 ========== */
         .top-bar-container {
             position: fixed;
             top: 0;
@@ -104,7 +97,6 @@
             align-items: center;
             padding: 0 20px;
         }
-
         .top-bar {
             display: flex;
             align-items: center;
@@ -112,7 +104,6 @@
             max-width: 1200px;
             margin: 0 auto;
         }
-
         .menu-toggle {
             background: none;
             border: none;
@@ -121,7 +112,6 @@
             margin-right: 20px;
             color: #4a5568;
         }
-
         .logo {
             font-size: 1.5rem;
             font-weight: 700;
@@ -129,7 +119,6 @@
             text-decoration: none;
             margin-right: auto;
         }
-
         .search-area {
             display: flex;
             align-items: center;
@@ -138,7 +127,6 @@
             padding: 4px 12px;
             width: 260px;
         }
-
         .search-area input {
             border: none;
             background: transparent;
@@ -146,14 +134,12 @@
             width: 100%;
             padding: 8px 0;
         }
-
         .search-area button {
             background: transparent;
             border: none;
             cursor: pointer;
             color: #6c757d;
         }
-
         .about-link {
             margin-left: 16px;
             color: #4a5568;
@@ -163,15 +149,12 @@
             transition: color 0.2s;
             white-space: nowrap;
         }
-
         .about-link:hover {
             color: #1E88E5;
         }
-
         .about-link i {
             margin-right: 4px;
         }
-
         .notifications-icon {
             position: relative;
             margin-left: 16px;
@@ -181,7 +164,6 @@
             display: inline-flex;
             align-items: center;
         }
-
         .notif-badge {
             position: absolute;
             top: -8px;
@@ -197,7 +179,6 @@
             justify-content: center;
         }
 
-        /* ========== 侧边栏 ========== */
         #sidebar {
             position: fixed;
             top: 60px;
@@ -212,26 +193,21 @@
             z-index: 99;
             overflow-x: hidden;
         }
-
         #sidebar.collapsed {
             width: 70px;
         }
-
         #sidebar.collapsed .sidebar-user-info,
         #sidebar.collapsed .sidebar-link span {
             display: none;
         }
-
         #sidebar.collapsed .sidebar-logout {
             font-size: 0;
             padding: 8px;
         }
-
         #sidebar.collapsed .sidebar-logout::before {
-            content: "🚪";
+            content: "\01F5EA";
             font-size: 1.2rem;
         }
-
         .sidebar-user {
             display: flex;
             align-items: center;
@@ -239,7 +215,6 @@
             border-bottom: 1px solid #eef2f6;
             cursor: pointer;
         }
-
         .sidebar-avatar {
             width: 48px;
             height: 48px;
@@ -248,41 +223,34 @@
             flex-shrink: 0;
             margin-right: 12px;
         }
-
         .sidebar-avatar img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-
         .sidebar-avatar i {
             font-size: 48px;
             color: #1E88E5;
         }
-
         .sidebar-user-info {
             flex: 1;
             overflow: hidden;
             white-space: nowrap;
         }
-
         .sidebar-nickname {
             font-weight: 600;
             font-size: 1rem;
         }
-
         .sidebar-email {
             font-size: 0.7rem;
             color: #6c757d;
         }
-
         .sidebar-nav {
             flex: 1;
             display: flex;
             flex-direction: column;
             padding: 16px 0;
         }
-
         .sidebar-link {
             display: flex;
             align-items: center;
@@ -292,37 +260,30 @@
             transition: background 0.2s;
             white-space: nowrap;
         }
-
         .sidebar-link i {
             width: 28px;
             font-size: 1.2rem;
             text-align: center;
         }
-
         .sidebar-link span {
             margin-left: 12px;
         }
-
         .sidebar-link:hover {
             background: #f0f2f5;
         }
-
         .sidebar-link.active {
             background: #e9f0fe;
             color: #1E88E5;
         }
-
         .notif-dot {
             color: #e53e3e;
             font-size: 0.7rem;
             margin-left: 4px;
         }
-
         .sidebar-footer {
             padding: 16px;
             border-top: 1px solid #eef2f6;
         }
-
         .sidebar-logout {
             width: 100%;
             background: none;
@@ -333,9 +294,156 @@
             border-radius: 8px;
             text-align: center;
         }
-
         .sidebar-logout:hover {
             background: #ffe5e5;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin-left: 0;
+            }
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+            #sidebar.open-mobile {
+                transform: translateX(0);
+            }
+        }
+
+        /* ========== 自习室广场 ========== */
+        .study-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 20px 0 4px;
+        }
+        .study-header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .study-tabs {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+        }
+        .study-tab {
+            padding: 10px 24px;
+            border-radius: 40px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+            font-size: 0.95rem;
+        }
+        .study-tab.active-tab {
+            background: #1E88E5;
+            color: white;
+            border-color: #1E88E5;
+        }
+        .study-tab:hover:not(.active-tab) {
+            background: #f0f2f5;
+        }
+
+        .create-btn {
+            background: #1E88E5;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.95rem;
+        }
+        .create-btn:hover {
+            background: #1565C0;
+        }
+
+        .leaderboard-header-btn {
+            background: transparent;
+            border: 1px solid #F59E0B;
+            color: #F59E0B;
+            border-radius: 40px;
+            padding: 10px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+        .leaderboard-header-btn:hover {
+            background: #F59E0B;
+            color: white;
+        }
+
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .room-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid #eef2f6;
+            cursor: pointer;
+            transition: box-shadow 0.2s, transform 0.1s;
+        }
+        .room-card:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+            transform: translateY(-2px);
+        }
+        .room-card .room-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .room-card .room-desc {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 12px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .room-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 0.85rem;
+            color: #4a5568;
+        }
+        .room-meta i {
+            color: #1E88E5;
+            width: 16px;
+        }
+        .studying-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2ecc71;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .room-creator {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #8a9aa8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .room-creator img {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
         }
 
         .loading,
@@ -348,145 +456,44 @@
             color: #6c757d;
         }
 
-        /* 移动端响应式（基础部分） */
-        @media (max-width: 768px) {
-            body {
-                margin-left: 0;
-            }
-
-            #sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                width: 260px !important;
-            }
-
-            #sidebar.open-mobile {
-                transform: translateX(0);
-            }
-        }
-
-        /* ========== 自习室专属样式 ========== */
-        .study-tabs {
-            display: flex;
-            gap: 12px;
-            margin: 20px 0;
-        }
-
-        .study-tab {
-            padding: 10px 24px;
-            border-radius: 40px;
-            border: 1px solid #e0e0e0;
-            background: white;
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-
-        .study-tab.active-tab {
-            background: #1E88E5;
-            color: white;
-            border-color: #1E88E5;
-        }
-
-        .create-btn {
-            margin-left: auto;
-            background: #1E88E5;
-            color: white;
-            border: none;
-            border-radius: 40px;
-            padding: 10px 24px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .room-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-        }
-
-        .room-card {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            border: 1px solid #eef2f6;
-            cursor: pointer;
-            transition: box-shadow 0.2s, transform 0.1s;
-        }
-
-        .room-card:hover {
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-        }
-
-        .room-card .room-name {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .room-card .room-desc {
-            font-size: 0.85rem;
-            color: #6c757d;
-            margin-bottom: 12px;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .room-meta {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.85rem;
-            color: #4a5568;
-        }
-
-        .room-meta i {
-            color: #1E88E5;
-        }
-
-        .room-meta .studying-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #2ecc71;
-            display: inline-block;
-        }
-
-        .room-creator {
-            margin-top: 8px;
-            font-size: 0.8rem;
-            color: #8a9aa8;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .room-creator img {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        /* 自习室内部 */
+        /* ========== 自习室内部 ========== */
         #studyRoom {
             display: none;
+        }
+
+        /* 两栏布局 */
+        .study-room-layout {
+            display: flex;
+            gap: 24px;
+            margin-top: 20px;
+        }
+        .study-room-left {
+            flex: 1;
+            min-width: 0;
+        }
+        .study-room-right {
+            width: 360px;
+            flex-shrink: 0;
         }
 
         .room-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
-
         .room-header h2 {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .room-header-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .room-header-info span {
+            font-size: 0.9rem;
+            color: #6c757d;
         }
 
         .leave-btn {
@@ -496,17 +503,18 @@
             border-radius: 40px;
             cursor: pointer;
             transition: 0.2s;
+            font-size: 0.9rem;
         }
-
         .leave-btn:hover {
             background: #f0f0f0;
         }
 
+        /* 座位网格 */
         .seats-grid {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .seat-card {
@@ -514,124 +522,658 @@
             border-radius: 16px;
             padding: 16px;
             text-align: center;
-            width: 100px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            position: relative;
             border: 1px solid #eef2f6;
+            position: relative;
+            transition: box-shadow 0.2s;
         }
-
-        .seat-card .seat-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            margin: 0 auto 8px;
+        .seat-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
         }
-
-        .seat-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .seat-card .seat-avatar i {
-            font-size: 48px;
-            color: #1E88E5;
-        }
-
-        .seat-card .seat-name {
-            font-weight: 600;
-            font-size: 0.9rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .seat-status {
+        .seat-card .seat-status {
             position: absolute;
-            top: 8px;
-            right: 8px;
+            top: 10px;
+            right: 10px;
             width: 12px;
             height: 12px;
             border-radius: 50%;
             border: 2px solid white;
         }
-
-        .status-idle {
+        .seat-status-idle {
             background: #adb5bd;
         }
-
-        .status-studying {
+        .seat-status-studying {
             background: #2ecc71;
+            animation: pulse-dot 2s infinite;
         }
-
-        .status-resting {
+        .seat-status-resting {
             background: #f1c40f;
+            animation: pulse-dot 2s infinite;
         }
 
-        /* 番茄钟控制面板 */
-        .pomodoro-panel {
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(46, 204, 113, 0);
+            }
+        }
+        .seat-status-resting {
+            animation-name: pulse-dot-rest;
+        }
+        @keyframes pulse-dot-rest {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(241, 196, 15, 0);
+            }
+        }
+
+        .seat-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            margin: 8px auto 8px;
+            overflow: hidden;
+        }
+        .seat-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .seat-avatar i {
+            font-size: 52px;
+            color: #1E88E5;
+        }
+        .seat-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        .seat-level {
+            font-size: 0.75rem;
+            color: #F59E0B;
+            font-weight: 600;
+            margin: 2px 0;
+        }
+        .seat-goal {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin: 4px 0;
+            padding: 2px 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .seat-time {
+            font-size: 0.8rem;
+            color: #1E88E5;
+            font-weight: 500;
+            margin: 4px 0;
+        }
+        .cheer-btn {
+            background: #fff3e0;
+            border: 1px solid #FFE0B2;
+            color: #E65100;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 4px;
+        }
+        .cheer-btn:hover {
+            background: #FFE0B2;
+        }
+        .cheer-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ========== 右侧控制面板 ========== */
+        .control-panel {
             background: white;
             border-radius: 20px;
             padding: 24px;
-            margin-bottom: 20px;
-            text-align: center;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             border: 1px solid #eef2f6;
+            position: sticky;
+            top: 80px;
+        }
+
+        .panel-status {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .panel-status .status-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .panel-status .status-value {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .status-value.idle {
+            color: #6c757d;
+        }
+        .status-value.studying {
+            color: #2ecc71;
+        }
+        .status-value.resting {
+            color: #f1c40f;
         }
 
         .timer-display {
-            font-size: 3rem;
+            font-size: 3.5rem;
             font-weight: 700;
             color: #1E88E5;
-            font-family: monospace;
+            font-family: 'Courier New', Courier, monospace;
+            text-align: center;
             margin: 12px 0;
+            letter-spacing: 2px;
+        }
+        .timer-display.resting-mode {
+            color: #f1c40f;
+        }
+        .timer-display.idle-mode {
+            color: #adb5bd;
+        }
+
+        .timer-settings {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .timer-settings .setting-group {
+            flex: 1;
+        }
+        .timer-settings label {
+            display: block;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        .timer-settings select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            background: white;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+        }
+        .timer-settings select:focus {
+            border-color: #1E88E5;
+        }
+
+        .study-goal-input {
+            margin-bottom: 16px;
+        }
+        .study-goal-input label {
+            display: block;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        .study-goal-input input {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .study-goal-input input:focus {
+            border-color: #1E88E5;
         }
 
         .timer-controls {
             display: flex;
-            justify-content: center;
-            gap: 12px;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .timer-controls .timer-btn {
+            flex: 1;
+            padding: 10px 0;
+            border-radius: 40px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.85rem;
+        }
+        .timer-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .timer-btn.btn-primary {
+            background: #1E88E5;
+            color: white;
+        }
+        .timer-btn.btn-primary:hover:not(:disabled) {
+            background: #1565C0;
+        }
+        .timer-btn.btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+        .timer-btn.btn-success:hover:not(:disabled) {
+            background: #27ae60;
+        }
+        .timer-btn.btn-secondary {
+            background: #f0f2f5;
+            color: #333;
+        }
+        .timer-btn.btn-secondary:hover:not(:disabled) {
+            background: #e2e6ea;
+        }
+        .timer-btn.btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        .timer-btn.btn-danger:hover:not(:disabled) {
+            background: #c0392b;
         }
 
-        .timer-btn {
-            padding: 10px 24px;
+        /* 白噪音 */
+        .sound-section {
+            margin: 16px 0;
+        }
+        .sound-section .section-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        .sound-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .sound-btn {
+            padding: 10px 8px;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        .sound-btn:hover {
+            background: #f0f2f5;
+        }
+        .sound-btn.active {
+            background: #E3F2FD;
+            border-color: #1E88E5;
+            color: #1E88E5;
+        }
+        .sound-btn .sound-icon {
+            font-size: 1.2rem;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* 今日统计 */
+        .today-stats {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #eef2f6;
+        }
+        .today-stats .stats-row {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+        .today-stats .stat-item .stat-number {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1E88E5;
+        }
+        .today-stats .stat-item .stat-label {
+            font-size: 0.75rem;
+            color: #8a9aa8;
+        }
+
+        /* ========== 模态框通用 ========== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-dialog {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: modalIn 0.25s ease;
+        }
+        @keyframes modalIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        .modal-icon {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .modal-footer-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .modal-footer-actions button {
+            padding: 10px 32px;
             border-radius: 40px;
             border: none;
             font-weight: 600;
             cursor: pointer;
             transition: 0.2s;
         }
-
-        .timer-btn.btn-primary {
+        .btn-primary-sm {
             background: #1E88E5;
             color: white;
         }
-
-        .timer-btn.btn-secondary {
+        .btn-primary-sm:hover {
+            background: #1565C0;
+        }
+        .btn-secondary-sm {
             background: #f0f2f5;
             color: #333;
         }
-
-        .timer-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .btn-secondary-sm:hover {
+            background: #e2e6ea;
         }
 
-        /* 响应式微调 */
+        /* ========== 排行榜模态框 ========== */
+        .leaderboard-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .leaderboard-tab {
+            padding: 8px 24px;
+            border-radius: 40px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        .leaderboard-tab.active {
+            background: #F59E0B;
+            color: white;
+            border-color: #F59E0B;
+        }
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+        .leaderboard-item:hover {
+            background: #f8f9fa;
+        }
+        .leaderboard-item .lb-rank {
+            width: 32px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+        .leaderboard-item .lb-rank.gold {
+            color: #FFD700;
+        }
+        .leaderboard-item .lb-rank.silver {
+            color: #C0C0C0;
+        }
+        .leaderboard-item .lb-rank.bronze {
+            color: #CD7F32;
+        }
+        .leaderboard-item .lb-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            margin: 0 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .leaderboard-item .lb-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .leaderboard-item .lb-avatar i {
+            font-size: 36px;
+            color: #1E88E5;
+        }
+        .leaderboard-item .lb-name {
+            flex: 1;
+            font-weight: 500;
+        }
+        .leaderboard-item .lb-hours {
+            color: #F59E0B;
+            font-weight: 700;
+        }
+        .leaderboard-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8a9aa8;
+        }
+
+        /* ========== 庆祝动画粒子 ========== */
+        @keyframes particleBurst {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
+        }
+        @keyframes fadeInOut {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            80% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+        }
+
+        /* 加油动画 */
+        @keyframes cheerFloat {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) scale(1.5);
+            }
+        }
+        .cheer-animation {
+            position: fixed;
+            z-index: 9998;
+            pointer-events: none;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #E65100;
+            animation: cheerFloat 1.5s ease-out forwards;
+        }
+
+        /* ========== 移动端适配 ========== */
         @media (max-width: 768px) {
+            .study-room-layout {
+                flex-direction: column;
+            }
+            .study-room-right {
+                width: 100%;
+            }
+            .seats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            .timer-display {
+                font-size: 2.8rem;
+            }
+            .control-panel {
+                position: static;
+                padding: 16px;
+            }
             .room-grid {
                 grid-template-columns: 1fr;
             }
-
-            .seats-grid {
-                justify-content: center;
+            .study-tabs {
+                flex-wrap: wrap;
             }
+            .leaderboard-header-btn {
+                font-size: 0.8rem;
+                padding: 6px 12px;
+            }
+            .study-header {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .timer-settings {
+                flex-direction: row;
+            }
+            .sound-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .modal-dialog {
+                padding: 20px;
+                width: 95%;
+            }
+            .room-header {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .room-header h2 {
+                font-size: 1.2rem;
+            }
+            .panel-status .status-label {
+                font-size: 0.8rem;
+            }
+            .timer-controls .timer-btn {
+                font-size: 0.8rem;
+                padding: 8px 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .seats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .seat-card {
+                padding: 12px 8px;
+            }
+            .seat-avatar {
+                width: 40px;
+                height: 40px;
+            }
+            .seat-avatar i {
+                font-size: 40px;
+            }
+            .seat-name {
+                font-size: 0.8rem;
+            }
+            .timer-display {
+                font-size: 2.2rem;
+            }
+        }
+
+        /* ========== 创建自习室模态框内表单 ========== */
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 4px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #1E88E5;
         }
     </style>
 </head>
 
 <body id="appBody">
-    <!-- 背景装饰（同 index.html） -->
+    <!-- 背景装饰 -->
     <div class="bg-decorations">
         <div class="circle circle1"></div>
         <div class="circle circle2"></div>
@@ -639,7 +1181,7 @@
         <div class="wave"></div>
     </div>
 
-    <!-- 顶部栏（同 index.html） -->
+    <!-- 顶部栏 -->
     <div class="top-bar-container">
         <div class="top-bar">
             <button class="menu-toggle" id="menuToggle">
@@ -660,7 +1202,7 @@
         </div>
     </div>
 
-    <!-- 侧边栏（同 index.html，但自习室链接高亮） -->
+    <!-- 侧边栏 -->
     <div id="sidebar">
         <div class="sidebar-user" id="sidebarUserBtn">
             <div class="sidebar-avatar" id="sidebarAvatar">
@@ -695,11 +1237,17 @@
         </div>
     </div>
 
-    <!-- 主内容区 -->
+    <!-- 主内容 -->
     <main class="main container">
 
-        <!-- 自习室广场 -->
+        <!-- ===== 自习室广场 ===== -->
         <div id="studyLobby">
+            <div class="study-header">
+                <h1>📚 自习室</h1>
+                <button class="leaderboard-header-btn" onclick="openLeaderboard()">
+                    🏆 排行榜
+                </button>
+            </div>
             <div class="study-tabs">
                 <button class="study-tab active-tab" data-type="district">🏙️ 区域自习室</button>
                 <button class="study-tab" data-type="personal">👤 个人自习室</button>
@@ -710,51 +1258,133 @@
             </div>
         </div>
 
-        <!-- 自习室内部 -->
+        <!-- ===== 自习室内部 ===== -->
         <div id="studyRoom">
             <div class="room-header">
-                <h2 id="currentRoomName"></h2>
-                <button class="leave-btn" id="leaveRoomBtn">🚪 退出自习室</button>
-            </div>
-            <p style="color:#6c757d; margin-bottom:20px;" id="currentRoomDesc"></p>
-
-            <!-- 座位区 -->
-            <h3>🧑‍🤝‍🧑 当前成员 (<span id="memberCount">0</span>)</h3>
-            <div class="seats-grid" id="seatsGrid"></div>
-
-            <!-- 番茄钟面板 -->
-            <div class="pomodoro-panel">
-                <div>当前状态：<strong id="statusText">空闲中</strong></div>
-                <div class="timer-display" id="timerDisplay">00:00</div>
-                <div class="timer-controls">
-                    <button class="timer-btn btn-primary" id="startFocusBtn">开始专注 (25分钟)</button>
-                    <button class="timer-btn btn-secondary" id="startRestBtn">休息一下 (5分钟)</button>
-                    <button class="timer-btn btn-secondary" id="stopTimerBtn">结束</button>
+                <div>
+                    <h2 id="currentRoomName"></h2>
+                    <div class="room-header-info">
+                        <span><i class="fas fa-user"></i> <span id="memberCount">0</span> 人在线</span>
+                        <span><span class="studying-dot"></span> <span id="studyingCount">0</span> 专注中</span>
+                    </div>
                 </div>
-                <p style="font-size:0.8rem; color:#8a9aa8; margin-top:8px;">番茄钟会自动切换到下一阶段</p>
+                <button class="leave-btn" id="leaveRoomBtn">🚪 退出</button>
+            </div>
+
+            <div class="study-room-layout">
+                <!-- 左侧：座位区 -->
+                <div class="study-room-left">
+                    <div class="seats-grid" id="seatsGrid"></div>
+                </div>
+
+                <!-- 右侧：控制面板 -->
+                <div class="study-room-right">
+                    <div class="control-panel" id="controlPanel">
+                        <!-- 状态显示 -->
+                        <div class="panel-status">
+                            <div class="status-label">当前状态</div>
+                            <div class="status-value idle" id="statusText">空闲中</div>
+                        </div>
+
+                        <!-- 计时器 -->
+                        <div class="timer-display idle-mode" id="timerDisplay">00:00</div>
+
+                        <!-- 番茄钟设置 -->
+                        <div class="timer-settings">
+                            <div class="setting-group">
+                                <label>专注时长</label>
+                                <select id="focusDuration" onchange="updateTimerSettings()">
+                                    <option value="15">15 分钟</option>
+                                    <option value="25" selected>25 分钟</option>
+                                    <option value="30">30 分钟</option>
+                                    <option value="45">45 分钟</option>
+                                    <option value="60">60 分钟</option>
+                                </select>
+                            </div>
+                            <div class="setting-group">
+                                <label>休息时长</label>
+                                <select id="restDuration" onchange="updateTimerSettings()">
+                                    <option value="5" selected>5 分钟</option>
+                                    <option value="10">10 分钟</option>
+                                    <option value="15">15 分钟</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 学习目标 -->
+                        <div class="study-goal-input">
+                            <label>📝 本次学习目标（选填）</label>
+                            <input type="text" id="studyGoal" placeholder="如：完成数学第三章习题" maxlength="50"
+                                onchange="saveStudyGoal()">
+                        </div>
+
+                        <!-- 控制按钮 -->
+                        <div class="timer-controls">
+                            <button class="timer-btn btn-primary" id="startFocusBtn">▶ 专注</button>
+                            <button class="timer-btn btn-success" id="startRestBtn" disabled>☕ 休息</button>
+                            <button class="timer-btn btn-danger" id="stopTimerBtn" disabled>■ 结束</button>
+                        </div>
+
+                        <!-- 白噪音 -->
+                        <div class="sound-section">
+                            <div class="section-title">🎵 白噪音</div>
+                            <div class="sound-grid">
+                                <button class="sound-btn" data-sound="rain" onclick="toggleSound('rain')">
+                                    <span class="sound-icon">☔</span>雨声
+                                </button>
+                                <button class="sound-btn" data-sound="cafe" onclick="toggleSound('cafe')">
+                                    <span class="sound-icon">☕</span>咖啡馆
+                                </button>
+                                <button class="sound-btn" data-sound="library" onclick="toggleSound('library')">
+                                    <span class="sound-icon">📚</span>图书馆
+                                </button>
+                                <button class="sound-btn" data-sound="fire" onclick="toggleSound('fire')">
+                                    <span class="sound-icon">🔥</span>篝火
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 今日统计 -->
+                        <div class="today-stats">
+                            <div class="stats-row">
+                                <div class="stat-item">
+                                    <div class="stat-number" id="todayPomodoros">0</div>
+                                    <div class="stat-label">🍅 番茄钟</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number" id="todayMinutes">0</div>
+                                    <div class="stat-label">⏱ 分钟</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number" id="todayCoins">0</div>
+                                    <div class="stat-label">🪙 鹏城币</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
     </main>
 
-    <!-- 创建自习室模态框（隐藏） -->
+    <!-- ===== 创建自习室模态框 ===== -->
     <div id="createRoomModal" class="modal-overlay" style="display:none;">
         <div class="modal-dialog">
             <button class="modal-close-btn" id="closeCreateModal">&times;</button>
             <div class="modal-icon">✨</div>
             <div class="modal-title">创建个人自习室</div>
-            <div class="modal-body" style="text-align:left;">
+            <div class="form-group">
                 <label>名称</label>
-                <input type="text" id="newRoomName"
-                    style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; margin-bottom:12px;"
-                    placeholder="如：深中冲刺团">
+                <input type="text" id="newRoomName" placeholder="如：深中冲刺团" maxlength="20">
+            </div>
+            <div class="form-group">
                 <label>简介</label>
-                <input type="text" id="newRoomDesc"
-                    style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; margin-bottom:12px;"
-                    placeholder="一起加油！">
+                <input type="text" id="newRoomDesc" placeholder="一起加油！">
+            </div>
+            <div class="form-group">
                 <label>人数上限</label>
-                <select id="newRoomMax"
-                    style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; margin-bottom:12px;">
+                <select id="newRoomMax">
                     <option value="4">4人</option>
                     <option value="6" selected>6人</option>
                     <option value="8">8人</option>
@@ -768,17 +1398,50 @@
         </div>
     </div>
 
+    <!-- ===== 排行榜模态框 ===== -->
+    <div id="leaderboardModal" class="modal-overlay" style="display:none;">
+        <div class="modal-dialog" style="max-width:480px;">
+            <button class="modal-close-btn" onclick="closeLeaderboard()">&times;</button>
+            <div class="modal-icon">🏆</div>
+            <div class="modal-title">自习排行榜</div>
+            <div class="leaderboard-tabs">
+                <button class="leaderboard-tab active" data-period="week" onclick="switchLeaderboard('week')">本周</button>
+                <button class="leaderboard-tab" data-period="month" onclick="switchLeaderboard('month')">本月</button>
+            </div>
+            <div id="leaderboardList" style="min-height:120px;">
+                <div class="leaderboard-empty">加载中...</div>
+            </div>
+        </div>
+    </div>
+
     <script>
         window.API_BASE = window.API_BASE || '/api';
         const token = localStorage.getItem('token');
+
+        // ========== 全局状态 ==========
         let currentTab = 'district';
         let currentRoomId = null;
-        let pollTimer = null;
-        let pomodoroTimer = null;
-        let pomodoroSeconds = 0;
-        let pomodoroStatus = 'idle'; // idle, studying, resting
+        let currentUserId = null;
+        let pollInterval = null;
 
-        // ---------- 复用侧边栏逻辑（与 index.html 相同）----------
+        // 番茄钟状态
+        let focusDuration = 25;
+        let restDuration = 5;
+        let timerSeconds = 0;
+        let timerStatus = 'idle'; // idle / studying / resting
+        let timerInterval = null;
+
+        // 白噪音
+        let currentSound = null;
+        let audioCtx = null;
+        let noiseNode = null;
+        let gainNode = null;
+
+        // 今日统计（本地累计）
+        let todayPomodoros = 0;
+        let todayMinutes = 0;
+
+        // ========== 侧边栏 ==========
         const sidebar = document.getElementById('sidebar');
         const toggleBtn = document.getElementById('menuToggle');
         const body = document.getElementById('appBody');
@@ -803,7 +1466,7 @@
             }
         });
 
-        // 用户信息
+        // ========== 用户信息 ==========
         async function updateSidebarUser() {
             if (!token) {
                 document.getElementById('sidebarNickname').innerText = '未登录';
@@ -819,15 +1482,17 @@
                     const user = await res.json();
                     document.getElementById('sidebarNickname').innerText = user.nickname || '用户';
                     document.getElementById('sidebarEmail').innerText = user.email || '';
+                    currentUserId = user.id;
                     if (user.avatar_url) {
                         document.getElementById('sidebarAvatar').innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
                     } else {
                         document.getElementById('sidebarAvatar').innerHTML = '<i class="fas fa-user-circle"></i>';
                     }
                 }
-            } catch (e) { }
+            } catch (e) {}
         }
         updateSidebarUser();
+
         document.getElementById('sidebarUserBtn').addEventListener('click', () => {
             window.location.href = '/profile.html';
         });
@@ -836,7 +1501,7 @@
             window.location.href = '/login.html';
         });
 
-        // 小红点逻辑（简化）
+        // ========== 通知小红点 ==========
         async function updateNotifDot() {
             if (!token) return;
             try {
@@ -854,14 +1519,47 @@
                 if (sidebarDot) {
                     sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
                 }
-            } catch (e) { }
+            } catch (e) {}
         }
         updateNotifDot();
         if (token) setInterval(updateNotifDot, 30000);
 
-        // ---------- 自习室逻辑 ----------
+        // ========== 工具函数 ==========
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' } [m] || m));
+        }
 
-        // 广场搜索
+        function formatMinutes(mins) {
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            if (h > 0) return `${h}小时${m}分钟`;
+            return `${m}分钟`;
+        }
+
+        function calculateLevel(exp) {
+            const levels = [
+                { level: 0, name: '未认证', color: '#9CA3AF' },
+                { level: 1, name: '新生报到', minExp: 0, maxExp: 99, color: '#9CA3AF' },
+                { level: 2, name: '积极成员', minExp: 100, maxExp: 399, color: '#10B981' },
+                { level: 3, name: '活跃分子', minExp: 400, maxExp: 999, color: '#3B82F6' },
+                { level: 4, name: '社区达人', minExp: 1000, maxExp: 1999, color: '#8B5CF6' },
+                { level: 5, name: '资深学长', minExp: 2000, maxExp: 3999, color: '#F59E0B' },
+                { level: 6, name: '社区元老', minExp: 4000, maxExp: 8999, color: '#EF4444' },
+                { level: 7, name: '传说级存在', minExp: 9000, maxExp: Infinity, color: '#FFD700' }
+            ];
+            const lv = levels.find(l => l.minExp !== undefined && exp >= l.minExp && exp <= l.maxExp);
+            return lv || levels[0];
+        }
+
+        function renderLevelBadge(exp) {
+            const lv = calculateLevel(exp);
+            return `<span style="font-size:0.75rem;font-weight:600;color:${lv.color};">LV${lv.level} ${lv.name}</span>`;
+        }
+
+        // ========== 自习室广场 ==========
+
+        // 搜索
         document.getElementById('studySearchBtn').addEventListener('click', () => {
             const keyword = document.getElementById('studySearchInput').value.trim();
             loadRooms(currentTab, keyword);
@@ -870,7 +1568,7 @@
             if (e.key === 'Enter') document.getElementById('studySearchBtn').click();
         });
 
-        // 切换选项卡
+        // 选项卡切换
         document.querySelectorAll('.study-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.study-tab').forEach(t => t.classList.remove('active-tab'));
@@ -878,62 +1576,9 @@
                 currentTab = tab.dataset.type;
                 document.getElementById('studySearchInput').value = '';
                 loadRooms(currentTab);
-                // 显示/隐藏创建按钮
                 const createBtn = document.getElementById('createRoomBtn');
-                if (token && currentTab === 'personal') {
-                    createBtn.style.display = 'inline-block';
-                } else {
-                    createBtn.style.display = 'none';
-                }
+                createBtn.style.display = (token && currentTab === 'personal') ? 'inline-block' : 'none';
             });
-        });
-
-        // 创建按钮事件
-        document.getElementById('createRoomBtn').addEventListener('click', () => {
-            if (!token) {
-                alert('请先登录');
-                return;
-            }
-            document.getElementById('createRoomModal').style.display = 'flex';
-        });
-        document.getElementById('closeCreateModal').addEventListener('click', () => {
-            document.getElementById('createRoomModal').style.display = 'none';
-        });
-        document.getElementById('cancelCreateRoom').addEventListener('click', () => {
-            document.getElementById('createRoomModal').style.display = 'none';
-        });
-        document.getElementById('submitCreateRoom').addEventListener('click', async () => {
-            const name = document.getElementById('newRoomName').value.trim();
-            const desc = document.getElementById('newRoomDesc').value.trim() || '';
-            const max = parseInt(document.getElementById('newRoomMax').value);
-            if (!name) {
-                alert('请输入自习室名称');
-                return;
-            }
-            try {
-                const res = await fetch(`${window.API_BASE}/study-rooms`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ name, description: desc, max_members: max })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    alert('自习室创建成功');
-                    document.getElementById('createRoomModal').style.display = 'none';
-                    document.getElementById('newRoomName').value = '';
-                    document.getElementById('newRoomDesc').value = '';
-                    loadRooms('personal');
-                } else {
-                    if (typeof handleQuizRequired === 'function' && !handleQuizRequired(data)) {
-                        alert(data.error || '创建失败');
-                    }
-                }
-            } catch (err) {
-                alert('网络错误');
-            }
         });
 
         // 加载自习室列表
@@ -951,34 +1596,26 @@
                     return;
                 }
                 grid.innerHTML = rooms.map(room => {
-                    let meta = '';
-                    if (room.room_type === 'district') {
-                        meta = `<span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(room.name)}</span>`;
-                    } else {
-                        meta = `<span>👤 ${escapeHtml(room.creator_nickname || '未知')}</span>`;
-                    }
-                    return `
-                    <div class="room-card" data-id="${room.id}" data-type="${room.room_type}">
+                    return `<div class="room-card" data-id="${room.id}" data-type="${room.room_type}">
                         <div class="room-name">${escapeHtml(room.name)}</div>
                         <div class="room-desc">${escapeHtml(room.description || '暂无简介')}</div>
                         <div class="room-meta">
-                            <span><i class="fas fa-user"></i> ${room.online_count || 0} 人在线</span>
+                            <span><i class="fas fa-user"></i> ${room.online_count || 0} 人</span>
                             <span><span class="studying-dot"></span> ${room.studying_count || 0} 专注中</span>
                         </div>
-                        ${room.room_type === 'personal' ? `<div class="room-creator">
-                            ${room.creator_avatar ? `<img src="${escapeHtml(room.creator_avatar)}" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
-                            ${escapeHtml(room.creator_nickname || '')}
-                        </div>` : ''}
+                        ${room.room_type === 'personal'
+                            ? `<div class="room-creator">
+                                ${room.creator_avatar
+                                    ? `<img src="${escapeHtml(room.creator_avatar)}" alt="avatar">`
+                                    : '<i class="fas fa-user-circle"></i>'}
+                                ${escapeHtml(room.creator_nickname || '')}
+                            </div>`
+                            : ''}
                     </div>`;
                 }).join('');
 
-                // 卡片点击进入
                 document.querySelectorAll('.room-card').forEach(card => {
-                    card.addEventListener('click', () => {
-                        const id = card.dataset.id;
-                        const type = card.dataset.type;
-                        enterRoom(id);
-                    });
+                    card.addEventListener('click', () => enterRoom(card.dataset.id));
                 });
             } catch (err) {
                 console.error(err);
@@ -986,13 +1623,46 @@
             }
         }
 
-        // 进入自习室
+        // ========== 创建自习室 ==========
+        document.getElementById('createRoomBtn').addEventListener('click', () => {
+            if (!token) { alert('请先登录'); return; }
+            document.getElementById('createRoomModal').style.display = 'flex';
+        });
+        document.getElementById('closeCreateModal').addEventListener('click', () => {
+            document.getElementById('createRoomModal').style.display = 'none';
+        });
+        document.getElementById('cancelCreateRoom').addEventListener('click', () => {
+            document.getElementById('createRoomModal').style.display = 'none';
+        });
+        document.getElementById('submitCreateRoom').addEventListener('click', async () => {
+            const name = document.getElementById('newRoomName').value.trim();
+            const desc = document.getElementById('newRoomDesc').value.trim() || '';
+            const max = parseInt(document.getElementById('newRoomMax').value);
+            if (!name) { alert('请输入自习室名称'); return; }
+            try {
+                const res = await fetch(`${window.API_BASE}/study-rooms`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ name, description: desc, max_members: max })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('自习室创建成功');
+                    document.getElementById('createRoomModal').style.display = 'none';
+                    document.getElementById('newRoomName').value = '';
+                    document.getElementById('newRoomDesc').value = '';
+                    loadRooms('personal');
+                } else {
+                    if (typeof handleQuizRequired === 'function' && !handleQuizRequired(data)) {
+                        alert(data.error || '创建失败');
+                    }
+                }
+            } catch (err) { alert('网络错误'); }
+        });
+
+        // ========== 进入/退出自习室 ==========
         async function enterRoom(roomId) {
-            if (!token) {
-                alert('请先登录');
-                return;
-            }
-            // 先加入房间
+            if (!token) { alert('请先登录'); return; }
             try {
                 const joinRes = await fetch(`${window.API_BASE}/study-rooms/${roomId}/join`, {
                     method: 'POST',
@@ -1005,27 +1675,41 @@
                     }
                     return;
                 }
-            } catch (err) {
-                alert('加入失败');
-                return;
-            }
+            } catch (err) { alert('加入失败'); return; }
 
             currentRoomId = roomId;
             document.getElementById('studyLobby').style.display = 'none';
             document.getElementById('studyRoom').style.display = 'block';
 
-            // 加载房间详情
             await refreshRoomDetail();
+            refreshUserCoins();
 
-            // 启动轮询
-            if (pollTimer) clearInterval(pollTimer);
-            pollTimer = setInterval(refreshRoomDetail, 8000);
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(refreshRoomDetail, 8000);
 
-            // 重置番茄钟
-            resetPomodoro();
+            resetTimer();
         }
 
-        // 轮询刷新房间成员状态
+        document.getElementById('leaveRoomBtn').addEventListener('click', async () => {
+            if (!currentRoomId) return;
+            // 停止计时和白噪音
+            stopTimer();
+            stopAllSound();
+            try {
+                await fetch(`${window.API_BASE}/study-rooms/${currentRoomId}/leave`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch (e) {}
+            if (pollInterval) { clearInterval(pollInterval);
+                pollInterval = null; }
+            currentRoomId = null;
+            document.getElementById('studyRoom').style.display = 'none';
+            document.getElementById('studyLobby').style.display = 'block';
+            loadRooms(currentTab);
+        });
+
+        // ========== 刷新房间详情 ==========
         async function refreshRoomDetail() {
             if (!currentRoomId) return;
             try {
@@ -1033,177 +1717,548 @@
                 const data = await res.json();
                 const room = data.room;
                 const members = data.members || [];
+
                 document.getElementById('currentRoomName').innerText = room.name;
-                document.getElementById('currentRoomDesc').innerText = room.description || '';
                 document.getElementById('memberCount').innerText = members.length;
+                document.getElementById('studyingCount').innerText =
+                    members.filter(m => m.status === 'studying').length;
 
                 // 渲染座位
                 const seatsGrid = document.getElementById('seatsGrid');
-                seatsGrid.innerHTML = members.map(m => {
-                    const statusClass = `status-${m.status}`;
-                    const statusLabel = { idle: '空闲', studying: '学习中', resting: '休息中' }[m.status] || '空闲';
-                    return `
-                    <div class="seat-card">
-                        <div class="seat-status ${statusClass}" title="${statusLabel}"></div>
-                        <div class="seat-avatar">
-                            ${m.avatar_url ? `<img src="${escapeHtml(m.avatar_url)}" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
-                        </div>
-                        <div class="seat-name" title="${escapeHtml(m.nickname)}">${escapeHtml(m.nickname)}</div>
-                    </div>`;
-                }).join('');
-
-                // 如果没有成员，显示提示
                 if (members.length === 0) {
-                    seatsGrid.innerHTML = '<p style="color:#8a9aa8;">暂时还没有成员，快邀请朋友吧~</p>';
+                    seatsGrid.innerHTML = '<p style="color:#8a9aa8;grid-column:1/-1;text-align:center;padding:40px;">暂时还没有成员，快邀请朋友吧~</p>';
+                } else {
+                    seatsGrid.innerHTML = members.map(m => renderSeatCard(m)).join('');
                 }
+
+                // 检测是否收到加油（通过通知系统，这里简化处理）
+                // 实际加油通知走 notification 系统
+
             } catch (err) {
                 console.error('刷新房间失败:', err);
             }
         }
 
-        // 退出自习室
-        document.getElementById('leaveRoomBtn').addEventListener('click', async () => {
-            if (!currentRoomId) return;
-            try {
-                await fetch(`${window.API_BASE}/study-rooms/${currentRoomId}/leave`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-            } catch (e) { }
-            // 清理
-            if (pollTimer) clearInterval(pollTimer);
-            pollTimer = null;
-            stopPomodoro();
-            currentRoomId = null;
+        function renderSeatCard(m) {
+            const statusLabel = { idle: '空闲', studying: '学习中', resting: '休息中' } [m.status] || '空闲';
+            const isMe = currentUserId && m.user_id === currentUserId;
+            const levelInfo = calculateLevel(m.exp || 0);
+            const goal = m.study_goal || '';
 
-            document.getElementById('studyRoom').style.display = 'none';
-            document.getElementById('studyLobby').style.display = 'block';
-            loadRooms(currentTab); // 刷新广场列表
-        });
+            return `<div class="seat-card" data-user-id="${m.user_id}">
+                <div class="seat-status seat-status-${m.status}" title="${statusLabel}"></div>
+                <div class="seat-avatar">
+                    ${m.avatar_url
+                        ? `<img src="${escapeHtml(m.avatar_url)}" alt="avatar">`
+                        : '<i class="fas fa-user-circle"></i>'}
+                </div>
+                <div class="seat-name" title="${escapeHtml(m.nickname)}">${escapeHtml(m.nickname)}</div>
+                <div class="seat-level" style="color:${levelInfo.color};">LV${levelInfo.level} ${levelInfo.name}</div>
+                ${goal ? `<div class="seat-goal" title="${escapeHtml(goal)}">📝 ${escapeHtml(goal).substring(0, 18)}${goal.length > 18 ? '…' : ''}</div>` : ''}
+                <div class="seat-time">⏱ ${formatMinutes(m.focus_today || 0)}</div>
+                ${isMe ? '' : `<button class="cheer-btn" onclick="sendCheer(${m.user_id}, this)">👏 加油</button>`}
+            </div>`;
+        }
 
-        // ---------- 番茄钟逻辑 ----------
-        const FOCUS_TIME = 25 * 60;   // 25分钟
-        const REST_TIME = 5 * 60;     // 5分钟
+        // ========== 番茄钟逻辑 ==========
+
+        function updateTimerSettings() {
+            if (timerStatus !== 'idle') return; // 计时中不允许修改
+            focusDuration = parseInt(document.getElementById('focusDuration').value) || 25;
+            restDuration = parseInt(document.getElementById('restDuration').value) || 5;
+            resetTimer();
+        }
+
+        function resetTimer() {
+            timerSeconds = focusDuration * 60;
+            timerStatus = 'idle';
+            updateTimerDisplay();
+            updateUI();
+        }
 
         function updateTimerDisplay() {
-            const mins = Math.floor(pomodoroSeconds / 60);
-            const secs = pomodoroSeconds % 60;
-            document.getElementById('timerDisplay').textContent =
-                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            const totalSec = timerSeconds;
+            const mins = Math.floor(totalSec / 60);
+            const secs = totalSec % 60;
+            const display = document.getElementById('timerDisplay');
+            display.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            display.className = 'timer-display';
+            if (timerStatus === 'idle') display.classList.add('idle-mode');
+            else if (timerStatus === 'resting') display.classList.add('resting-mode');
         }
 
-        function stopPomodoro() {
-            if (pomodoroTimer) {
-                clearInterval(pomodoroTimer);
-                pomodoroTimer = null;
-            }
-            pomodoroSeconds = 0;
-            pomodoroStatus = 'idle';
-            updateTimerDisplay();
-            updatePomodoroStatusText();
-            updatePomodoroButtons();
-        }
+        function updateUI() {
+            const statusText = document.getElementById('statusText');
+            const statusVal = { idle: '空闲中', studying: '专注中', resting: '休息中' } [timerStatus] || '空闲中';
+            statusText.textContent = statusVal;
+            statusText.className = 'status-value ' + timerStatus;
 
-        function resetPomodoro() {
-            stopPomodoro();
-        }
-
-        async function setStatusOnServer(status, sessionStart = null) {
-            if (!currentRoomId) return;
-            try {
-                await fetch(`${window.API_BASE}/study-rooms/${currentRoomId}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ status, session_start: sessionStart ? sessionStart.toISOString() : null })
-                });
-            } catch (e) { }
-        }
-
-        function updatePomodoroStatusText() {
-            const textEl = document.getElementById('statusText');
-            textEl.textContent = { idle: '空闲中', studying: '专注中', resting: '休息中' }[pomodoroStatus] || '空闲中';
-        }
-
-        function updatePomodoroButtons() {
             const startF = document.getElementById('startFocusBtn');
             const startR = document.getElementById('startRestBtn');
             const stop = document.getElementById('stopTimerBtn');
-            if (pomodoroStatus === 'idle') {
-                startF.disabled = false;
-                startR.disabled = true;
-                stop.disabled = true;
-            } else if (pomodoroStatus === 'studying') {
-                startF.disabled = true;
-                startR.disabled = true;
-                stop.disabled = false;
-            } else if (pomodoroStatus === 'resting') {
-                startF.disabled = true;
-                startR.disabled = true;
-                stop.disabled = false;
-            }
+
+            startF.disabled = timerStatus !== 'idle';
+            startR.disabled = timerStatus !== 'studying';
+            stop.disabled = timerStatus === 'idle';
+
+            // 禁用设置当计时中
+            document.getElementById('focusDuration').disabled = timerStatus !== 'idle';
+            document.getElementById('restDuration').disabled = timerStatus !== 'idle';
+            document.getElementById('studyGoal').disabled = timerStatus !== 'idle';
         }
 
         function startFocus() {
-            if (pomodoroTimer) clearInterval(pomodoroTimer);
-            pomodoroStatus = 'studying';
-            pomodoroSeconds = FOCUS_TIME;
-            updateTimerDisplay();
-            updatePomodoroStatusText();
-            updatePomodoroButtons();
-            setStatusOnServer('studying', new Date());
+            if (timerStatus !== 'idle') return;
+            if (timerInterval) clearInterval(timerInterval);
 
-            pomodoroTimer = setInterval(() => {
-                pomodoroSeconds--;
+            timerStatus = 'studying';
+            timerSeconds = focusDuration * 60;
+            updateTimerDisplay();
+            updateUI();
+
+            // 保存学习目标到服务器
+            saveStudyGoal();
+            // 通知服务器开始学习
+            setStatusOnServer('studying', new Date(), focusDuration, restDuration);
+
+            timerInterval = setInterval(() => {
+                timerSeconds--;
                 updateTimerDisplay();
-                if (pomodoroSeconds <= 0) {
-                    clearInterval(pomodoroTimer);
-                    // 自动转休息
-                    startRest();
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    completePomodoro();
                 }
             }, 1000);
         }
 
         function startRest() {
-            if (pomodoroTimer) clearInterval(pomodoroTimer);
-            pomodoroStatus = 'resting';
-            pomodoroSeconds = REST_TIME;
-            updateTimerDisplay();
-            updatePomodoroStatusText();
-            updatePomodoroButtons();
-            setStatusOnServer('resting', new Date());
+            if (timerStatus !== 'studying') return;
+            if (timerInterval) clearInterval(timerInterval);
 
-            pomodoroTimer = setInterval(() => {
-                pomodoroSeconds--;
+            timerStatus = 'resting';
+            timerSeconds = restDuration * 60;
+            updateTimerDisplay();
+            updateUI();
+
+            setStatusOnServer('resting', null);
+
+            timerInterval = setInterval(() => {
+                timerSeconds--;
                 updateTimerDisplay();
-                if (pomodoroSeconds <= 0) {
-                    clearInterval(pomodoroTimer);
-                    stopPomodoro();
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    // 休息结束，回到空闲
+                    timerStatus = 'idle';
+                    resetTimer();
+                    updateUI();
                     setStatusOnServer('idle');
                 }
             }, 1000);
         }
 
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            const wasStudying = timerStatus === 'studying';
+            timerStatus = 'idle';
+            resetTimer();
+            updateUI();
+
+            if (wasStudying) {
+                // 通知服务器结束学习（会触发学习记录和金币奖励）
+                setStatusOnServer('idle').then(() => {
+                    // 刷新今日统计
+                    refreshTodayStats();
+                });
+            } else {
+                setStatusOnServer('idle');
+            }
+        }
+
+        function completePomodoro() {
+            // 完成一个番茄钟
+            todayPomodoros++;
+            todayMinutes += focusDuration;
+            updateTodayStatsDisplay();
+
+            // 显示庆祝动画
+            showCelebration();
+
+            // 通知服务器结束学习
+            setStatusOnServer('idle');
+
+            // 刷新今日统计（从服务器获取最新数据）
+            refreshTodayStats();
+            refreshUserCoins();
+
+            // 延迟后自动进入休息
+            setTimeout(() => {
+                if (timerStatus === 'idle') {
+                    // 直接启动休息
+                    timerStatus = 'studying'; // 临时设一下让 startRest 能跑
+                    startRest();
+                }
+            }, 1500);
+        }
+
+        // ========== 服务器通信 ==========
+        async function setStatusOnServer(status, sessionStart, focusDur, restDur) {
+            if (!currentRoomId) return;
+            const body = { status };
+            if (sessionStart) body.session_start = sessionStart.toISOString();
+            if (focusDur !== undefined) body.focus_duration = focusDur;
+            if (restDur !== undefined) body.rest_duration = restDur;
+
+            const goal = document.getElementById('studyGoal').value.trim();
+            if (goal) body.study_goal = goal;
+
+            try {
+                await fetch(`${window.API_BASE}/study-rooms/${currentRoomId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(body)
+                });
+            } catch (e) {}
+        }
+
+        function saveStudyGoal() {
+            const goal = document.getElementById('studyGoal').value.trim();
+            if (currentRoomId && goal) {
+                fetch(`${window.API_BASE}/study-rooms/${currentRoomId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status: timerStatus || 'idle', study_goal: goal })
+                }).catch(() => {});
+            }
+        }
+
+        async function refreshTodayStats() {
+            if (!token) return;
+            try {
+                // 获取今日学习统计
+                const res = await fetch(`${window.API_BASE}/study-rooms/${currentRoomId}`);
+                const data = await res.json();
+                const members = data.members || [];
+                const me = members.find(m => m.user_id === currentUserId);
+                if (me) {
+                    const ft = parseInt(me.focus_today) || 0;
+                    todayMinutes = ft;
+                    // 估算番茄钟数
+                    const avgFocus = focusDuration || 25;
+                    todayPomodoros = ft > 0 ? Math.max(1, Math.round(ft / avgFocus)) : 0;
+                    updateTodayStatsDisplay();
+                }
+            } catch (e) {}
+        }
+
+        async function refreshUserCoins() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    document.getElementById('todayCoins').textContent = user.coins || 0;
+                }
+            } catch (e) {}
+        }
+
+        function updateTodayStatsDisplay() {
+            document.getElementById('todayPomodoros').textContent = todayPomodoros;
+            const mins = document.getElementById('todayMinutes');
+            if (todayMinutes >= 60) {
+                mins.textContent = `${Math.floor(todayMinutes / 60)}h${todayMinutes % 60}m`;
+            } else {
+                mins.textContent = todayMinutes;
+            }
+        }
+
+        // ========== 按钮绑定 ==========
         document.getElementById('startFocusBtn').addEventListener('click', startFocus);
         document.getElementById('startRestBtn').addEventListener('click', startRest);
-        document.getElementById('stopTimerBtn').addEventListener('click', async () => {
-            stopPomodoro();
-            await setStatusOnServer('idle');
+        document.getElementById('stopTimerBtn').addEventListener('click', stopTimer);
+
+        // ========== 白噪音 ==========
+        const SOUND_NAMES = {
+            rain: '☔ 雨声',
+            cafe: '☕ 咖啡馆',
+            library: '📚 图书馆',
+            fire: '🔥 篝火'
+        };
+
+        function toggleSound(type) {
+            if (currentSound === type) {
+                stopAllSound();
+                return;
+            }
+            stopAllSound();
+            currentSound = type;
+            playBrownNoise(type);
+            updateSoundButtons();
+        }
+
+        function stopAllSound() {
+            if (noiseNode) {
+                try { noiseNode.disconnect(); } catch (e) {}
+                noiseNode = null;
+            }
+            if (audioCtx) {
+                try { audioCtx.close(); } catch (e) {}
+                audioCtx = null;
+            }
+            gainNode = null;
+            currentSound = null;
+            updateSoundButtons();
+        }
+
+        function playBrownNoise(type) {
+            try {
+                audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+
+                // 创建增益节点控制音量
+                gainNode = audioCtx.createGain();
+                gainNode.gain.value = 0.3;
+                gainNode.connect(audioCtx.destination);
+
+                const bufferSize = audioCtx.sampleRate * 2;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+
+                let lastOut = 0;
+                for (let i = 0; i < bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    // 棕色噪音：低频更丰富
+                    data[i] = (lastOut + (0.02 * white)) / 1.02;
+                    lastOut = data[i];
+                    data[i] *= 1.5;
+                }
+
+                // 根据噪音类型调整频率特性
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.loop = true;
+
+                // 不同类型使用不同滤波器
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+
+                switch (type) {
+                    case 'rain':
+                        filter.frequency.value = 3000;
+                        filter.Q.value = 0.5;
+                        gainNode.gain.value = 0.35;
+                        break;
+                    case 'cafe':
+                        filter.frequency.value = 5000;
+                        filter.Q.value = 0.3;
+                        gainNode.gain.value = 0.25;
+                        // 增加一些中频嘈杂感
+                        break;
+                    case 'library':
+                        filter.frequency.value = 1500;
+                        filter.Q.value = 1.0;
+                        gainNode.gain.value = 0.2;
+                        break;
+                    case 'fire':
+                        filter.frequency.value = 800;
+                        filter.Q.value = 1.5;
+                        gainNode.gain.value = 0.3;
+                        // 低频噼啪感
+                        break;
+                }
+
+                source.connect(filter);
+                filter.connect(gainNode);
+                source.start();
+
+                noiseNode = source;
+
+                // 音量控制滑块（未来可以加）
+            } catch (e) {
+                console.error('白噪音播放失败:', e);
+            }
+        }
+
+        function updateSoundButtons() {
+            document.querySelectorAll('.sound-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.sound === currentSound);
+            });
+        }
+
+        // ========== 加油功能 ==========
+        let cheerCooldown = false;
+
+        async function sendCheer(targetUserId, btn) {
+            if (!token) { alert('请先登录'); return; }
+            if (cheerCooldown) return;
+            if (!currentRoomId) return;
+
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            try {
+                const res = await fetch(`${window.API_BASE}/study-rooms/${currentRoomId}/cheer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ target_user_id: targetUserId })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    // 在目标座位上显示加油动画
+                    showCheerAnimation(targetUserId);
+                    btn.textContent = `👏 已加油 (${data.cheers_remaining}/3)`;
+                    cheerCooldown = true;
+                    setTimeout(() => { cheerCooldown = false; }, 2000);
+                } else {
+                    btn.textContent = '👏 加油';
+                    alert(data.error || '加油失败');
+                }
+            } catch (err) {
+                btn.textContent = '👏 加油';
+                alert('网络错误');
+            }
+            setTimeout(() => { if (btn) btn.disabled = false; }, 2000);
+        }
+
+        function showCheerAnimation(targetUserId) {
+            // 找到目标用户的座位卡片
+            const seatCard = document.querySelector(`.seat-card[data-user-id="${targetUserId}"]`);
+            if (!seatCard) return;
+
+            const rect = seatCard.getBoundingClientRect();
+            const cheerEl = document.createElement('div');
+            cheerEl.className = 'cheer-animation';
+            cheerEl.textContent = '👏 加油！';
+            cheerEl.style.left = (rect.left + rect.width / 2 - 40) + 'px';
+            cheerEl.style.top = (rect.top - 10) + 'px';
+            document.body.appendChild(cheerEl);
+
+            setTimeout(() => cheerEl.remove(), 1600);
+        }
+
+        // ========== 庆祝动画 ==========
+        function showCelebration() {
+            const colors = ['#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#FF8E53', '#A66CFF', '#FF9FF3'];
+
+            // 粒子爆发
+            for (let i = 0; i < 60; i++) {
+                const particle = document.createElement('div');
+                const tx = (Math.random() - 0.5) * 500;
+                const ty = (Math.random() - 0.5) * 500 - 100;
+                const size = 6 + Math.random() * 10;
+
+                particle.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; z-index: 9999;
+                    width: ${size}px; height: ${size}px; border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+                    background: ${colors[Math.floor(Math.random() * colors.length)]};
+                    pointer-events: none;
+                    --tx: ${tx}px; --ty: ${ty}px;
+                    animation: particleBurst ${0.8 + Math.random() * 1.2}s ease-out forwards;
+                    animation-delay: ${Math.random() * 0.3}s;
+                `;
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 2500);
+            }
+
+            // 完成提示
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed; top: 30%; left: 50%; transform: translate(-50%, -50%); z-index: 10000;
+                background: rgba(0,0,0,0.85); color: white; padding: 24px 36px; border-radius: 20px;
+                font-size: 1.3rem; font-weight: 700; text-align: center; pointer-events: none;
+                animation: fadeInOut 2.2s ease forwards;
+                line-height: 1.6;
+            `;
+            toast.innerHTML = `
+                🎉 太棒了！<br>
+                完成了一个 ${focusDuration} 分钟的番茄钟！<br>
+                <span style="color:#F59E0B;">+15 鹏城币</span>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2400);
+
+            // 更新本地今日统计
+            document.getElementById('todayPomodoros').textContent = todayPomodoros;
+        }
+
+        // ========== 排行榜 ==========
+        let currentLeaderboardPeriod = 'week';
+
+        function openLeaderboard() {
+            document.getElementById('leaderboardModal').style.display = 'flex';
+            loadLeaderboard('week');
+        }
+
+        function closeLeaderboard() {
+            document.getElementById('leaderboardModal').style.display = 'none';
+        }
+
+        function switchLeaderboard(period) {
+            currentLeaderboardPeriod = period;
+            document.querySelectorAll('.leaderboard-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.period === period);
+            });
+            loadLeaderboard(period);
+        }
+
+        async function loadLeaderboard(period) {
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '<div class="leaderboard-empty">加载中...</div>';
+
+            try {
+                const res = await fetch(`${window.API_BASE}/study-leaderboard?period=${period}`);
+                const data = await res.json();
+                const lb = data.leaderboard || [];
+
+                if (lb.length === 0) {
+                    list.innerHTML = '<div class="leaderboard-empty">😢 暂无数据，快去自习吧！</div>';
+                    return;
+                }
+
+                const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+                const rankClasses = { 1: 'gold', 2: 'silver', 3: 'bronze' };
+
+                list.innerHTML = lb.map(item => {
+                    const medal = medals[item.rank] || '';
+                    const rankClass = rankClasses[item.rank] || '';
+                    return `<div class="leaderboard-item">
+                        <div class="lb-rank ${rankClass}">${medal || item.rank}</div>
+                        <div class="lb-avatar">
+                            ${item.avatar_url
+                                ? `<img src="${escapeHtml(item.avatar_url)}" alt="avatar">`
+                                : '<i class="fas fa-user-circle"></i>'}
+                        </div>
+                        <div class="lb-name">${escapeHtml(item.nickname)}</div>
+                        <div class="lb-hours">${item.total_hours} 小时</div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                list.innerHTML = '<div class="leaderboard-empty">加载失败</div>';
+            }
+        }
+
+        // 点模态框外部关闭
+        document.getElementById('leaderboardModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeLeaderboard();
+        });
+        document.getElementById('createRoomModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                document.getElementById('createRoomModal').style.display = 'none';
+            }
         });
 
-        // 初始加载
+        // ========== 初始化 ==========
         if (token) {
-            document.getElementById('createRoomBtn').style.display = 'none'; // 由 tab 控制
+            document.getElementById('createRoomBtn').style.display = 'none';
         }
         loadRooms('district');
-
-        // 小工具
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-        }
+        resetTimer();
     </script>
 </body>
 

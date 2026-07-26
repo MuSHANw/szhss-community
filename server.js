@@ -2182,12 +2182,20 @@ app.get('/api/study-rooms/:id', async (req, res) => {
         if (roomResult.rows.length === 0) return res.status(404).json({ error: '自习室不存在' });
         const room = roomResult.rows[0];
 
-        // 成员列表（含状态）
+        // 成员列表（含状态、番茄钟设置、学习目标、今日专注时长）
         const membersQuery = `
             SELECT m.user_id, m.status, m.session_start, m.joined_at,
-                   u.nickname, u.avatar_url
+                   m.focus_duration, m.rest_duration, m.study_goal,
+                   u.nickname, u.avatar_url, u.exp,
+                   COALESCE(ss.focus_today, 0) as focus_today
             FROM study_room_members m
             JOIN users u ON m.user_id = u.id
+            LEFT JOIN (
+                SELECT user_id, SUM(focus_minutes) as focus_today
+                FROM study_stats
+                WHERE completed_at >= CURRENT_DATE
+                GROUP BY user_id
+            ) ss ON m.user_id = ss.user_id
             WHERE m.room_id = $1
             ORDER BY m.joined_at ASC
         `;
@@ -2295,11 +2303,11 @@ app.post('/api/study-rooms/:id/leave', authMiddleware, async (req, res) => {
     }
 });
 
-// 更新自身状态（含番茄钟计时）
+// 更新自身状态（支持自定义番茄钟参数和学习目标，并记录学习时长）
 app.patch('/api/study-rooms/:id/status', authMiddleware, async (req, res) => {
     const roomId = parseInt(req.params.id);
     const userId = req.user.userId;
-    const { status, session_start } = req.body;  // status: 'idle' | 'studying' | 'resting'
+    const { status, session_start, focus_duration, rest_duration, study_goal } = req.body;
 
     if (isNaN(roomId)) return res.status(400).json({ error: '无效的自习室ID' });
     if (!['idle', 'studying', 'resting'].includes(status)) {
@@ -2307,27 +2315,59 @@ app.patch('/api/study-rooms/:id/status', authMiddleware, async (req, res) => {
     }
 
     try {
-        // 确认用户在该自习室内
+        // 确认用户在该自习室内并获取当前状态（用于后续判断）
         const memberCheck = await pool.query(
-            'SELECT id FROM study_room_members WHERE room_id = $1 AND user_id = $2',
+            'SELECT id, status, session_start FROM study_room_members WHERE room_id = $1 AND user_id = $2',
             [roomId, userId]
         );
         if (memberCheck.rows.length === 0) {
             return res.status(400).json({ error: '你未加入该自习室' });
         }
 
-        // 更新状态
         const sessionStartVal = session_start ? new Date(session_start).toISOString() : null;
+
+        // 构建动态更新字段
+        const updates = ['status = $1', 'session_start = $2'];
+        const values = [status, sessionStartVal];
+        let paramIndex = 3;
+
+        if (focus_duration !== undefined) {
+            updates.push(`focus_duration = $${paramIndex}`);
+            values.push(parseInt(focus_duration));
+            paramIndex++;
+        }
+        if (rest_duration !== undefined) {
+            updates.push(`rest_duration = $${paramIndex}`);
+            values.push(parseInt(rest_duration));
+            paramIndex++;
+        }
+        if (study_goal !== undefined) {
+            updates.push(`study_goal = $${paramIndex}`);
+            values.push(study_goal);
+            paramIndex++;
+        }
+        values.push(roomId, userId);
+
         await pool.query(
-            'UPDATE study_room_members SET status = $1, session_start = $2 WHERE room_id = $3 AND user_id = $4',
-            [status, sessionStartVal, roomId, userId]
+            `UPDATE study_room_members SET ${updates.join(', ')} WHERE room_id = $${paramIndex} AND user_id = $${paramIndex + 1}`,
+            values
         );
 
-        // 如果状态变为 idle 或 resting，并且之前是 studying，可以在这里插入一条学习记录（可选）
-        // 为将来统计做准备，简单起见 Phase 1 先不做
+        // 如果从 studying 变为 idle，记录学习统计
+        if (status === 'idle' && memberCheck.rows[0].status === 'studying' && memberCheck.rows[0].session_start) {
+            const startTime = new Date(memberCheck.rows[0].session_start);
+            const now = new Date();
+            const focusMinutes = Math.floor((now - startTime) / 60000);
 
-        if (status === 'studying') {
-            await awardDailyTask(userId, 'study_session');
+            if (focusMinutes >= 1) {
+                await pool.query(
+                    'INSERT INTO study_stats (user_id, room_id, focus_minutes) VALUES ($1, $2, $3)',
+                    [userId, roomId, focusMinutes]
+                );
+
+                // 奖励鹏城币（每日上限已在 awardDailyTask 中处理）
+                await awardDailyTask(userId, 'study_session');
+            }
         }
 
         res.json({ message: '状态更新成功' });
@@ -2370,6 +2410,106 @@ app.delete('/api/study-rooms/:id', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('关闭自习室失败:', err);
         res.status(500).json({ error: '关闭自习室失败' });
+    }
+});
+
+// 给用户加油
+app.post('/api/study-rooms/:id/cheer', authMiddleware, async (req, res) => {
+    const roomId = parseInt(req.params.id);
+    const fromUserId = req.user.userId;
+    const { target_user_id } = req.body;
+
+    if (isNaN(roomId) || !target_user_id) {
+        return res.status(400).json({ error: '参数错误' });
+    }
+    if (fromUserId === target_user_id) {
+        return res.status(400).json({ error: '不能给自己加油' });
+    }
+
+    const today = getBeijingDate();
+
+    try {
+        // 检查发送者今日加油次数
+        const senderCheck = await pool.query(
+            'SELECT cheers_today, cheers_last_date FROM study_room_members WHERE room_id = $1 AND user_id = $2',
+            [roomId, fromUserId]
+        );
+        if (senderCheck.rows.length === 0) {
+            return res.status(400).json({ error: '你未在该自习室中' });
+        }
+
+        const sender = senderCheck.rows[0];
+        const senderDate = sender.cheers_last_date ? sender.cheers_last_date.toISOString().slice(0, 10) : '';
+
+        let cheersToday = sender.cheers_today;
+        if (senderDate !== today) {
+            cheersToday = 0;
+        }
+
+        if (cheersToday >= 3) {
+            return res.status(400).json({ error: '今日加油次数已用完（3/3）' });
+        }
+
+        // 检查目标用户是否在自习室中
+        const targetCheck = await pool.query(
+            'SELECT id FROM study_room_members WHERE room_id = $1 AND user_id = $2',
+            [roomId, target_user_id]
+        );
+        if (targetCheck.rows.length === 0) {
+            return res.status(400).json({ error: '目标用户不在该自习室中' });
+        }
+
+        // 更新发送者的加油计数
+        await pool.query(
+            'UPDATE study_room_members SET cheers_today = $1, cheers_last_date = $2 WHERE room_id = $3 AND user_id = $4',
+            [cheersToday + 1, today, roomId, fromUserId]
+        );
+
+        // 发送通知给目标用户
+        await createNotification(target_user_id, 'cheer', roomId, fromUserId, '给你加油了！');
+
+        res.json({ message: '加油已发送！', cheers_remaining: 2 - cheersToday });
+    } catch (err) {
+        console.error('加油失败:', err);
+        res.status(500).json({ error: '加油失败' });
+    }
+});
+
+// 自习排行榜
+app.get('/api/study-leaderboard', async (req, res) => {
+    const { period = 'week' } = req.query; // week / month
+
+    try {
+        let dateCondition;
+        if (period === 'month') {
+            dateCondition = "completed_at >= DATE_TRUNC('month', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai'))";
+        } else {
+            dateCondition = "completed_at >= DATE_TRUNC('week', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai'))";
+        }
+
+        const query = `
+            SELECT u.id, u.nickname, u.avatar_url, SUM(ss.focus_minutes) as total_minutes
+            FROM study_stats ss
+            JOIN users u ON ss.user_id = u.id
+            WHERE ${dateCondition}
+            GROUP BY u.id, u.nickname, u.avatar_url
+            ORDER BY total_minutes DESC
+            LIMIT 20
+        `;
+
+        const result = await pool.query(query);
+
+        res.json({
+            period,
+            leaderboard: result.rows.map((r, i) => ({
+                rank: i + 1,
+                ...r,
+                total_hours: (r.total_minutes / 60).toFixed(1)
+            }))
+        });
+    } catch (err) {
+        console.error('获取排行榜失败:', err);
+        res.status(500).json({ error: '获取排行榜失败' });
     }
 });
 
