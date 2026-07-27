@@ -358,6 +358,19 @@
         function removeTag(tag) { var idx = selectedTags.indexOf(tag); if (idx !== -1) selectedTags.splice(idx,1); syncTagUI(); }
         function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if (m==='&') return '&amp;'; if (m==='<') return '&lt;'; if (m==='>') return '&gt;'; return m; }); }
 
+        // ---------- 相对路径转完整 URL ----------
+        function getFullUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('http://') || url.startsWith('https://')) return url;
+            return url.startsWith('/') ? 'https://szhss-community.top' + url : 'https://szhss-community.top/' + url;
+        }
+        function fixContentUrls(html) {
+            if (!html) return html;
+            return html.replace(/(src|href)="(\/[^"]+)"/g, function(match, attr, path) {
+                return attr + '="' + getFullUrl(path) + '"';
+            });
+        }
+
         document.querySelectorAll('.preset-tag').forEach(function(el) { el.addEventListener('click', function() { toggleTag(el.dataset.tag); }); });
         document.getElementById('customTagInput').addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ',') {
@@ -382,7 +395,7 @@
                 document.getElementById('postTitle').value = post.title || '';
                 document.getElementById('postCategory').value = post.category || '综合';
                 // Quill 内容：新帖子是 HTML，旧帖子是 Markdown，都直接填入
-                quill.root.innerHTML = post.content || '';
+                quill.root.innerHTML = fixContentUrls(post.content || '');
                 if (post.tags && post.tags.length) setTagsFromString(post.tags.join(','));
 
                 // 设置返回链接

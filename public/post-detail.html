@@ -1253,6 +1253,21 @@
             return `发布于 ${createdStr}`;
         }
 
+        // 将相对路径转换为完整 URL
+        function getFullUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('http://') || url.startsWith('https://')) return url;
+            return url.startsWith('/') ? 'https://szhss-community.top' + url : 'https://szhss-community.top/' + url;
+        }
+
+        // 将 HTML 内容中的相对路径替换为完整 URL
+        function fixContentUrls(html) {
+            if (!html) return html;
+            return html.replace(/(src|href)="(\/[^"]+)"/g, function(match, attr, path) {
+                return attr + '="' + getFullUrl(path) + '"';
+            });
+        }
+
         // 处理回复内容展开/收起
         function handleReplyContentExpand() {
             document.querySelectorAll('.reply-content').forEach(el => {
@@ -1337,7 +1352,7 @@
                                 ${!isAuthor && token ? '<a href="/chat.html?uid=' + post.user_id + '" class="action-btn" style="text-decoration:none;margin-left:auto;"><i class="fas fa-envelope"></i> 发私信</a>' : ''}
                             </div>
                         </div>
-                        <div class="post-content">${post.content || ''}</div>
+                        <div class="post-content">${fixContentUrls(post.content || '')}</div>
                         <div class="post-actions">
                             <button class="like-btn ${isLiked ? 'liked' : ''}" data-id="${post.id}" id="likeBtn">
                                 <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> <span id="likesCount">${post.likes || 0}</span>

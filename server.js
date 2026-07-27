@@ -871,6 +871,7 @@ app.get('/api/following-posts', authMiddleware, async (req, res) => {
         const countResult = await pool.query(countQuery, [userId]);
         const total = parseInt(countResult.rows[0].total);
 
+        result.rows.forEach(fixPostMedia);
         res.json({
             posts: result.rows,
             page,
@@ -1206,6 +1207,27 @@ app.get('/api/users/:id/favorites', async (req, res) => {
     }
 });
 
+// ---------- 辅助函数：将帖子内容中的相对路径替换为完整 URL ----------
+const SITE_BASE = 'https://szhss-community.top';
+function fixContentUrls(content) {
+    if (!content) return content;
+    // 替换 src="/xxx" 为 src="https://szhss-community.top/xxx"
+    return content.replace(/(src|href)="(\/[^"]+)"/g, (match, attr, path) => {
+        return `${attr}="${SITE_BASE}${path}"`;
+    });
+}
+function fixMediaUrl(url) {
+    if (!url) return url;
+    return url.startsWith('/') ? SITE_BASE + url : url;
+}
+function fixPostMedia(post) {
+    if (!post) return post;
+    if (post.content) post.content = fixContentUrls(post.content);
+    if (post.images && Array.isArray(post.images)) post.images = post.images.map(fixMediaUrl);
+    if (post.videos && Array.isArray(post.videos)) post.videos = post.videos.map(fixMediaUrl);
+    return post;
+}
+
 // ---------- 帖子相关 API ----------
 app.post('/api/posts', authMiddleware, quizRequired, async (req, res) => {
     const { title, content, category, tags, circle_id, images, videos } = req.body;
@@ -1298,6 +1320,8 @@ app.get('/api/posts', async (req, res) => {
         const total = parseInt(countResult.rows[0].total);
         const totalPages = Math.ceil(total / limit);
 
+        // 列表中的图片视频 URL 也转为完整路径（供移动端使用）
+        result.rows.forEach(fixPostMedia);
         res.json({ posts: result.rows, page, limit, total, totalPages });
     } catch (err) {
         console.error(err);
@@ -1317,7 +1341,7 @@ app.get('/api/posts/:id', async (req, res) => {
             [id]
         );
         if (postResult.rows.length === 0) return res.status(404).json({ error: '帖子不存在' });
-        const post = postResult.rows[0];
+        const post = fixPostMedia(postResult.rows[0]);
         const repliesResult = await pool.query(
             `SELECT r.*, u.nickname, u.avatar_url, u.exp, u.has_passed_quiz
              FROM replies r
@@ -1976,6 +2000,7 @@ app.get('/api/search', async (req, res) => {
         `;
         const countResult = await pool.query(countQuery, [searchPattern]);
         const total = parseInt(countResult.rows[0].total);
+        result.rows.forEach(fixPostMedia);
         res.json({
             posts: result.rows,
             page,
@@ -2021,6 +2046,7 @@ app.get('/api/search/all', async (req, res) => {
             const result = await pool.query(query, [searchPattern, limit, offset]);
             const countResult = await pool.query(countQuery, [searchPattern]);
             const total = parseInt(countResult.rows[0].total);
+            result.rows.forEach(fixPostMedia);
             res.json({ type: 'posts', results: result.rows, page, limit, total, totalPages: Math.ceil(total / limit) });
 
         } else if (type === 'users') {
@@ -3327,6 +3353,7 @@ app.get('/api/circles/:id/posts', async (req, res) => {
         const countResult = await pool.query(countQuery, [circleId]);
         const total = parseInt(countResult.rows[0].total);
 
+        result.rows.forEach(fixPostMedia);
         res.json({
             posts: result.rows,
             page,
