@@ -759,6 +759,7 @@
         <div class="settings-wrapper">
             <div class="settings-sidebar">
                 <div class="nav-item active" data-tab="profile">个人资料</div>
+                <div class="nav-item" data-tab="security">账号安全</div>
                 <div class="nav-item" data-tab="privacy">隐私设置</div>
             </div>
             <div class="settings-content">
@@ -796,13 +797,39 @@
                     <button id="saveProfileBtn">保存修改</button>
                     <div id="profileMsg" class="error-msg" style="margin-top: 12px;"></div>
                 </div>
+                <div id="security-tab" class="tab-pane">
+                    <h2>账号安全</h2>
+                    <div class="form-group">
+                        <label>当前邮箱</label>
+                        <input type="text" id="currentEmail" disabled value="加载中...">
+                        <div class="hint">邮箱已绑定 · 更换邮箱功能即将上线</div>
+                    </div>
+                    <div class="form-group">
+                        <label>修改密码</label>
+                        <input type="password" id="oldPassword" placeholder="请输入旧密码">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="newPassword" placeholder="请输入新密码（至少6位）">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="confirmPassword" placeholder="请再次输入新密码">
+                    </div>
+                    <div id="passwordMsg" class="error-msg" style="margin-bottom:12px;"></div>
+                    <button id="savePasswordBtn">修改密码</button>
+                </div>
                 <div id="privacy-tab" class="tab-pane">
                     <h2>隐私设置</h2>
                     <div class="checkbox-group"><input type="checkbox" id="show_activity"> 公开我的活跃度日历</div>
                     <div class="checkbox-group"><input type="checkbox" id="show_replies"> 公开我的回复列表</div>
                     <div class="checkbox-group"><input type="checkbox" id="show_favorites"> 公开我的收藏列表</div>
+                    <div class="checkbox-group"><input type="checkbox" id="show_stats"> 公开我的数据仪表盘</div>
                     <div class="checkbox-group"><input type="checkbox" id="allow_messages"> 允许他人给我发送私信</div>
                     <div class="checkbox-group" id="uploadPermissionStatus" style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f5;"></div>
+                    <div class="form-group" style="margin-top:16px;padding-top:16px;border-top:1px solid #eef2f6;">
+                        <label>绑定手机号</label>
+                        <input type="text" placeholder="即将上线，敬请期待" disabled>
+                        <div class="hint">绑定手机号功能即将上线</div>
+                    </div>
                     <button id="savePrivacyBtn">保存隐私设置</button>
                     <div id="privacyMsg" class="error-msg" style="margin-top: 12px;"></div>
                 </div>
@@ -1046,7 +1073,9 @@
                 document.getElementById('show_activity').checked = currentUser.show_activity !== false;
                 document.getElementById('show_replies').checked = currentUser.show_replies !== false;
                 document.getElementById('show_favorites').checked = currentUser.show_favorites !== false;
+                document.getElementById('show_stats').checked = currentUser.show_stats !== false;
                 document.getElementById('allow_messages').checked = currentUser.allow_messages === true;
+                document.getElementById('currentEmail').value = currentUser.email || '未知';
 
                 // 检查上传权限状态
                 try {
@@ -1148,12 +1177,13 @@
             const show_activity = document.getElementById('show_activity').checked;
             const show_replies = document.getElementById('show_replies').checked;
             const show_favorites = document.getElementById('show_favorites').checked;
+            const show_stats = document.getElementById('show_stats').checked;
             const allow_messages = document.getElementById('allow_messages').checked;
             try {
                 const res = await fetch(`${window.API_BASE}/me/profile`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ show_activity, show_replies, show_favorites, allow_messages })
+                    body: JSON.stringify({ show_activity, show_replies, show_favorites, show_stats, allow_messages })
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -1195,9 +1225,50 @@
         document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
         document.getElementById('savePrivacyBtn').addEventListener('click', savePrivacy);
 
+        // ---------- 修改密码 ----------
+        document.getElementById('savePasswordBtn').addEventListener('click', async () => {
+            const oldPassword = document.getElementById('oldPassword').value.trim();
+            const newPassword = document.getElementById('newPassword').value.trim();
+            const confirmPassword = document.getElementById('confirmPassword').value.trim();
+            const msgEl = document.getElementById('passwordMsg');
+
+            if (!oldPassword || !newPassword) {
+                msgEl.innerText = '请填写完整信息';
+                return;
+            }
+            if (newPassword.length < 6) {
+                msgEl.innerText = '新密码至少6位';
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                msgEl.innerText = '两次输入的新密码不一致';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${window.API_BASE}/me/password`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ oldPassword, newPassword })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    msgEl.innerHTML = '<span style="color:#10B981;">密码修改成功</span>';
+                    document.getElementById('oldPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                } else {
+                    msgEl.innerText = data.error || '修改失败';
+                }
+            } catch (e) {
+                msgEl.innerText = '网络错误';
+            }
+        });
+
         const navItems = document.querySelectorAll('.nav-item');
         const tabs = {
             profile: document.getElementById('profile-tab'),
+            security: document.getElementById('security-tab'),
             privacy: document.getElementById('privacy-tab')
         };
         navItems.forEach(item => {

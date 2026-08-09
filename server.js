@@ -537,7 +537,7 @@ app.get('/api/me', authMiddleware, async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT id, email, nickname, school, district, hobby, avatar_url, is_admin, nickname_last_updated,
-                    show_activity, show_replies, show_favorites, allow_messages, u.exp, u.has_passed_quiz, u.coins,
+                    show_activity, show_replies, show_favorites, show_stats, allow_messages, u.exp, u.has_passed_quiz, u.coins,
                     (SELECT COUNT(*) FROM user_follows WHERE follower_id = u.id) as following_count,
                     (SELECT COUNT(*) FROM user_follows WHERE followee_id = u.id) as follower_count
              FROM users u WHERE u.id = $1`,
@@ -552,7 +552,7 @@ app.get('/api/me', authMiddleware, async (req, res) => {
 });
 
 app.put('/api/me/profile', authMiddleware, async (req, res) => {
-    const { nickname, school, district, hobby, show_activity, show_replies, show_favorites, allow_messages } = req.body;
+    const { nickname, school, district, hobby, show_activity, show_replies, show_favorites, show_stats, allow_messages } = req.body;
     const userId = req.user.userId;
     const client = await pool.connect();
     try {
@@ -599,6 +599,7 @@ app.put('/api/me/profile', authMiddleware, async (req, res) => {
         if (show_activity !== undefined) { updateFields.push(`show_activity = $${updateValues.length + 1}`); updateValues.push(show_activity); }
         if (show_replies !== undefined) { updateFields.push(`show_replies = $${updateValues.length + 1}`); updateValues.push(show_replies); }
         if (show_favorites !== undefined) { updateFields.push(`show_favorites = $${updateValues.length + 1}`); updateValues.push(show_favorites); }
+        if (show_stats !== undefined) { updateFields.push(`show_stats = $${updateValues.length + 1}`); updateValues.push(show_stats); }
         if (updateFields.length > 0) {
             console.log('🔍 保存隐私设置:', { updateFields, updateValues });
             updateValues.push(userId);
@@ -615,6 +616,32 @@ app.put('/api/me/profile', authMiddleware, async (req, res) => {
         res.status(500).json({ error: '更新失败' });
     } finally {
         client.release();
+    }
+});
+
+// 修改密码
+app.put('/api/me/password', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+        return res.status(400).json({ error: '请填写旧密码和新密码' });
+    }
+    if (newPassword.length < 6) {
+        return res.status(400).json({ error: '新密码至少6位' });
+    }
+
+    try {
+        const userRes = await pool.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+        const valid = await bcrypt.compare(oldPassword, userRes.rows[0].password_hash);
+        if (!valid) return res.status(400).json({ error: '旧密码不正确' });
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedPassword, userId]);
+        res.json({ message: '密码修改成功' });
+    } catch (err) {
+        console.error('修改密码失败:', err);
+        res.status(500).json({ error: '修改密码失败' });
     }
 });
 
@@ -960,6 +987,7 @@ app.get('/api/users/:id', async (req, res) => {
     try {
         const query = `
             SELECT id, email, nickname, school, district, hobby, avatar_url, allow_messages,
+                   show_stats,
                    exp, has_passed_quiz, created_at, coins,
                    total_likes_received, total_favorites_received, total_replies_received,
                    (SELECT COUNT(*) FROM user_follows WHERE follower_id = $1) as following_count,
@@ -1184,6 +1212,73 @@ app.get('/api/users/:id/activity', async (req, res) => {
     } catch (err) {
         console.error('获取活跃度失败:', err);
         res.status(500).json({ error: '获取活跃度失败' });
+    }
+});
+
+// 获取用户数据统计
+app.get('/api/users/:id/stats', async (req, res) => {
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) return res.status(400).json({ error: '无效的用户ID' });
+
+    try {
+        // 数据概览
+        const overviewRes = await pool.query(
+            `SELECT
+                total_likes_received, total_favorites_received,
+                following_count, follower_count
+             FROM users WHERE id = $1`,
+            [userId]
+        );
+        const overview = overviewRes.rows[0];
+        const postsCount = await pool.query('SELECT COUNT(*) as cnt FROM posts WHERE user_id = $1', [userId]);
+        const repliesCount = await pool.query('SELECT COUNT(*) as cnt FROM replies WHERE user_id = $1', [userId]);
+
+        // 最近6个月每月发帖数
+        const monthlyPosts = await pool.query(
+            `SELECT DATE_TRUNC('month', created_at) as month, COUNT(*) as count
+             FROM posts WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '6 months'
+             GROUP BY month ORDER BY month`,
+            [userId]
+        );
+
+        // 最近6个月每月回复数
+        const monthlyReplies = await pool.query(
+            `SELECT DATE_TRUNC('month', created_at) as month, COUNT(*) as count
+             FROM replies WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '6 months'
+             GROUP BY month ORDER BY month`,
+            [userId]
+        );
+
+        // 活跃时段分布（发帖+回复按小时汇总）
+        const hourlyRes = await pool.query(
+            `SELECT hour, SUM(count) as total FROM (
+                SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
+                FROM posts WHERE user_id = $1
+                GROUP BY hour
+                UNION ALL
+                SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
+                FROM replies WHERE user_id = $1
+                GROUP BY hour
+            ) sub GROUP BY hour ORDER BY hour`,
+            [userId]
+        );
+
+        res.json({
+            overview: {
+                posts: parseInt(postsCount.rows[0].cnt),
+                replies: parseInt(repliesCount.rows[0].cnt),
+                likes: overview.total_likes_received || 0,
+                favorites: overview.total_favorites_received || 0,
+                following: overview.following_count || 0,
+                followers: overview.follower_count || 0
+            },
+            monthlyPosts: monthlyPosts.rows,
+            monthlyReplies: monthlyReplies.rows,
+            hourlyActivity: hourlyRes.rows
+        });
+    } catch (err) {
+        console.error('获取用户统计数据失败:', err);
+        res.status(500).json({ error: '获取统计数据失败' });
     }
 });
 
@@ -3282,10 +3377,14 @@ app.post('/api/messages', authMiddleware, quizRequired, async (req, res) => {
             [senderId, receiver_id, content.trim()]
         );
 
+        // 发送通知给接收者（私信通知）
+        await createNotification(receiver_id, 'message', result.rows[0].id, senderId, content.trim().substring(0, 50));
+
         res.json({
             id: result.rows[0].id,
             created_at: result.rows[0].created_at,
-            message: '发送成功'
+            message: '发送成功',
+            receiver_has_not_replied: hasReplied.rows.length === 0
         });
     } catch (err) {
         console.error('发送私信失败:', err);

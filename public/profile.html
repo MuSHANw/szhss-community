@@ -11,6 +11,7 @@
     <script src="/js/mobile.js" defer></script>
     <script src="/js/level-utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* ========== 全局样式（与 index 一致） ========== */
@@ -381,6 +382,48 @@
             gap: 8px;
         }
 
+        /* 数据仪表盘 */
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-mini-card {
+            background: #F9FAFB;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        .stat-mini-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1E88E5;
+        }
+        .stat-mini-label {
+            font-size: 0.8rem;
+            color: #6B7280;
+            margin-top: 4px;
+        }
+        .charts-row {
+            display: flex;
+            gap: 16px;
+        }
+        .chart-card {
+            background: #F9FAFB;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .chart-card h4 {
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+        @media (max-width: 768px) {
+            .stats-overview { grid-template-columns: repeat(2, 1fr); }
+            .charts-row { flex-direction: column; }
+        }
+
         .calendar {
             overflow-x: auto;
         }
@@ -693,6 +736,57 @@
                         <div style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">🪙 最近获得</div>
                         <div id="recentCoinFlow" style="font-size:0.8rem;color:#6B7280;">
                             <div class="task-item">暂无记录</div>
+                        </div>
+                    </div>
+
+                    <!-- 数据仪表盘 -->
+                    <div class="activity-section" id="statsDashboard" style="padding:0;border:none;margin-top:16px;">
+                        <div class="section-title"><i class="fas fa-chart-bar"></i> 数据仪表盘</div>
+
+                        <!-- 数据概览 -->
+                        <div class="stats-overview" id="statsOverview">
+                            <div class="stat-mini-card">
+                                <div class="stat-mini-number" id="statOverviewPosts">--</div>
+                                <div class="stat-mini-label">发帖</div>
+                            </div>
+                            <div class="stat-mini-card">
+                                <div class="stat-mini-number" id="statOverviewReplies">--</div>
+                                <div class="stat-mini-label">回复</div>
+                            </div>
+                            <div class="stat-mini-card">
+                                <div class="stat-mini-number" id="statOverviewLikes">--</div>
+                                <div class="stat-mini-label">获赞</div>
+                            </div>
+                            <div class="stat-mini-card">
+                                <div class="stat-mini-number" id="statOverviewFavorites">--</div>
+                                <div class="stat-mini-label">被收藏</div>
+                            </div>
+                            <div class="stat-mini-card">
+                                <div class="stat-mini-number" id="statOverviewFollowing">--</div>
+                                <div class="stat-mini-label">关注</div>
+                            </div>
+                            <div class="stat-mini-card">
+                                <div class="stat-mini-number" id="statOverviewFollowers">--</div>
+                                <div class="stat-mini-label">粉丝</div>
+                            </div>
+                        </div>
+
+                        <!-- 图表区域 -->
+                        <div class="stats-charts">
+                            <div class="chart-card">
+                                <h4>📈 发帖趋势（近6个月）</h4>
+                                <canvas id="postsChart" height="200"></canvas>
+                            </div>
+                            <div class="charts-row">
+                                <div class="chart-card" style="flex:1;">
+                                    <h4>🎯 互动构成</h4>
+                                    <canvas id="interactionChart" height="200"></canvas>
+                                </div>
+                                <div class="chart-card" style="flex:1;">
+                                    <h4>🕐 活跃时段</h4>
+                                    <canvas id="hourlyChart" height="200"></canvas>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1208,6 +1302,92 @@
             }
         }
 
+        // ---------- 数据仪表盘 ----------
+        async function loadStats() {
+            if (!currentUser) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/users/${currentUser.id}/stats`, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                const data = await res.json();
+
+                document.getElementById('statOverviewPosts').textContent = data.overview.posts;
+                document.getElementById('statOverviewReplies').textContent = data.overview.replies;
+                document.getElementById('statOverviewLikes').textContent = data.overview.likes;
+                document.getElementById('statOverviewFavorites').textContent = data.overview.favorites;
+                document.getElementById('statOverviewFollowing').textContent = data.overview.following;
+                document.getElementById('statOverviewFollowers').textContent = data.overview.followers;
+
+                if (typeof Chart !== 'undefined') {
+                    renderPostsChart(data.monthlyPosts, data.monthlyReplies);
+                    renderInteractionChart(data.overview);
+                    renderHourlyChart(data.hourlyActivity);
+                }
+            } catch (e) {
+                console.warn('加载统计数据失败:', e);
+            }
+        }
+
+        function renderPostsChart(monthlyPosts, monthlyReplies) {
+            const ctx = document.getElementById('postsChart').getContext('2d');
+            const months = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date();
+                d.setMonth(d.getMonth() - i);
+                months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+            }
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        { label: '发帖', data: fillMonthlyData(months, monthlyPosts), borderColor: '#1E88E5', backgroundColor: 'rgba(30,136,229,0.1)', tension: 0.3 },
+                        { label: '回复', data: fillMonthlyData(months, monthlyReplies), borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        function renderInteractionChart(overview) {
+            const ctx = document.getElementById('interactionChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['获赞', '被收藏', '被回复'],
+                    datasets: [{
+                        data: [overview.likes, overview.favorites, overview.replies],
+                        backgroundColor: ['#EF4444', '#F59E0B', '#3B82F6']
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        function renderHourlyChart(hourlyData) {
+            const ctx = document.getElementById('hourlyChart').getContext('2d');
+            const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+            const data = Array.from({ length: 24 }, (_, i) => {
+                const found = hourlyData.find(h => parseInt(h.hour) === i);
+                return found ? parseInt(found.total) : 0;
+            });
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{ data: data, backgroundColor: '#1E88E5' }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        function fillMonthlyData(months, data) {
+            return months.map(m => {
+                const found = data.find(d => d.month && d.month.startsWith(m));
+                return found ? parseInt(found.count) : 0;
+            });
+        }
+
         async function init() {
             try {
                 currentUser = await fetchMe();
@@ -1305,6 +1485,7 @@
             })();
             renderCalendar(activity);
             loadCoins();
+            loadStats();
             initTabs();
             await renderMyPosts(1);
         }

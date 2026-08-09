@@ -449,6 +449,15 @@
             </div>
         </div>
 
+        <!-- 回复限制提示 -->
+        <div id="replyNotice" style="display:none;background:#FFF3CD;padding:8px 16px;text-align:center;font-size:0.85rem;color:#856404;">
+            ⚠️ 对方尚未回复你，暂时无法发送第二条消息。请耐心等待对方回复。
+        </div>
+        <!-- 私信关闭提示 -->
+        <div id="messageDisabledNotice" style="display:none;background:#FEE2E2;padding:8px 16px;text-align:center;font-size:0.85rem;color:#991B1B;">
+            ⚠️ 对方已关闭私信功能，无法发送消息
+        </div>
+
         <!-- 消息列表 -->
         <div class="chat-messages" id="chatMessages">
             <div style="text-align:center;padding:40px;color:#6c757d;">加载中...</div>
@@ -833,6 +842,11 @@
                 const data = await res.json();
                 if (res.ok) {
                     input.value = '';
+                    // 如果对方尚未回复，显示提示并禁用输入
+                    if (data.receiver_has_not_replied) {
+                        document.getElementById('replyNotice').style.display = 'block';
+                        showInputBlocked('对方回复后即可继续发送');
+                    }
                     // 直接添加消息到列表
                     if (myId) {
                         messages.push({
@@ -851,7 +865,14 @@
                         await loadMessages(1);
                     }
                 } else {
-                    alert(data.error || '发送失败');
+                    // 按错误类型显示对应提示条
+                    const errMsg = data.error || '发送失败';
+                    if (errMsg.includes('未开启私信')) {
+                        document.getElementById('messageDisabledNotice').style.display = 'block';
+                    } else if (errMsg.includes('尚未回复')) {
+                        document.getElementById('replyNotice').style.display = 'block';
+                    }
+                    alert(errMsg);
                     // 如果是因为未开启私信等错误，刷新状态
                     checkSendPermission();
                 }
