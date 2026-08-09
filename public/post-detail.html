@@ -371,6 +371,14 @@
             line-height: 1.3;
         }
 
+        .detail-badge {
+            display: inline-block; padding: 2px 10px; border-radius: 12px;
+            font-size: 0.8rem; font-weight: 600; margin-left: 8px;
+            vertical-align: middle;
+        }
+        .detail-badge.pinned { background: #DBEAFE; color: #1E40AF; }
+        .detail-badge.essence { background: #FEF3C7; color: #D97706; }
+
         .post-meta-top {
             display: flex;
             flex-wrap: wrap;
@@ -1331,7 +1339,10 @@
                 const postHtml = `
                     <div class="post-main">
                         <div class="post-header-section">
-                            <h1 class="post-title">${escapeHtml(post.title)}</h1>
+                            <h1 class="post-title">${escapeHtml(post.title)}
+                                ${post.is_pinned ? '<span class="detail-badge pinned">📌 置顶</span>' : ''}
+                                ${post.is_essence ? '<span class="detail-badge essence">⭐ 精华</span>' : ''}
+                            </h1>
                             <div class="post-meta-top">
                                 <span class="post-category">${escapeHtml(post.category || '综合')}</span>
                                 <div class="post-tags">${tagsHtml}</div>

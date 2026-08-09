@@ -1593,9 +1593,11 @@
                     var essenceBadge = post.is_essence ? '<span class="essence-badge">⭐ 精华</span>' : '';
 
                     var essenceBtn = '';
+                    var pinBtn = '';
                     if (isAdminOrCreator) {
                         var isEssence = post.is_essence;
                         essenceBtn = '<button class="essence-btn ' + (isEssence ? 'active' : '') + '" onclick="event.stopPropagation();toggleEssence(' + post.id + ')" title="' + (isEssence ? '取消精华' : '设为精华') + '">' + (isEssence ? '⭐ 已精华' : '☆ 精华') + '</button>';
+                        pinBtn = '<button class="essence-btn ' + (post.is_pinned ? 'active' : '') + '" onclick="event.stopPropagation();togglePin(' + post.id + ')" title="' + (post.is_pinned ? '取消置顶' : '置顶') + '">' + (post.is_pinned ? '📌 已置顶' : '📌 置顶') + '</button>';
                     }
 
                     var summary = (post.content || '').replace(/<[^>]+>/g, '').substring(0, 150);
@@ -1606,9 +1608,9 @@
                     return '<div class="post-card" data-post-id="' + post.id + '" onclick="window.location.href=\'/post-detail.html?id=' + post.id + '\'">' +
                         '<div class="post-card-header">' +
                         '<div class="post-card-badges">' + categoryBadge + essenceBadge + '</div>' +
-                        '<div>' + essenceBtn + '</div>' +
+                        '<div>' + essenceBtn + pinBtn + '</div>' +
                         '</div>' +
-                        '<div class="post-card-title">' + (post.is_essence ? '<span class="essence-star" title="精华帖">⭐</span> ' : '') + escapeHtml(post.title) + '</div>' +
+                        '<div class="post-card-title">' + (post.is_pinned ? '<span class="essence-star" title="置顶帖">📌</span> ' : '') + (post.is_essence ? '<span class="essence-star" title="精华帖">⭐</span> ' : '') + escapeHtml(post.title) + '</div>' +
                         '<div class="post-card-summary">' + escapeHtml(summary) + '</div>' +
                         '<div class="post-card-footer">' +
                         '<div class="post-card-author">' + avatarHtml + '<span>' + escapeHtml(post.nickname) + '</span></div>' +
@@ -1756,6 +1758,23 @@
         async function toggleEssence(postId) {
             try {
                 var res = await fetch(window.API_BASE + '/posts/' + postId + '/essence', {
+                    method: 'PATCH',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                var data = await res.json();
+                if (res.ok) {
+                    loadPosts();
+                } else {
+                    alert(data.error || '操作失败');
+                }
+            } catch (err) {
+                alert('网络错误');
+            }
+        }
+
+        async function togglePin(postId) {
+            try {
+                var res = await fetch(window.API_BASE + '/posts/' + postId + '/pin', {
                     method: 'PATCH',
                     headers: { 'Authorization': 'Bearer ' + token }
                 });

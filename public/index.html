@@ -694,6 +694,84 @@
         .level-progress { width: 100%; height: 6px; background: #eef2f6; border-radius: 3px; overflow: hidden; }
         .level-progress-bar { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
 
+        /* ========== 首页轮播横幅 ========== */
+        .post-banner {
+            position: relative; width: 100%; height: 160px;
+            border-radius: 16px; overflow: hidden; margin-bottom: 16px;
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+        }
+        .banner-track {
+            display: flex; height: 100%; transition: transform 0.5s ease;
+        }
+        .banner-slide {
+            min-width: 100%; height: 100%; position: relative;
+            display: flex; align-items: center; padding: 24px 48px;
+            cursor: pointer; color: white; text-decoration: none;
+        }
+        .banner-slide::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(30,64,175,0.85), rgba(59,130,246,0.85));
+        }
+        .banner-content {
+            position: relative; z-index: 1; flex: 1; min-width: 0;
+        }
+        .banner-badge {
+            display: inline-block; padding: 2px 10px; border-radius: 12px;
+            font-size: 0.75rem; font-weight: 600; margin-bottom: 8px;
+        }
+        .banner-badge.pinned { background: rgba(255,255,255,0.3); color: white; }
+        .banner-badge.essence { background: rgba(245,158,11,0.8); color: white; }
+        .banner-title {
+            font-size: 1.3rem; font-weight: 700; margin-bottom: 6px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .banner-excerpt {
+            font-size: 0.85rem; opacity: 0.85;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            max-width: 500px;
+        }
+        .banner-meta {
+            font-size: 0.8rem; opacity: 0.7; margin-top: 6px;
+        }
+        .banner-image {
+            width: 80px; height: 80px; border-radius: 12px;
+            object-fit: cover; margin-left: 16px; flex-shrink: 0;
+            position: relative; z-index: 1; border: 2px solid rgba(255,255,255,0.3);
+        }
+        .banner-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(255,255,255,0.2); color: white; border: none;
+            width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+            font-size: 1rem; transition: background 0.2s; z-index: 2;
+        }
+        .banner-btn:hover { background: rgba(255,255,255,0.4); }
+        .banner-prev { left: 8px; }
+        .banner-next { right: 8px; }
+        .banner-dots {
+            position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 6px; z-index: 2;
+        }
+        .banner-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: rgba(255,255,255,0.4); cursor: pointer; transition: background 0.2s;
+        }
+        .banner-dot.active { background: white; }
+
+        @media (max-width: 768px) {
+            .post-banner { height: 130px; }
+            .banner-slide { padding: 16px 36px; }
+            .banner-title { font-size: 1.1rem; }
+            .banner-image { width: 60px; height: 60px; }
+        }
+
+        /* 帖子列表置顶/加精标识 */
+        .post-badge {
+            margin-right: 4px; font-size: 0.85rem;
+        }
+        .post-badge.pinned { color: #3B82F6; }
+        .post-badge.essence { color: #F59E0B; }
+
         /* ========== 信息流标签栏 ========== */
         .feed-tabs {
             display: flex; gap: 0; margin-bottom: 0;
@@ -1150,6 +1228,13 @@
                     <button class="category-tab" data-category="升学">升学</button>
                     <button class="category-tab" data-category="综合">综合</button>
                 </div>
+                <!-- 轮播横幅 -->
+                <div id="postBanner" class="post-banner" style="display:none;">
+                    <div class="banner-track" id="bannerTrack"></div>
+                    <div class="banner-dots" id="bannerDots"></div>
+                    <button class="banner-btn banner-prev" onclick="moveBanner(-1)">❮</button>
+                    <button class="banner-btn banner-next" onclick="moveBanner(1)">❯</button>
+                </div>
                 <!-- 排序栏 -->
                 <div class="feed-tabs">
                     <button class="feed-tab active" data-sort="recommended">🔥 推荐</button>
@@ -1461,9 +1546,104 @@
         let currentPage = 1;
         let totalPages = 1;
 
+        // 将相对路径转换为完整 URL（横幅图片使用）
+        function getFullUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('http://') || url.startsWith('https://')) return url;
+            return url.startsWith('/') ? 'https://szhss-community.top' + url : 'https://szhss-community.top/' + url;
+        }
+
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        }
+
+        // ---------- 首页轮播横幅 ----------
+        let bannerPosts = [];
+        let bannerCurrent = 0;
+        let bannerInterval = null;
+
+        async function loadBanner() {
+            try {
+                const res = await fetch(`${window.API_BASE}/posts/banner`);
+                const data = await res.json();
+
+                if (!data.posts || data.posts.length === 0) {
+                    document.getElementById('postBanner').style.display = 'none';
+                    return;
+                }
+
+                bannerPosts = data.posts;
+                document.getElementById('postBanner').style.display = 'block';
+                renderBanner();
+                startBannerAutoPlay();
+            } catch (e) {
+                document.getElementById('postBanner').style.display = 'none';
+            }
+        }
+
+        function renderBanner() {
+            const track = document.getElementById('bannerTrack');
+            const dots = document.getElementById('bannerDots');
+
+            track.innerHTML = bannerPosts.map(post => {
+                const badge = post.is_pinned ?
+                    '<span class="banner-badge pinned">📌 置顶</span>' :
+                    '<span class="banner-badge essence">⭐ 精华</span>';
+
+                const imageHtml = post.images && post.images.length > 0 ?
+                    `<img src="${getFullUrl(post.images[0])}" class="banner-image" alt="" onerror="this.style.display='none'">` :
+                    '';
+
+                return `
+                    <div class="banner-slide" onclick="location.href='/post-detail.html?id=${post.id}'">
+                        <div class="banner-content">
+                            ${badge}
+                            <div class="banner-title">${escapeHtml(post.title)}</div>
+                            <div class="banner-excerpt">${escapeHtml(String(post.content || '').replace(/<[^>]*>/g, '').substring(0, 100))}</div>
+                            <div class="banner-meta">${escapeHtml(post.nickname)} · ${escapeHtml(post.category || '综合')}</div>
+                        </div>
+                        ${imageHtml}
+                    </div>
+                `;
+            }).join('');
+
+            dots.innerHTML = bannerPosts.map((_, i) =>
+                `<div class="banner-dot ${i === 0 ? 'active' : ''}" onclick="goToBanner(${i})"></div>`
+            ).join('');
+
+            bannerCurrent = 0;
+            updateBannerPosition();
+        }
+
+        function moveBanner(dir) {
+            bannerCurrent = (bannerCurrent + dir + bannerPosts.length) % bannerPosts.length;
+            updateBannerPosition();
+            resetBannerAutoPlay();
+        }
+
+        function goToBanner(index) {
+            bannerCurrent = index;
+            updateBannerPosition();
+            resetBannerAutoPlay();
+        }
+
+        function updateBannerPosition() {
+            document.getElementById('bannerTrack').style.transform =
+                `translateX(-${bannerCurrent * 100}%)`;
+            document.querySelectorAll('.banner-dot').forEach((d, i) => {
+                d.classList.toggle('active', i === bannerCurrent);
+            });
+        }
+
+        function startBannerAutoPlay() {
+            clearInterval(bannerInterval);
+            bannerInterval = setInterval(() => moveBanner(1), 5000);
+        }
+
+        function resetBannerAutoPlay() {
+            clearInterval(bannerInterval);
+            startBannerAutoPlay();
         }
         function renderMarkdown(text) {
             if (!text) return '';
@@ -1556,6 +1736,12 @@
                 container.innerHTML = posts.map(post => {
                     const isLiked = likeStatus[post.id] || false;
                     const isFav = favStatus[post.id] || false;
+                    let pinBadge = '';
+                    if (post.is_pinned) {
+                        pinBadge = '<span class="post-badge pinned" title="置顶">📌</span>';
+                    } else if (post.is_essence) {
+                        pinBadge = '<span class="post-badge essence" title="精华">⭐</span>';
+                    }
                     const avatarHtml = post.avatar_url
                         ? `<img src="${post.avatar_url}" alt="头像" class="post-item-avatar">`
                         : `<i class="fas fa-user-circle post-item-avatar-icon"></i>`;
@@ -1563,7 +1749,7 @@
                         <div class="post-item" data-post-id="${post.id}">
                             <div class="post-item-avatar-area">${avatarHtml}</div>
                             <div class="post-item-content">
-                                <div class="post-item-title">${escapeHtml(post.title)}</div>
+                                <div class="post-item-title">${pinBadge}${escapeHtml(post.title)}</div>
                                 <div class="post-item-excerpt">${getPlainText(post.content, 150)}</div>
                                 <div class="post-item-meta">
                                     <span class="post-item-author">${escapeHtml(post.nickname)}</span>
@@ -1667,6 +1853,7 @@
         initCategoryTabs();
         initSortButtons();
         loadPosts();
+        loadBanner();
 
         // ---------- 内测公告弹窗逻辑 ----------
         (function () {
