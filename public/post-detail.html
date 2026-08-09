@@ -523,6 +523,22 @@
             background: #ffe5e5;
         }
 
+        .action-btn.pin-btn {
+            color: #1E40AF;
+        }
+
+        .action-btn.pin-btn:hover {
+            background: #DBEAFE;
+        }
+
+        .action-btn.essence-btn {
+            color: #D97706;
+        }
+
+        .action-btn.essence-btn:hover {
+            background: #FEF3C7;
+        }
+
         .like-btn,
         .favorite-btn {
             background: none;
@@ -1331,6 +1347,9 @@
                 const isAuthor = (currentUserId === post.user_id);
                 const canEdit = isAuthor || currentUserIsAdmin;
                 const canReportPost = (currentUserId !== post.user_id);
+                // 置顶/加精权限：管理员可操作任意帖子，作者可加精自己的帖子（置顶仅管理员）
+                const canPin = currentUserIsAdmin;
+                const canEssence = currentUserIsAdmin || isAuthor;
 
                 const tagsHtml = (post.tags && post.tags.length) ? post.tags.map(tag => `<span class="tag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`).join('') : '';
 
@@ -1376,6 +1395,12 @@
                             ${canEdit ? `
                                 <button id="editPostBtn" class="action-btn"><i class="fas fa-edit"></i>${currentUserIsAdmin && !isAuthor ? ' 🛡️' : ''} 编辑</button>
                                 <button id="deletePostBtn" class="action-btn delete-btn"><i class="fas fa-trash-alt"></i>${currentUserIsAdmin && !isAuthor ? ' 🛡️' : ''} 删除</button>
+                            ` : ''}
+                            ${canPin ? `
+                                <button id="pinPostBtn" class="action-btn pin-btn">${post.is_pinned ? '📌 取消置顶' : '📌 置顶'}</button>
+                            ` : ''}
+                            ${canEssence ? `
+                                <button id="essencePostBtn" class="action-btn essence-btn">${post.is_essence ? '⭐ 取消加精' : '⭐ 加精'}</button>
                             ` : ''}
                             ${canReportPost ? `
                                 <button class="action-btn report-btn" data-target-type="post" data-target-id="${post.id}" data-target-info="帖子：${escapeHtml(post.title)}">举报</button>
@@ -1434,6 +1459,36 @@
 
                 const editBtn = document.getElementById('editPostBtn');
                 if (editBtn) editBtn.addEventListener('click', () => window.location.href = `/edit-post.html?id=${currentPostId}`);
+
+                // 置顶/加精操作
+                async function togglePin() {
+                    const res = await fetch(`${window.API_BASE}/posts/${currentPostId}/pin`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        loadPostDetail(currentPostId);
+                    } else {
+                        alert(data.error || '操作失败');
+                    }
+                }
+                async function toggleEssence() {
+                    const res = await fetch(`${window.API_BASE}/posts/${currentPostId}/essence`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        loadPostDetail(currentPostId);
+                    } else {
+                        alert(data.error || '操作失败');
+                    }
+                }
+                const pinBtn = document.getElementById('pinPostBtn');
+                if (pinBtn) pinBtn.addEventListener('click', togglePin);
+                const essenceBtn = document.getElementById('essencePostBtn');
+                if (essenceBtn) essenceBtn.addEventListener('click', toggleEssence);
 
                 const deletePostBtn = document.getElementById('deletePostBtn');
                 if (deletePostBtn) {
