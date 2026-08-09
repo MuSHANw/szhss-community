@@ -3848,12 +3848,16 @@ app.post('/api/activities/:id/vote', authMiddleware, async (req, res) => {
     const userId = req.user.userId;
     const { option_id } = req.body;
 
-    if (isNaN(activityId) || !option_id) return res.status(400).json({ error: '参数错误' });
+    if (isNaN(activityId)) return res.status(400).json({ error: '参数错误' });
+
+    // 注意：option_id 从 0 开始（选项索引），不能用 !option_id 判断空值
+    const optionId = parseInt(option_id);
+    if (isNaN(optionId)) return res.status(400).json({ error: '参数错误' });
 
     try {
         await pool.query(
             'INSERT INTO activity_votes (activity_id, user_id, option_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
-            [activityId, userId, option_id]
+            [activityId, userId, optionId]
         );
         res.json({ message: '投票成功' });
     } catch (err) {
