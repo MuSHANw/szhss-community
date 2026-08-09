@@ -1268,11 +1268,8 @@
 
                         <div class="sidebar-card">
                             <h3><i class="fas fa-users"></i> 热门圈子</h3>
-                            <ul class="circle-list">
-                                <li><i class="fas fa-book"></i> 学习交流</li>
-                                <li><i class="fas fa-gamepad"></i> 游戏动漫</li>
-                                <li><i class="fas fa-music"></i> 音乐社</li>
-                                <li><i class="fas fa-futbol"></i> 运动爱好者</li>
+                            <ul class="circle-list" id="hotCirclesList">
+                                <li style="color:#9CA3AF;">加载中...</li>
                             </ul>
                         </div>
 
@@ -1568,7 +1565,9 @@
                 const res = await fetch(`${window.API_BASE}/posts/banner`);
                 const data = await res.json();
 
-                if (!data.posts || data.posts.length === 0) {
+                if (!res.ok || !data.posts || data.posts.length === 0) {
+                    // 没有置顶/精华帖子，或接口报错时隐藏横幅
+                    if (!res.ok) console.warn('横幅接口错误:', data);
                     document.getElementById('postBanner').style.display = 'none';
                     return;
                 }
@@ -1578,6 +1577,7 @@
                 renderBanner();
                 startBannerAutoPlay();
             } catch (e) {
+                console.warn('加载横幅失败:', e);
                 document.getElementById('postBanner').style.display = 'none';
             }
         }
@@ -1645,6 +1645,37 @@
             clearInterval(bannerInterval);
             startBannerAutoPlay();
         }
+
+        // ---------- 热门圈子 ----------
+        async function loadHotCircles() {
+            try {
+                const res = await fetch('/api/circles?sort=member_count&limit=5');
+                const data = await res.json();
+
+                if (data.circles && data.circles.length > 0) {
+                    const html = data.circles.map(circle => {
+                        const icon = circle.icon_url
+                            ? `<img src="${getFullUrl(circle.icon_url)}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">`
+                            : `<i class="fas fa-users"></i>`;
+                        return `
+                            <li>
+                                <a href="/circle-detail.html?id=${circle.id}" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">
+                                    ${icon}
+                                    <span>${escapeHtml(circle.name)}</span>
+                                </a>
+                            </li>
+                        `;
+                    }).join('');
+                    document.getElementById('hotCirclesList').innerHTML = html;
+                } else {
+                    document.getElementById('hotCirclesList').innerHTML = '<li style="color:#9CA3AF;">暂无圈子</li>';
+                }
+            } catch (e) {
+                console.warn('加载热门圈子失败:', e);
+                document.getElementById('hotCirclesList').innerHTML = '<li style="color:#9CA3AF;">加载失败</li>';
+            }
+        }
+
         function renderMarkdown(text) {
             if (!text) return '';
             if (typeof marked !== 'undefined' && marked.parse) return marked.parse(text, { async: false });
@@ -1854,6 +1885,7 @@
         initSortButtons();
         loadPosts();
         loadBanner();
+        loadHotCircles();
 
         // ---------- 内测公告弹窗逻辑 ----------
         (function () {
