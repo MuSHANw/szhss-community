@@ -4,12 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>关注列表 - 深圳高中生社区</title>
+    <title>更新日志 - 深圳高中生社区</title>
     <link rel="stylesheet" href="/css/style.css">
     <!-- 移动端适配 -->
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
     <script src="/js/mobile.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* ========== 全局样式（与 index 一致） ========== */
         * {
@@ -85,7 +86,7 @@
         }
 
         .container {
-            max-width: 700px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
         }
@@ -338,115 +339,91 @@
             background: #ffe5e5;
         }
 
-        /* ========== 页面内容 ========== */
-        .follow-list-wrapper {
+        /* ========== 更新日志页面 ========== */
+        .changelog-container {
+            display: flex;
+            gap: 0;
+            max-width: 1000px;
             margin: 24px auto;
-            max-width: 600px;
-        }
-
-        .page-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 16px;
-        }
-
-        .user-item {
-            background: white;
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border: 1px solid #eef2f6;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .user-avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .user-avatar i {
-            font-size: 44px;
-            color: #1E88E5;
-        }
-
-        .user-name {
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-
-        .follow-btn {
-            background: #1E88E5;
-            color: white;
-            border: none;
-            padding: 6px 16px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: background 0.2s;
-            white-space: nowrap;
-        }
-
-        .follow-btn:hover {
-            background: #0b5e8a;
-        }
-
-        .follow-btn.following {
-            background: #f0f2f5;
-            color: #4a5568;
-        }
-
-        .follow-btn.following:hover {
-            background: #e2e6ea;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 24px;
-        }
-
-        .pagination button {
-            background: #f0f2f5;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.85rem;
-        }
-
-        .pagination button.active {
-            background: #1E88E5;
-            color: white;
-        }
-
-        .loading,
-        .empty {
-            text-align: center;
-            padding: 40px;
             background: white;
             border-radius: 16px;
+            border: 1px solid #eef2f6;
+            overflow: hidden;
+        }
+
+        .changelog-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid #F3F4F6;
+            padding: 20px 0;
+            overflow-y: auto;
+            max-height: calc(100vh - 140px);
+            position: sticky;
+            top: 80px;
+        }
+
+        .changelog-sidebar h3 {
+            padding: 0 16px 12px;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #F3F4F6;
+            margin-bottom: 8px;
+        }
+
+        .changelog-toc-item {
+            display: block;
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            color: #6B7280;
+            text-decoration: none;
+            transition: background 0.15s;
+            cursor: pointer;
+        }
+
+        .changelog-toc-item:hover {
+            background: #F9FAFB;
+        }
+
+        .changelog-toc-item.active {
+            background: #EFF6FF;
+            color: #1E88E5;
+            font-weight: 600;
+        }
+
+        .changelog-content {
+            flex: 1;
+            padding: 24px 32px;
+            overflow-y: auto;
+            max-height: calc(100vh - 140px);
+        }
+
+        .changelog-content h2 {
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #F3F4F6;
+        }
+
+        .changelog-date-block {
+            margin-bottom: 32px;
+        }
+
+        .changelog-date-block ul {
+            margin-left: 20px;
+        }
+
+        .changelog-date-block li {
+            margin-bottom: 6px;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+
+        .changelog-empty {
+            padding: 40px;
+            text-align: center;
             color: #6c757d;
         }
 
+        /* 页脚 */
         .footer {
             background: white;
             border-top: 1px solid #e9ecef;
@@ -475,6 +452,49 @@
             .search-area {
                 width: 180px;
             }
+
+            .about-link {
+                margin-left: 8px;
+                font-size: 0.85rem;
+            }
+
+            .changelog-container {
+                flex-direction: column;
+            }
+
+            .changelog-sidebar {
+                width: 100%;
+                max-height: none;
+                position: static;
+                border-right: none;
+                border-bottom: 1px solid #F3F4F6;
+                padding: 12px 16px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .changelog-sidebar h3 {
+                width: 100%;
+                padding: 0 0 8px;
+                border-bottom: 1px solid #F3F4F6;
+            }
+
+            .changelog-toc-item {
+                padding: 4px 10px;
+                font-size: 0.8rem;
+                border-radius: 12px;
+                background: #F3F4F6;
+            }
+
+            .changelog-toc-item.active {
+                background: #EFF6FF;
+            }
+
+            .changelog-content {
+                padding: 20px;
+                max-height: none;
+            }
         }
     </style>
 </head>
@@ -496,11 +516,11 @@
             </button>
             <a href="/" class="logo">深圳高中生社区</a>
             <div class="search-area">
-                <input type="text" placeholder="搜索帖子、用户..." id="topSearchInput">
-                <button id="topSearchBtn"><i class="fas fa-search"></i></button>
+                <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
             </div>
             <a href="/about.html" class="about-link" id="aboutLink">
-                <i class="fas fa-info-circle"></i> <span>关于</span>
+                <i class="fas fa-info-circle"></i> 关于
             </a>
             <a href="/notifications.html" class="notifications-icon" id="notifLink">
                 <i class="fas fa-bell"></i>
@@ -524,7 +544,9 @@
             <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
             <a href="learning.html" class="sidebar-link" title="学习"><i
                     class="fas fa-graduation-cap"></i><span>学习</span></a>
-            <a href="circles.html" class="sidebar-link" title="圈子"><i class="fas fa-users"></i><span>圈子</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子">
+                <i class="fas fa-users"></i><span>圈子</span>
+            </a>
             <a href="/study.html" class="sidebar-link" title="自习室">
                 <i class="fas fa-clock"></i><span>自习室</span>
             </a>
@@ -556,15 +578,18 @@
         </div>
     </div>
 
-    <main class="container">
-        <div class="follow-list-wrapper">
-            <h1 class="page-title" id="pageTitle">加载中...</h1>
-            <div id="followList">
-                <div class="loading">加载中...</div>
+    <div class="container">
+        <div class="changelog-container">
+            <!-- 左侧目录 -->
+            <aside class="changelog-sidebar" id="changelogToc">
+                <h3>📋 更新目录</h3>
+            </aside>
+            <!-- 右侧内容 -->
+            <div class="changelog-content" id="changelogContent">
+                <div class="changelog-empty" id="changelogLoading">加载中...</div>
             </div>
-            <div id="pagination" class="pagination"></div>
         </div>
-    </main>
+    </div>
 
     <footer class="footer">
         <div class="container">
@@ -574,6 +599,193 @@
 
     <script>
         window.API_BASE = window.API_BASE || '/api';
+
+        // ---------- 更新日志数据（精简自 docs/dev-log.md，需手动同步维护） ----------
+        const DEV_LOG_CONTENT = `
+## 2026-08-09
+
+- 帖子置顶与加精功能（完整实现）：首页轮播横幅、置顶/精华标识、管理操作。
+- 数据统计仪表盘（个人主页 + 他人主页）：六项统计 + 发帖趋势折线图 + 互动构成环形图 + 活跃时段柱状图。
+- 社区公告系统（完整实现 + 两轮优化）：全站公告发布、首页提示条、公告详情页、确认收到、确认用户头像墙。
+- 为 App 开发者 MING 提供移动端开发文档（docs/mobile-app-guide.md）。
+
+## 2026-07-25
+
+- 注册机制升级：邮箱验证码注册，忘记密码流程重构为邮箱验证码方式。
+- 社区任务与鹏城币系统（完整实现）：每日任务 + 成就任务 + 金币流水 + 右侧面板展示。
+- 圈子系统深度优化（四批迭代完成）：公告、精华、活动、成员管理、分享海报。
+- 圈子广场全面升级：顶部轮播 + 动态流 + 分类标签 + 卡片升级。
+
+## 2026-07-24
+
+- 帖子编辑器从 Markdown 升级为 Quill.js 富文本编辑器，图片视频直接嵌入。
+- 新增草稿箱系统（每30秒自动保存，多篇草稿）。
+- 入站考试系统重构：两级考试 + JS 题库迁移 + 每日3次限制。
+
+## 2026-07-12
+
+- 帖子编辑器升级为 Markdown 编辑器（发帖页 + 编辑页，实时预览）。
+- 所有帖子展示页面增加 Markdown 渲染支持，摘要去标净化显示。
+
+## 2026-07-11
+
+- 帖子推荐算法实现（Hacker News 风格热度衰减）。
+- 三个内容页面创建（生活 / 社团 / 升学）。
+- 信息流改造：全站帖子列表从卡片式改为列表式。
+- 服务器购买与域名配置，公网部署上线。
+
+## 2026-06-13
+
+- 私信系统完整实现（对话列表 + 聊天气泡 + 防骚扰机制 + 8秒轮询）。
+- 举报处理接口升级（举报通过后自动删除违规内容）。
+- 登录页多账号切换功能。
+- 用户经验值与等级系统 + 入站答题机制（大功能）。
+
+## 2026-05-17
+
+- 接入 AI 编程助手，开发模式升级（Claude Code + DeepSeek 双通道开发）。
+
+## 2026-05-10
+
+- 自习室功能完整实现（区域自习室 + 个人创建 + 番茄钟 + 轮询同步）。
+- 宣传页 landing.html 创建（单页下拉式设计）。
+- 公开统计接口新增、Git 仓库初始化并推送 GitHub。
+
+## 2026-05-02
+
+- 用户关注功能实现（前端 + 后端 + 数据库）。
+- 前端页面全面适配关注功能（关注动态流、关注列表、粉丝列表）。
+
+## 2026-05-01
+
+- 首次公网内测启动与反馈收集。
+- 合规性研究与备案规划。
+- 公网部署细节处理。
+
+## 2026-04-30
+
+- 移动端适配（全站）：mobile.css + mobile.js，底部导航 + 侧边滑出菜单。
+- 移动端信息栏（今日日期、高考倒计时、每日诗句）。
+- 公网部署与 API 地址修正。
+
+## 2026-04-18
+
+- 圈子创建申请流程重构（参与者确认机制，5人联合申请）。
+- 用户搜索 API 修复。
+
+## 2026-04-12
+
+- 全局页面布局统一与侧边栏重构（14 个页面）。
+- 首页右侧信息面板增强（日期、高考倒计时、每日诗句）。
+- 背景装饰统一、后端接口参数校验增强。
+
+## 2026-04-05
+
+- 站内通知系统（完整实现）。
+- 管理员仪表盘增强（数据统计与可视化 Chart.js）。
+- 学校选择模态框优化（普高/中职分类）。
+- 反馈与举报页面完善、全局头像同步修复。
+- 搜索功能增强（支持分类搜索）。
+
+## 2026-04-04（晚间）
+
+- 用户资料编辑与隐私设置。
+- 全局头像同步、搜索功能增强。
+- 个人主页与用户主页完善。
+- 点赞与收藏功能。
+
+## 2026-04-04（上午）
+
+- 发帖功能与帖子详情页。
+- 数据库升级（标签、回复表、索引）。
+- Bug 修复。
+
+## 2026-04-03
+
+- 项目启动：初始化 Node.js 项目，安装依赖。
+- 配置 PostgreSQL 数据库，实现注册、登录、发送验证码、获取个人信息接口。
+- 用 Thunder Client 测试全部接口通过。
+- 进行项目调研。
+`;
+
+        // ---------- 渲染更新日志 ----------
+        function initChangelog() {
+            const tocEl = document.getElementById('changelogToc');
+            const contentEl = document.getElementById('changelogContent');
+            if (!tocEl || !contentEl) return;
+
+            const blocks = DEV_LOG_CONTENT.trim().split(/^## /m).filter(Boolean);
+            if (!blocks.length) {
+                contentEl.innerHTML = '<div class="changelog-empty">暂无更新记录</div>';
+                return;
+            }
+
+            const sectionIds = [];
+            const tocItems = [];
+
+            blocks.forEach(block => {
+                const title = block.split('\n')[0].trim();
+                const id = 'date-' + title.replace(/[^\w一-龥]/g, '-');
+                sectionIds.push({ id, title });
+
+                // 目录项
+                const a = document.createElement('a');
+                a.href = '#' + id;
+                a.className = 'changelog-toc-item';
+                a.textContent = title;
+                a.dataset.id = id;
+                tocEl.appendChild(a);
+                tocItems.push(a);
+
+                // 内容区块
+                const div = document.createElement('div');
+                div.className = 'changelog-date-block';
+                div.id = id;
+                div.innerHTML = marked.parse('## ' + block);
+                contentEl.appendChild(div);
+            });
+
+            // 点击目录项平滑滚动
+            tocItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const target = document.getElementById(item.dataset.id);
+                    if (target) {
+                        contentEl.scrollTo({ top: target.offsetTop - 24, behavior: 'smooth' });
+                    }
+                });
+            });
+
+            // 滚动监听高亮
+            function updateActive() {
+                const scrollTop = contentEl.scrollTop;
+                let currentId = sectionIds[0].id;
+                sectionIds.forEach(item => {
+                    const el = document.getElementById(item.id);
+                    if (el && el.offsetTop - 80 <= scrollTop) currentId = item.id;
+                });
+                tocItems.forEach(item => {
+                    item.classList.toggle('active', item.dataset.id === currentId);
+                });
+            }
+
+            contentEl.addEventListener('scroll', updateActive, { passive: true });
+
+            // URL hash 支持（如 changelog.html#date-2026-07-25）
+            const hash = window.location.hash;
+            if (hash) {
+                const target = document.getElementById(hash.slice(1));
+                if (target) {
+                    setTimeout(() => {
+                        contentEl.scrollTop = target.offsetTop - 24;
+                    }, 100);
+                }
+            } else {
+                updateActive();
+            }
+        }
+
+        initChangelog();
 
         // ---------- 侧边栏展开/收起 ----------
         const sidebar = document.getElementById('sidebar');
@@ -666,166 +878,17 @@
             window.location.href = '/login.html';
         });
 
-        // ---------- 顶部搜索 ----------
-        const topSearchBtn = document.getElementById('topSearchBtn');
-        const topSearchInput = document.getElementById('topSearchInput');
-        topSearchBtn?.addEventListener('click', () => {
-            const keyword = topSearchInput.value.trim();
+        // ---------- 搜索 ----------
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        searchBtn?.addEventListener('click', () => {
+            const keyword = searchInput.value.trim();
             if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
             else alert('请输入搜索关键词');
         });
-        topSearchInput?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') topSearchBtn.click();
+        searchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBtn.click();
         });
-
-        // ---------- 关注/粉丝列表逻辑 ----------
-        const urlParams = new URLSearchParams(window.location.search);
-        const listUserId = urlParams.get('uid');
-        const listType = urlParams.get('type'); // 'following' 或 'followers'
-
-        if (!listUserId || !listType) {
-            document.getElementById('followList').innerHTML = '<div class="empty">参数错误</div>';
-        } else {
-            const titleMap = {
-                following: 'TA 的关注',
-                followers: 'TA 的粉丝'
-            };
-            document.getElementById('pageTitle').innerText = titleMap[listType] || '列表';
-
-            let currentPage = 1;
-            let totalPages = 1;
-
-            function escapeHtml(str) {
-                if (!str) return '';
-                return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-            }
-
-            async function loadList() {
-                const container = document.getElementById('followList');
-                container.innerHTML = '<div class="loading">加载中...</div>';
-
-                const endpoint = listType === 'followers'
-                    ? `${window.API_BASE}/users/${listUserId}/followers?page=${currentPage}&limit=20`
-                    : `${window.API_BASE}/users/${listUserId}/following?page=${currentPage}&limit=20`;
-
-                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-                try {
-                    const res = await fetch(endpoint, { headers });
-                    if (!res.ok) throw new Error('加载失败');
-                    const data = await res.json();
-                    const users = data.users || [];
-                    totalPages = data.totalPages || 1;
-
-                    if (!users.length) {
-                        container.innerHTML = '<div class="empty">暂无数据</div>';
-                        document.getElementById('pagination').innerHTML = '';
-                        return;
-                    }
-
-                    container.innerHTML = users.map(u => {
-                        const avatarHtml = u.avatar_url
-                            ? `<img src="${escapeHtml(u.avatar_url)}" alt="头像">`
-                            : '<i class="fas fa-user-circle"></i>';
-                        // 如果是自己，则不显示关注按钮
-                        const isSelf = (currentUserId && currentUserId === u.id);
-                        const followBtnHtml = (token && !isSelf) ? `
-                            <button class="follow-btn ${u.is_following ? 'following' : ''}" data-userid="${u.id}">
-                                ${u.is_following ? '已关注' : '关注'}
-                            </button>
-                        ` : '';
-                        return `
-                            <div class="user-item">
-                                <div class="user-info">
-                                    <a href="/user-profile.html?uid=${u.id}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px;">
-                                        <div class="user-avatar">
-                                            ${avatarHtml}
-                                        </div>
-                                        <span class="user-name">${escapeHtml(u.nickname)}</span>
-                                    </a>
-                                </div>
-                                ${followBtnHtml}
-                            </div>
-                        `;
-                    }).join('');
-
-                    // 绑定关注按钮事件
-                    document.querySelectorAll('.follow-btn').forEach(btn => {
-                        btn.addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            const userId = parseInt(btn.dataset.userid);
-                            if (!token) {
-                                alert('请先登录');
-                                window.location.href = '/login.html';
-                                return;
-                            }
-                            const res = await fetch(`${window.API_BASE}/users/${userId}/follow`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-                            });
-                            const result = await res.json();
-                            if (res.ok) {
-                                if (result.following) {
-                                    btn.textContent = '已关注';
-                                    btn.classList.add('following');
-                                } else {
-                                    btn.textContent = '关注';
-                                    btn.classList.remove('following');
-                                }
-                            } else {
-                                alert(result.error || '操作失败');
-                            }
-                        });
-                    });
-
-                    // 渲染分页
-                    renderPagination();
-                } catch (err) {
-                    container.innerHTML = '<div class="empty">加载失败，请刷新重试</div>';
-                }
-            }
-
-            function renderPagination() {
-                const paginationDiv = document.getElementById('pagination');
-                if (totalPages <= 1) {
-                    paginationDiv.innerHTML = '';
-                    return;
-                }
-                let html = '';
-                for (let i = 1; i <= totalPages; i++) {
-                    html += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
-                }
-                paginationDiv.innerHTML = html;
-                paginationDiv.querySelectorAll('button').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const page = parseInt(btn.dataset.page);
-                        if (page && page !== currentPage) {
-                            currentPage = page;
-                            loadList();
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-                    });
-                });
-            }
-
-            // 获取当前登录用户 ID
-            let currentUserId = null;
-            async function fetchCurrentUserId() {
-                if (!token) return;
-                try {
-                    const res = await fetch(`${window.API_BASE}/me`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (res.ok) {
-                        const user = await res.json();
-                        currentUserId = user.id;
-                    }
-                } catch (e) { }
-            }
-
-            // 初始加载
-            fetchCurrentUserId().then(() => loadList());
-        }
     </script>
 </body>
 

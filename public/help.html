@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>帮助中心 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- 移动端适配 -->
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/mobile.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ========== 全局样式（与 index 一致） ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA;
+            color: #1f2d3d;
+            line-height: 1.5;
+            padding-top: 60px;
+            margin-left: 260px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body.sidebar-collapsed {
+            margin-left: 70px;
+        }
+
+        /* 背景装饰 */
+        .bg-decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-decorations .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .bg-decorations .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(30, 136, 229, 0.05);
+        }
+
+        .bg-decorations .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .bg-decorations .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .bg-decorations .circle3 {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: 10%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ========== 顶部栏 ========== */
+        .top-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-right: 20px;
+            color: #4a5568;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1E88E5;
+            text-decoration: none;
+            margin-right: auto;
+        }
+
+        .search-area {
+            display: flex;
+            align-items: center;
+            background: #f1f3f5;
+            border-radius: 24px;
+            padding: 4px 12px;
+            width: 260px;
+        }
+
+        .search-area input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .search-area button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .about-link {
+            margin-left: 16px;
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .about-link:hover {
+            color: #1E88E5;
+        }
+
+        .about-link i {
+            margin-right: 4px;
+        }
+
+        .notifications-icon {
+            position: relative;
+            margin-left: 16px;
+            font-size: 1.4rem;
+            color: #6c757d;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== 侧边栏 ========== */
+        #sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: white;
+            border-right: 1px solid #eef2f6;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            z-index: 99;
+            overflow-x: hidden;
+        }
+
+        #sidebar.collapsed {
+            width: 70px;
+        }
+
+        #sidebar.collapsed .sidebar-user-info,
+        #sidebar.collapsed .sidebar-link span {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-logout {
+            font-size: 0;
+            padding: 8px;
+        }
+
+        #sidebar.collapsed .sidebar-logout::before {
+            content: "🚪";
+            font-size: 1.2rem;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            padding: 20px 16px;
+            border-bottom: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .sidebar-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-avatar i {
+            font-size: 48px;
+            color: #1E88E5;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-nickname {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .sidebar-email {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 0;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a5568;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar-link i {
+            width: 28px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            margin-left: 12px;
+        }
+
+        .sidebar-link:hover {
+            background: #f0f2f5;
+        }
+
+        .sidebar-link.active {
+            background: #e9f0fe;
+            color: #1E88E5;
+        }
+
+        .notif-dot {
+            color: #e53e3e;
+            font-size: 0.7rem;
+            margin-left: 4px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #eef2f6;
+        }
+
+        .sidebar-logout {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: #e53e3e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .sidebar-logout:hover {
+            background: #ffe5e5;
+        }
+
+        /* ========== 帮助中心页面 ========== */
+        .help-container {
+            max-width: 800px;
+            margin: 24px auto;
+        }
+
+        .help-search {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 40px;
+            padding: 4px;
+            border: 2px solid #E5E7EB;
+            margin-bottom: 24px;
+            transition: border-color 0.2s;
+        }
+
+        .help-search:focus-within {
+            border-color: #1E88E5;
+        }
+
+        .help-search input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 12px 20px;
+            font-size: 1rem;
+            background: transparent;
+        }
+
+        .help-search button {
+            background: #1E88E5;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 36px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .help-categories {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .help-category-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #eef2f6;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .help-category-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .help-category-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .help-category-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .help-section {
+            margin-bottom: 32px;
+        }
+
+        .help-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #F3F4F6;
+        }
+
+        .faq-item {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid #eef2f6;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            padding: 14px 16px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.15s;
+        }
+
+        .faq-question:hover {
+            background: #F9FAFB;
+        }
+
+        .faq-question::after {
+            content: '+';
+            font-size: 1.2rem;
+            color: #9CA3AF;
+            transition: transform 0.2s;
+        }
+
+        .faq-item.open .faq-question::after {
+            content: '−';
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            padding: 0 16px 14px;
+            display: none;
+            color: #6B7280;
+            line-height: 1.7;
+            font-size: 0.9rem;
+        }
+
+        .faq-item.open .faq-answer {
+            display: block;
+        }
+
+        .help-contact {
+            background: #EFF6FF;
+            border-radius: 16px;
+            padding: 20px 24px;
+            text-align: center;
+        }
+
+        .help-contact h3 {
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .help-contact p {
+            color: #4a5568;
+            margin-bottom: 8px;
+            line-height: 1.7;
+        }
+
+        .help-contact a {
+            color: #1E88E5;
+            font-weight: 600;
+        }
+
+        .help-no-result {
+            display: none;
+            text-align: center;
+            padding: 40px 0;
+            color: #6c757d;
+        }
+
+        /* 页脚 */
+        .footer {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin-left: 0;
+            }
+
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+
+            #sidebar.open-mobile {
+                transform: translateX(0);
+            }
+
+            .search-area {
+                width: 180px;
+            }
+
+            .about-link {
+                margin-left: 8px;
+                font-size: 0.85rem;
+            }
+
+            .help-categories {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body id="appBody">
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <!-- 顶部栏 -->
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <a href="/about.html" class="about-link" id="aboutLink">
+                <i class="fas fa-info-circle"></i> 关于
+            </a>
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i
+                    class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子">
+                <i class="fas fa-users"></i><span>圈子</span>
+            </a>
+            <a href="/study.html" class="sidebar-link" title="自习室">
+                <i class="fas fa-clock"></i><span>自习室</span>
+            </a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="life.html" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="gaokao.html" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" title="管理后台"><i
+                    class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信">
+                <i class="fas fa-envelope"></i><span>私信</span>
+            </a>
+            <a href="drafts.html" class="sidebar-link" title="草稿箱">
+                <i class="fas fa-edit"></i><span>草稿箱</span>
+            </a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
+                <i class="fas fa-comment-dots"></i><span>反馈</span>
+            </a>
+            <a href="https://mushanw.github.io/MuShanblog/sponsor.html" class="sidebar-link sponsor-link" title="赞助" target="_blank"><i class="fas fa-heart"></i><span>赞助</span></a>
+
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="help-container">
+            <!-- 搜索框 -->
+            <div class="help-search">
+                <input type="text" placeholder="🔍 搜索帮助内容..." id="helpSearchInput">
+                <button id="helpSearchBtn">搜索</button>
+            </div>
+
+            <!-- 分类卡片 -->
+            <div class="help-categories">
+                <a class="help-category-card" href="#account">
+                    <div class="help-category-icon">📝</div>
+                    <div class="help-category-name">账号与注册</div>
+                </a>
+                <a class="help-category-card" href="#post">
+                    <div class="help-category-icon">📢</div>
+                    <div class="help-category-name">发帖与内容</div>
+                </a>
+                <a class="help-category-card" href="#interact">
+                    <div class="help-category-icon">💬</div>
+                    <div class="help-category-name">互动与交流</div>
+                </a>
+                <a class="help-category-card" href="#circle">
+                    <div class="help-category-icon">👥</div>
+                    <div class="help-category-name">圈子与社团</div>
+                </a>
+                <a class="help-category-card" href="#study">
+                    <div class="help-category-icon">⏱️</div>
+                    <div class="help-category-name">自习室与专注</div>
+                </a>
+                <a class="help-category-card" href="#safety">
+                    <div class="help-category-icon">🛡️</div>
+                    <div class="help-category-name">安全与隐私</div>
+                </a>
+            </div>
+
+            <!-- 账号与注册 -->
+            <div class="help-section" id="account">
+                <h2>📝 账号与注册</h2>
+                <div class="faq-item">
+                    <div class="faq-question">如何注册账号？</div>
+                    <div class="faq-answer">点击右上角登录按钮，在登录框中选择"还没有账号？立即注册"。填写邮箱、密码，点击发送验证码，查收邮件后输入验证码完成注册。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">忘记密码怎么办？</div>
+                    <div class="faq-answer">在登录页点击"忘记密码"，输入注册邮箱，系统会发送重置链接到你的邮箱。点击链接后设置新密码即可。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">如何修改昵称？</div>
+                    <div class="faq-answer">进入设置页面，在"个人资料"标签中可以修改昵称。注意：昵称7天内只能修改一次。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">如何修改密码？</div>
+                    <div class="faq-answer">进入设置页面，切换到"账号安全"标签，输入旧密码和新密码即可修改。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">什么是入站答题？为什么要做入站答题？</div>
+                    <div class="faq-answer">入站答题是社区的传统，新用户注册后需要完成答题（60分及格）才能发帖、回复等操作。题目涵盖社区公约、深圳常识和互联网礼仪，旨在帮助新成员了解社区文化。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">LV0 和 LV1 有什么区别？</div>
+                    <div class="faq-answer">LV0（未认证）用户只能浏览内容，不能发帖、回复、点赞等。通过入站答题后升级为 LV1（新生报到），解锁全部互动功能。</div>
+                </div>
+            </div>
+
+            <!-- 发帖与内容 -->
+            <div class="help-section" id="post">
+                <h2>📢 发帖与内容</h2>
+                <div class="faq-item">
+                    <div class="faq-question">如何发布帖子？</div>
+                    <div class="faq-answer">登录后，在首页点击底部"+"按钮或侧边栏"发帖"入口，输入标题、选择分类、添加标签、编辑内容后点击发布。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">帖子支持哪些格式？</div>
+                    <div class="faq-answer">社区支持富文本编辑，可以使用加粗、斜体、标题、列表、引用、代码块等格式，也可以插入图片和视频。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">如何上传图片和视频？</div>
+                    <div class="faq-answer">在编辑器中点击工具栏的图片或视频按钮，选择本地文件后自动上传。通过第二级入站考试后解锁图片视频上传权限。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">帖子可以修改吗？</div>
+                    <div class="faq-answer">可以。打开你的帖子，点击"编辑"按钮即可修改标题、内容和标签。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">帖子可以删除吗？</div>
+                    <div class="faq-answer">可以。打开你的帖子，点击"删除"按钮即可删除。管理员也可以删除违规帖子。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">什么是草稿箱？</div>
+                    <div class="faq-answer">发帖时系统会自动保存草稿，每30秒保存一次。如果你编辑到一半退出，下次打开发帖页时会提示恢复草稿。</div>
+                </div>
+            </div>
+
+            <!-- 互动与交流 -->
+            <div class="help-section" id="interact">
+                <h2>💬 互动与交流</h2>
+                <div class="faq-item">
+                    <div class="faq-question">如何回复帖子？</div>
+                    <div class="faq-answer">在帖子详情页底部输入框输入内容，点击发布即可。你也可以点击某条回复下方的"回复"按钮，对该条回复进行回复。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">如何点赞和收藏？</div>
+                    <div class="faq-answer">在帖子列表或详情页中，点击❤️图标点赞，点击⭐图标收藏。点赞和收藏可以随时取消。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">如何关注其他用户？</div>
+                    <div class="faq-answer">进入对方的个人主页，点击"关注"按钮即可。关注后，你可以在"动态"页面看到对方的最新帖子。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">什么是私信？如何使用？</div>
+                    <div class="faq-answer">私信是用户之间一对一的私密聊天功能。在对方个人主页点击"发私信"即可进入聊天页面。你可以在设置中关闭私信功能。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">私信为什么发不出去？</div>
+                    <div class="faq-answer">可能的原因：1) 对方关闭了私信功能；2) 对方尚未回复你，你只能发送一条消息（防骚扰机制）；3) 你尚未通过入站答题；4) 你尚未开启私信功能，对方无法回复你。</div>
+                </div>
+            </div>
+
+            <!-- 圈子与社团 -->
+            <div class="help-section" id="circle">
+                <h2>👥 圈子与社团</h2>
+                <div class="faq-item">
+                    <div class="faq-question">什么是圈子？</div>
+                    <div class="faq-answer">圈子是基于兴趣或学校组建的社群，成员可以在圈内发帖、发布活动、查看公告等。类似一个社团的专属空间。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">如何创建圈子？</div>
+                    <div class="faq-answer">进入圈子广场，点击"创建圈子"。需要至少5位成员联合申请，所有成员确认后提交管理员审核。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">如何加入圈子？</div>
+                    <div class="faq-answer">在圈子广场找到感兴趣的圈子，点击进入详情页，点击"加入圈子"即可。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">圈子有什么特殊功能？</div>
+                    <div class="faq-answer">圈子有专属公告（圈主发布）、精华帖子、圈子活动（可报名参加）、成员管理等特色功能。</div>
+                </div>
+            </div>
+
+            <!-- 自习室与专注 -->
+            <div class="help-section" id="study">
+                <h2>⏱️ 自习室与专注</h2>
+                <div class="faq-item">
+                    <div class="faq-question">如何使用自习室？</div>
+                    <div class="faq-answer">进入自习室广场，选择一个区域自习室或加入个人自习室。点击"开始专注"后，番茄钟开始计时，你可以在座位上看到其他同学的学习状态。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">番茄钟是什么？</div>
+                    <div class="faq-answer">番茄钟是一种时间管理方法，默认25分钟专注+5分钟休息。完成一个番茄钟后会有庆祝动画和鹏城币奖励。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">如何自定义番茄钟时长？</div>
+                    <div class="faq-answer">进入自习室后，在右侧控制面板中可以调整专注时长（15/25/30/45/60分钟）和休息时长（5/10/15分钟）。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">白噪音怎么开启？</div>
+                    <div class="faq-answer">在自习室右侧控制面板中，点击雨声、咖啡馆、图书馆、篝火等按钮即可开启白噪音，帮助你集中注意力。</div>
+                </div>
+            </div>
+
+            <!-- 安全与隐私 -->
+            <div class="help-section" id="safety">
+                <h2>🛡️ 安全与隐私</h2>
+                <div class="faq-item">
+                    <div class="faq-question">如何举报违规内容？</div>
+                    <div class="faq-answer">在帖子或回复旁边点击"举报"按钮，选择举报类型并提交。管理员收到举报后会核查处理。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">如何设置隐私选项？</div>
+                    <div class="faq-answer">进入设置页面，在"隐私设置"标签中，你可以选择是否公开活跃度日历、回复列表、收藏列表和数据仪表盘。也可以设置是否允许他人给你发私信。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">社区公约在哪里？</div>
+                    <div class="faq-answer">网站底部有"社区公约"链接，点击即可查看完整内容。所有用户在注册时已同意社区公约。</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">如何联系管理员？</div>
+                    <div class="faq-answer">你可以通过社区反馈页面（feedback.html）提交问题或建议。也可以发送邮件至 MuSHANwyc@outlook.com。</div>
+                </div>
+            </div>
+
+            <!-- 无搜索结果提示 -->
+            <div class="help-no-result" id="helpNoResult">
+                <div style="font-size:2.5rem;margin-bottom:12px;">🔎</div>
+                没有找到相关帮助内容，试试换个关键词，或联系管理员。
+            </div>
+
+            <!-- 联系管理员 -->
+            <div class="help-contact">
+                <h3>📬 联系管理员</h3>
+                <p>如果以上问题没有解决你的疑问，欢迎通过以下方式联系：</p>
+                <p>📧 邮箱：<a href="mailto:MuSHANwyc@outlook.com">MuSHANwyc@outlook.com</a></p>
+                <p>💬 社区反馈：<a href="feedback.html">前往反馈页面</a></p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | <a href="/help.html" style="color:#6c757d;">帮助中心</a> | <a href="/changelog.html" style="color:#6c757d;">更新日志</a> | 粤ICP备xxxxxxxx号</p>
+        </div>
+    </footer>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+
+        // ---------- 手风琴折叠 ----------
+        document.querySelectorAll('.faq-question').forEach(q => {
+            q.addEventListener('click', () => {
+                q.parentElement.classList.toggle('open');
+            });
+        });
+
+        // ---------- 搜索过滤 ----------
+        const helpSearchInput = document.getElementById('helpSearchInput');
+        const helpSearchBtn = document.getElementById('helpSearchBtn');
+        const faqItems = document.querySelectorAll('.faq-item');
+        const helpSections = document.querySelectorAll('.help-section');
+        const noResult = document.getElementById('helpNoResult');
+
+        function filterFaq() {
+            const keyword = helpSearchInput.value.trim().toLowerCase();
+            let visibleCount = 0;
+
+            faqItems.forEach(item => {
+                const question = item.querySelector('.faq-question').textContent.toLowerCase();
+                const answer = item.querySelector('.faq-answer').textContent.toLowerCase();
+                const match = !keyword || question.includes(keyword) || answer.includes(keyword);
+                item.style.display = match ? '' : 'none';
+                if (match) {
+                    visibleCount++;
+                    // 搜索时自动展开匹配项
+                    if (keyword) item.classList.add('open');
+                } else {
+                    item.classList.remove('open');
+                }
+            });
+
+            // 隐藏没有匹配项的整个分类区块
+            helpSections.forEach(section => {
+                const visibleItems = section.querySelectorAll('.faq-item').length > 0 &&
+                    Array.from(section.querySelectorAll('.faq-item')).some(i => i.style.display !== 'none');
+                section.style.display = visibleItems ? '' : 'none';
+            });
+
+            noResult.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+
+        helpSearchInput.addEventListener('input', filterFaq);
+        helpSearchBtn.addEventListener('click', filterFaq);
+        helpSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') filterFaq();
+        });
+
+        // ---------- 分类卡片平滑滚动 ----------
+        document.querySelectorAll('.help-category-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.preventDefault();
+                const id = card.getAttribute('href').slice(1);
+                const target = document.getElementById(id);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // 更新地址栏 hash（不触发页面跳转）
+                    history.replaceState(null, '', '#' + id);
+                }
+            });
+        });
+
+        // ---------- URL 锚点支持 ----------
+        if (window.location.hash) {
+            const id = window.location.hash.slice(1);
+            const target = document.getElementById(id);
+            if (target) {
+                setTimeout(() => {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        }
+
+        // ---------- 侧边栏展开/收起 ----------
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        const body = document.getElementById('appBody');
+        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
+        if (!isExpanded) {
+            sidebar.classList.add('collapsed');
+            body.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            body.classList.remove('sidebar-collapsed');
+        }
+        toggleBtn.addEventListener('click', () => {
+            const currentlyExpanded = !sidebar.classList.contains('collapsed');
+            if (currentlyExpanded) {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'false');
+            } else {
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+                localStorage.setItem('sidebarExpanded', 'true');
+            }
+        });
+
+        // ---------- 用户信息 ----------
+        const token = localStorage.getItem('token');
+        const avatarDiv = document.getElementById('sidebarAvatar');
+        const nicknameSpan = document.getElementById('sidebarNickname');
+        const emailSpan = document.getElementById('sidebarEmail');
+        async function updateSidebarUser() {
+            if (!token) {
+                nicknameSpan.innerText = '未登录';
+                emailSpan.innerText = '';
+                avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                return;
+            }
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    nicknameSpan.innerText = user.nickname || '用户';
+                    emailSpan.innerText = user.email || '';
+                    if (user.avatar_url) {
+                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
+                    } else {
+                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                    }
+                }
+            } catch (e) { console.warn(e); }
+        }
+        updateSidebarUser();
+        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
+            window.location.href = '/profile.html';
+        });
+
+        // ---------- 未读小红点 ----------
+        async function updateNotifDot() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const unreadCount = data.unreadCount || 0;
+                const topBadge = document.getElementById('notifBadge');
+                const sidebarDot = document.getElementById('sidebarNotifDot');
+                if (topBadge) {
+                    if (unreadCount > 0) {
+                        topBadge.style.display = 'flex';
+                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                    } else {
+                        topBadge.style.display = 'none';
+                    }
+                }
+                if (sidebarDot) {
+                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) { }
+        }
+        updateNotifDot();
+        if (token) setInterval(updateNotifDot, 30000);
+
+        // ---------- 退出登录 ----------
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        });
+
+        // ---------- 搜索 ----------
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        searchBtn?.addEventListener('click', () => {
+            const keyword = searchInput.value.trim();
+            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
+            else alert('请输入搜索关键词');
+        });
+        searchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBtn.click();
+        });
+    </script>
+</body>
+
+</html>
