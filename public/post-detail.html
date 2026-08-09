@@ -638,6 +638,19 @@
             border: 1px solid #eef2f6;
         }
 
+        .reply-to { color: #6B7280; }
+        .nested-replies-toggle {
+            padding: 8px 16px 8px 60px; cursor: pointer;
+            color: #1E88E5; font-size: 0.85rem; font-weight: 500;
+            transition: background 0.15s;
+        }
+        .nested-replies-toggle:hover { background: #F0F7FF; }
+        .nested-replies {
+            border-left: 2px solid #E5E7EB;
+            margin-left: 45px;
+            padding-left: 0;
+        }
+
         .reply-header {
             display: flex;
             align-items: center;
@@ -1437,7 +1450,7 @@
                 // 渲染回复列表
                 const repliesList = document.getElementById('repliesList');
                 if (replies.length > 0) {
-                    repliesList.innerHTML = replies.map(reply => renderReply(reply)).join('');
+                    repliesList.innerHTML = renderReplies(replies);
                     handleReplyContentExpand();
                 }
 
@@ -1585,13 +1598,17 @@
             }
         }
 
-        function renderReply(reply) {
+        function renderReply(reply, isNested) {
             const isReplyAuthor = (currentUserId === reply.user_id);
             const canDeleteReply = isReplyAuthor || currentUserIsAdmin;
             const canReportReply = (currentUserId !== reply.user_id);
             const avatarHtml = reply.avatar_url ? `<img src="${reply.avatar_url}" alt="头像">` : `<i class="fas fa-user-circle"></i>`;
+            const marginStyle = isNested ? ' style="margin-left:30px;"' : '';
+            const replyToText = reply.parent_id
+                ? `<span class="reply-to">回复 <strong>${escapeHtml(reply.parent_nickname || '用户')}</strong>：</span>`
+                : '';
             return `
-                <div class="reply-card" data-reply-id="${reply.id}">
+                <div class="reply-card" data-reply-id="${reply.id}"${marginStyle}>
                     <div class="reply-header">
                         <div class="reply-avatar">
                             ${avatarHtml}
@@ -1601,7 +1618,7 @@
                             <div class="reply-time">${formatDate(reply.created_at)}</div>
                         </div>
                     </div>
-                    <div class="reply-content" data-full-text="${escapeHtml(reply.content).replace(/"/g, '&quot;')}">${escapeHtml(reply.content)}</div>
+                    <div class="reply-content" data-full-text="${escapeHtml(reply.content).replace(/"/g, '&quot;')}">${replyToText}${escapeHtml(reply.content)}</div>
                     <div class="reply-footer">
                         <button class="reply-reply-btn" data-reply-id="${reply.id}" data-username="${escapeHtml(reply.nickname)}"><i class="fas fa-reply"></i> 回复</button>
                         ${canDeleteReply ? `<button class="reply-delete-btn" data-reply-id="${reply.id}" data-author-id="${reply.user_id}"><i class="fas fa-trash-alt"></i>${currentUserIsAdmin && !isReplyAuthor ? ' 🛡️' : ''} 删除</button>` : ''}
@@ -1609,6 +1626,43 @@
                     </div>
                 </div>
             `;
+        }
+
+        // 嵌套评论渲染：一级评论 + 其下的所有回复（折叠展示）
+        function renderReplies(replies) {
+            const topLevelReplies = replies.filter(r => !r.parent_id);
+            const nestedReplies = replies.filter(r => r.parent_id);
+            let html = '';
+
+            topLevelReplies.forEach(reply => {
+                html += renderReply(reply, false);
+                const childReplies = nestedReplies.filter(r => r.parent_id === reply.id);
+                if (childReplies.length > 0) {
+                    html += `
+                        <div class="nested-replies-toggle" onclick="toggleNestedReplies(${reply.id})">
+                            <i class="fas fa-comments"></i> 展开 ${childReplies.length} 条回复
+                        </div>
+                        <div class="nested-replies" id="nestedReplies${reply.id}" style="display:none;">
+                            ${childReplies.map(r => renderReply(r, true)).join('')}
+                        </div>
+                    `;
+                }
+            });
+
+            return html;
+        }
+
+        function toggleNestedReplies(replyId) {
+            const container = document.getElementById(`nestedReplies${replyId}`);
+            const toggle = container.previousElementSibling;
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                toggle.innerHTML = '<i class="fas fa-chevron-up"></i> 收起回复';
+            } else {
+                container.style.display = 'none';
+                const count = container.querySelectorAll('.reply-card').length;
+                toggle.innerHTML = `<i class="fas fa-comments"></i> 展开 ${count} 条回复`;
+            }
         }
 
         // 侧边栏加载最新和热门帖子

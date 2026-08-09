@@ -12,6 +12,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- 引入 Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- 引入 Quill（公告编辑器） -->
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <style>
         /* ========== 管理员页面特有样式 ========== */
         .admin-container {
@@ -151,6 +154,23 @@
             background: #e53e3e;
             color: white;
         }
+
+        /* 公告管理 */
+        .card {
+            background: white; border-radius: 16px; padding: 20px;
+            border: 1px solid #eef2f6;
+        }
+        .card h3 { font-size: 1.1rem; margin-bottom: 16px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; color: #374151; }
+        .form-group input[type="text"] { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 0.95rem; outline: none; font-family: inherit; }
+        .form-group input[type="text"]:focus { border-color: #1E88E5; }
+        .btn-primary {
+            background: #1E88E5; color: white; border: none;
+            padding: 10px 24px; border-radius: 40px; font-size: 0.95rem;
+            font-weight: 600; cursor: pointer; transition: background 0.2s;
+        }
+        .btn-primary:hover { background: #1565C0; }
 
         .reply-form {
             margin-top: 8px;
@@ -615,6 +635,7 @@
             <button class="tab-btn active" data-tab="reports">举报受理</button>
             <button class="tab-btn" data-tab="feedbacks">反馈受理</button>
             <button class="tab-btn" data-tab="circle-applications">圈子申请</button>
+            <button class="tab-btn" data-tab="announcements">公告管理</button>
         </div>
         <div id="reportsTab" class="tab-content active">
             <div id="reportsList">加载中...</div>
@@ -624,6 +645,29 @@
         </div>
         <div id="circleApplicationsTab" class="tab-content">
             <div id="circleApplicationsList">加载中...</div>
+        </div>
+        <div id="announcementsTab" class="tab-content">
+            <!-- 发布公告表单 -->
+            <div class="card" style="margin-bottom:20px;">
+                <h3>发布新公告</h3>
+                <div class="form-group">
+                    <label>公告标题</label>
+                    <input type="text" id="announcementTitle" placeholder="公告标题" maxlength="200">
+                </div>
+                <div class="form-group">
+                    <label>公告内容</label>
+                    <div id="announcementEditor" style="min-height:200px;background:white;"></div>
+                </div>
+                <button class="btn-primary" id="publishAnnouncementBtn">发布公告</button>
+            </div>
+
+            <!-- 公告列表 -->
+            <div class="card">
+                <h3>公告列表</h3>
+                <div id="announcementsList">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -742,6 +786,11 @@
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        }
+
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
         }
 
         async function loadStats() {
@@ -1025,12 +1074,101 @@
             }
         }
 
+        // ---------- 公告管理 ----------
+        let announcementQuill = null;
+        function initAnnouncementEditor() {
+            if (!announcementQuill) {
+                announcementQuill = new Quill('#announcementEditor', {
+                    theme: 'snow',
+                    placeholder: '公告内容...',
+                    modules: {
+                        toolbar: [
+                            ['bold', 'italic', 'underline'],
+                            [{ 'header': 1 }, { 'header': 2 }],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            ['link', 'clean']
+                        ]
+                    }
+                });
+            }
+        }
+
+        // 发布公告
+        async function publishAnnouncement() {
+            const title = document.getElementById('announcementTitle').value.trim();
+            const content = announcementQuill.root.innerHTML.trim();
+            if (!title) { alert('请输入公告标题'); return; }
+            if (!content || content === '<p><br></p>') { alert('请输入公告内容'); return; }
+            const res = await fetch(`${window.API_BASE}/announcements`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ title, content })
+            });
+            if (res.ok) {
+                alert('公告发布成功');
+                document.getElementById('announcementTitle').value = '';
+                announcementQuill.root.innerHTML = '';
+                loadAnnouncements();
+            } else {
+                const data = await res.json();
+                alert(data.error || '发布失败');
+            }
+        }
+
+        // 加载公告列表
+        async function loadAnnouncements() {
+            const container = document.getElementById('announcementsList');
+            if (!container) return;
+            container.innerHTML = '<div class="loading">加载中...</div>';
+            try {
+                const res = await fetch(`${window.API_BASE}/announcements?limit=20`);
+                const data = await res.json();
+                if (data.announcements.length === 0) {
+                    container.innerHTML = '<div class="loading">暂无公告</div>';
+                    return;
+                }
+                container.innerHTML = data.announcements.map(a => `
+                    <div class="list-item">
+                        <div class="item-meta">
+                            <span>${escapeHtml(a.title)}</span>
+                            <span>发布者：${escapeHtml(a.creator_nickname)}</span>
+                            <span>${formatDate(a.created_at)}</span>
+                            <span>${a.confirm_count} 人已确认</span>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-sm primary" onclick="location.href='/announcement.html?id=${a.id}'">查看</button>
+                            <button class="btn-sm" onclick="viewConfirmations(${a.id})">确认列表</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                container.innerHTML = '<div class="loading">加载失败</div>';
+            }
+        }
+
+        // 查看确认用户列表
+        async function viewConfirmations(announcementId) {
+            const res = await fetch(`${window.API_BASE}/announcements/${announcementId}/confirmations`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok && data.confirmations.length > 0) {
+                const list = data.confirmations.map(c => c.nickname).join('、');
+                alert(`已确认用户（${data.confirmations.length}人）：\n${list}`);
+            } else {
+                alert('暂无确认记录');
+            }
+        }
+
+        document.getElementById('publishAnnouncementBtn').addEventListener('click', publishAnnouncement);
+
         // 标签页切换
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabs = {
             reports: document.getElementById('reportsTab'),
             feedbacks: document.getElementById('feedbacksTab'),
-            'circle-applications': document.getElementById('circleApplicationsTab')
+            'circle-applications': document.getElementById('circleApplicationsTab'),
+            announcements: document.getElementById('announcementsTab')
         };
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1039,9 +1177,12 @@
                 btn.classList.add('active');
                 Object.values(tabs).forEach(t => t.classList.remove('active'));
                 tabs[tab].classList.add('active');
-                // 切换到圈子申请时自动加载数据
+                // 切换到对应标签时自动加载数据
                 if (tab === 'circle-applications') {
                     loadCircleApplications();
+                } else if (tab === 'announcements') {
+                    initAnnouncementEditor();
+                    loadAnnouncements();
                 }
             });
         });

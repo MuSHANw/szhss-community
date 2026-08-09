@@ -1526,7 +1526,8 @@ app.get('/api/posts/:id', async (req, res) => {
         if (postResult.rows.length === 0) return res.status(404).json({ error: '帖子不存在' });
         const post = fixPostMedia(postResult.rows[0]);
         const repliesResult = await pool.query(
-            `SELECT r.*, u.nickname, u.avatar_url, u.exp, u.has_passed_quiz
+            `SELECT r.*, u.nickname, u.avatar_url, u.exp, u.has_passed_quiz,
+                    (SELECT u2.nickname FROM replies r2 JOIN users u2 ON r2.user_id = u2.id WHERE r2.id = r.parent_id) as parent_nickname
              FROM replies r
              JOIN users u ON r.user_id = u.id
              WHERE r.post_id = $1
@@ -1714,15 +1715,30 @@ app.post('/api/posts/:id/replies', authMiddleware, quizRequired, async (req, res
         );
         const postOwner = await pool.query('SELECT user_id FROM posts WHERE id = $1', [postId]);
         const ownerId = postOwner.rows[0].user_id;
-        if (ownerId !== req.user.userId) {
-            await createNotification(ownerId, 'reply', postId, req.user.userId);
-            addExp(ownerId, 'replied');
+        if (parent_id) {
+            // 回复评论：通知父评论的作者
+            const parentReply = await pool.query('SELECT user_id FROM replies WHERE id = $1', [parent_id]);
+            if (parentReply.rows.length > 0 && parentReply.rows[0].user_id !== req.user.userId) {
+                await createNotification(parentReply.rows[0].user_id, 'reply', postId, req.user.userId);
+                addExp(parentReply.rows[0].user_id, 'replied');
+            }
+        } else {
+            // 回复帖子：通知帖子作者
+            if (ownerId !== req.user.userId) {
+                await createNotification(ownerId, 'reply', postId, req.user.userId);
+                addExp(ownerId, 'replied');
+            }
         }
         addExp(req.user.userId, 'reply');
         await awardDailyTask(req.user.userId, 'reply');
         await checkAchievement(req.user.userId, 'first_reply');
-        // 更新帖子作者的被回复计数器
-        if (ownerId !== req.user.userId) {
+        // 更新被回复计数器
+        if (parent_id) {
+            const parentReply = await pool.query('SELECT user_id FROM replies WHERE id = $1', [parent_id]);
+            if (parentReply.rows.length > 0 && parentReply.rows[0].user_id !== req.user.userId) {
+                await pool.query('UPDATE users SET total_replies_received = total_replies_received + 1 WHERE id = $1', [parentReply.rows[0].user_id]);
+            }
+        } else if (ownerId !== req.user.userId) {
             await pool.query('UPDATE users SET total_replies_received = total_replies_received + 1 WHERE id = $1', [ownerId]);
         }
         res.json({ id: result.rows[0].id, message: '回复成功' });
@@ -3414,6 +3430,175 @@ app.put('/api/messages/read/:userId', authMiddleware, async (req, res) => {
 });
 
 // ---------- 私信 API 结束 ----------
+
+// ---------- 公告 API ----------
+
+// 发布公告（管理员专用）
+app.post('/api/announcements', authMiddleware, adminMiddleware, async (req, res) => {
+    const { title, content } = req.body;
+
+    if (!title || !title.trim()) return res.status(400).json({ error: '公告标题不能为空' });
+    if (!content || !content.trim()) return res.status(400).json({ error: '公告内容不能为空' });
+
+    try {
+        const result = await pool.query(
+            'INSERT INTO announcements (title, content, created_by) VALUES ($1, $2, $3) RETURNING id',
+            [title.trim(), content.trim(), req.user.userId]
+        );
+        res.json({ id: result.rows[0].id, message: '公告发布成功' });
+    } catch (err) {
+        console.error('发布公告失败:', err);
+        res.status(500).json({ error: '发布公告失败' });
+    }
+});
+
+// 获取公告列表（分页）
+app.get('/api/announcements', async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    try {
+        const query = `
+            SELECT a.*, u.nickname as creator_nickname,
+                   (SELECT COUNT(*) FROM announcement_confirmations WHERE announcement_id = a.id) as confirm_count
+            FROM announcements a
+            JOIN users u ON a.created_by = u.id
+            ORDER BY a.created_at DESC
+            LIMIT $1 OFFSET $2
+        `;
+        const countQuery = 'SELECT COUNT(*) as total FROM announcements';
+
+        const result = await pool.query(query, [limit, offset]);
+        const countResult = await pool.query(countQuery);
+        const total = parseInt(countResult.rows[0].total);
+
+        res.json({
+            announcements: result.rows,
+            page, limit, total,
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (err) {
+        console.error('获取公告列表失败:', err);
+        res.status(500).json({ error: '获取公告列表失败' });
+    }
+});
+
+// 获取最新公告（用于首页提示条）
+app.get('/api/announcements/latest', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT a.*, u.nickname as creator_nickname,
+                    (SELECT COUNT(*) FROM announcement_confirmations WHERE announcement_id = a.id) as confirm_count
+             FROM announcements a
+             JOIN users u ON a.created_by = u.id
+             ORDER BY a.created_at DESC LIMIT 1`
+        );
+
+        if (result.rows.length === 0) {
+            return res.json({ announcement: null });
+        }
+
+        // 检查当前用户是否已确认
+        const announcement = result.rows[0];
+        const token = req.headers.authorization?.split(' ')[1];
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                const confirmCheck = await pool.query(
+                    'SELECT id FROM announcement_confirmations WHERE announcement_id = $1 AND user_id = $2',
+                    [announcement.id, decoded.userId]
+                );
+                announcement.is_confirmed = confirmCheck.rows.length > 0;
+            } catch (e) {}
+        }
+
+        res.json({ announcement });
+    } catch (err) {
+        console.error('获取最新公告失败:', err);
+        res.status(500).json({ error: '获取最新公告失败' });
+    }
+});
+
+// 获取公告详情
+app.get('/api/announcements/:id', async (req, res) => {
+    const announcementId = parseInt(req.params.id);
+    if (isNaN(announcementId)) return res.status(400).json({ error: '无效的公告ID' });
+
+    try {
+        const query = `
+            SELECT a.*, u.nickname as creator_nickname,
+                   (SELECT COUNT(*) FROM announcement_confirmations WHERE announcement_id = a.id) as confirm_count
+            FROM announcements a
+            JOIN users u ON a.created_by = u.id
+            WHERE a.id = $1
+        `;
+        const result = await pool.query(query, [announcementId]);
+        if (result.rows.length === 0) return res.status(404).json({ error: '公告不存在' });
+
+        const announcement = result.rows[0];
+
+        // 检查当前用户是否已确认
+        const token = req.headers.authorization?.split(' ')[1];
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                const confirmCheck = await pool.query(
+                    'SELECT id FROM announcement_confirmations WHERE announcement_id = $1 AND user_id = $2',
+                    [announcementId, decoded.userId]
+                );
+                announcement.is_confirmed = confirmCheck.rows.length > 0;
+            } catch (e) {}
+        }
+
+        res.json({ announcement });
+    } catch (err) {
+        console.error('获取公告详情失败:', err);
+        res.status(500).json({ error: '获取公告详情失败' });
+    }
+});
+
+// 确认收到公告
+app.post('/api/announcements/:id/confirm', authMiddleware, async (req, res) => {
+    const announcementId = parseInt(req.params.id);
+    const userId = req.user.userId;
+
+    if (isNaN(announcementId)) return res.status(400).json({ error: '无效的公告ID' });
+
+    try {
+        await pool.query(
+            'INSERT INTO announcement_confirmations (announcement_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [announcementId, userId]
+        );
+        res.json({ message: '确认收到' });
+    } catch (err) {
+        console.error('确认公告失败:', err);
+        res.status(500).json({ error: '确认失败' });
+    }
+});
+
+// 管理员查看确认用户列表
+app.get('/api/announcements/:id/confirmations', authMiddleware, adminMiddleware, async (req, res) => {
+    const announcementId = parseInt(req.params.id);
+    if (isNaN(announcementId)) return res.status(400).json({ error: '无效的公告ID' });
+
+    try {
+        const result = await pool.query(
+            `SELECT ac.confirmed_at, u.id, u.nickname, u.avatar_url
+             FROM announcement_confirmations ac
+             JOIN users u ON ac.user_id = u.id
+             WHERE ac.announcement_id = $1
+             ORDER BY ac.confirmed_at DESC`,
+            [announcementId]
+        );
+        res.json({ confirmations: result.rows });
+    } catch (err) {
+        console.error('获取确认列表失败:', err);
+        res.status(500).json({ error: '获取确认列表失败' });
+    }
+});
+
+// ---------- 公告 API 结束 ----------
 
 // ---------- 圈子相关 API ----------
 
