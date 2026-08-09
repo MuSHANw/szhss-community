@@ -1234,8 +1234,9 @@ app.get('/api/users/:id/stats', async (req, res) => {
         const repliesCount = await pool.query('SELECT COUNT(*) as cnt FROM replies WHERE user_id = $1', [userId]);
 
         // 最近6个月每月发帖数
+        // 用 TO_CHAR 返回 YYYY-MM 字符串，避免 timestamp 经 pg 序列化为 UTC 后时区偏移错配月份
         const monthlyPosts = await pool.query(
-            `SELECT DATE_TRUNC('month', created_at) as month, COUNT(*) as count
+            `SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') as month, COUNT(*) as count
              FROM posts WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '6 months'
              GROUP BY month ORDER BY month`,
             [userId]
@@ -1243,7 +1244,7 @@ app.get('/api/users/:id/stats', async (req, res) => {
 
         // 最近6个月每月回复数
         const monthlyReplies = await pool.query(
-            `SELECT DATE_TRUNC('month', created_at) as month, COUNT(*) as count
+            `SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') as month, COUNT(*) as count
              FROM replies WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '6 months'
              GROUP BY month ORDER BY month`,
             [userId]

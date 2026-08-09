@@ -1330,10 +1330,11 @@
 
         function renderPostsChart(monthlyPosts, monthlyReplies) {
             const ctx = document.getElementById('postsChart').getContext('2d');
+            // 用每月1日固定日期，避免月末 setMonth 产生日期偏移（如 8月31日 减6个月 会错到 3月）
+            const now = new Date();
             const months = [];
             for (let i = 5; i >= 0; i--) {
-                const d = new Date();
-                d.setMonth(d.getMonth() - i);
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
             }
             new Chart(ctx, {
