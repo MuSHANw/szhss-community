@@ -1250,13 +1250,14 @@ app.get('/api/users/:id/stats', async (req, res) => {
         );
 
         // 活跃时段分布（发帖+回复按小时汇总）
+        // EXTRACT 返回 numeric，用 ::int 转成整数，避免 pg 驱动返回字符串导致前端解析异常
         const hourlyRes = await pool.query(
-            `SELECT hour, SUM(count) as total FROM (
-                SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
+            `SELECT hour, SUM(count)::int as total FROM (
+                SELECT EXTRACT(HOUR FROM created_at)::int as hour, COUNT(*) as count
                 FROM posts WHERE user_id = $1
                 GROUP BY hour
                 UNION ALL
-                SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
+                SELECT EXTRACT(HOUR FROM created_at)::int as hour, COUNT(*) as count
                 FROM replies WHERE user_id = $1
                 GROUP BY hour
             ) sub GROUP BY hour ORDER BY hour`,
