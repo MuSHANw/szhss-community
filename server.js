@@ -3598,6 +3598,22 @@ app.get('/api/announcements/:id/confirmations', authMiddleware, adminMiddleware,
     }
 });
 
+// 删除公告（管理员专用）
+app.delete('/api/announcements/:id', authMiddleware, adminMiddleware, async (req, res) => {
+    const announcementId = parseInt(req.params.id);
+    if (isNaN(announcementId)) return res.status(400).json({ error: '无效的公告ID' });
+
+    try {
+        const result = await pool.query('DELETE FROM announcements WHERE id = $1 RETURNING id', [announcementId]);
+        if (result.rows.length === 0) return res.status(404).json({ error: '公告不存在' });
+
+        res.json({ message: '公告已删除' });
+    } catch (err) {
+        console.error('删除公告失败:', err);
+        res.status(500).json({ error: '删除公告失败' });
+    }
+});
+
 // ---------- 公告 API 结束 ----------
 
 // ---------- 圈子相关 API ----------

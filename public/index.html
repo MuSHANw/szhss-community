@@ -783,15 +783,7 @@
         .announcement-bar-icon { font-size: 1.3rem; }
         .announcement-bar-text { flex: 1; min-width: 0; }
         .announcement-bar-title { font-weight: 600; font-size: 0.95rem; color: #1E40AF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .announcement-bar-btn {
-            background: #1E88E5; color: white; border: none;
-            padding: 6px 14px; border-radius: 20px; cursor: pointer;
-            font-size: 0.8rem; font-weight: 600; white-space: nowrap;
-            z-index: 1; flex-shrink: 0;
-        }
-        .announcement-bar-btn.confirmed {
-            background: #D1D5DB; color: #6B7280; cursor: default;
-        }
+        .announcement-bar-arrow { color: #1E88E5; font-size: 1rem; flex-shrink: 0; }
 
         /* ========== 信息流标签栏 ========== */
         .feed-tabs {
@@ -1262,7 +1254,7 @@
                     <div class="announcement-bar-text">
                         <span class="announcement-bar-title" id="announcementTitle">管理员发布了新公告</span>
                     </div>
-                    <button class="announcement-bar-btn" id="announcementConfirmBtn" onclick="confirmLatestAnnouncement(event)">确认收到</button>
+                    <i class="fas fa-chevron-right announcement-bar-arrow"></i>
                 </div>
                 <!-- 排序栏 -->
                 <div class="feed-tabs">
@@ -1717,34 +1709,9 @@
                     announcementId = data.announcement.id;
                     document.getElementById('announcementBar').style.display = 'flex';
                     document.getElementById('announcementTitle').textContent = data.announcement.title;
-
-                    const btn = document.getElementById('announcementConfirmBtn');
-                    if (data.announcement.is_confirmed) {
-                        btn.textContent = '✅ 已确认';
-                        btn.classList.add('confirmed');
-                    } else {
-                        btn.textContent = '确认收到';
-                        btn.classList.remove('confirmed');
-                    }
                 }
             } catch (e) {
                 console.warn('加载最新公告失败:', e);
-            }
-        }
-
-        async function confirmLatestAnnouncement(event) {
-            event.stopPropagation(); // 阻止跳转
-            if (!token || !announcementId) return;
-
-            const res = await fetch(`${window.API_BASE}/announcements/${announcementId}/confirm`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (res.ok) {
-                const btn = document.getElementById('announcementConfirmBtn');
-                btn.textContent = '✅ 已确认';
-                btn.classList.add('confirmed');
             }
         }
 
