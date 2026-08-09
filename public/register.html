@@ -414,7 +414,8 @@
                 </div>
                 <div class="form-group">
                     <label>昵称（可选）</label>
-                    <input type="text" id="nickname" placeholder="你的昵称">
+                    <input type="text" id="nickname" placeholder="2-12个字符，注册后不可修改">
+                    <div id="nicknameHint" style="font-size:0.75rem;margin-top:4px;min-height:1.2em;"></div>
                 </div>
 
                 <div class="options">
@@ -493,6 +494,35 @@
             if (!val) { hint.textContent = ''; }
             else if (emailRegex.test(val)) { hint.textContent = '✓ 邮箱格式正确'; hint.style.color = '#10B981'; }
             else { hint.textContent = '✗ 请输入正确的邮箱地址'; hint.style.color = '#EF4444'; }
+        });
+
+        // 昵称实时校验
+        nicknameInput.addEventListener('input', function() {
+            const nickname = this.value.trim();
+            const hint = document.getElementById('nicknameHint');
+
+            if (!nickname) {
+                hint.textContent = '';
+                hint.style.color = '';
+                return;
+            }
+
+            const length = [...nickname].length;
+
+            if (length < 2) {
+                hint.textContent = '昵称至少需要2个字符（当前' + length + '个）';
+                hint.style.color = '#EF4444';
+                return;
+            }
+            if (length > 12) {
+                hint.textContent = '昵称最多12个字符（当前' + length + '个）';
+                hint.style.color = '#EF4444';
+                return;
+            }
+
+            // 通过
+            hint.textContent = '✓ 昵称格式正确';
+            hint.style.color = '#10B981';
         });
 
         // 发送验证码

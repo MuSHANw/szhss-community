@@ -43,6 +43,26 @@ const transporter = nodemailer.createTransport(
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
 
+// ---------- 昵称校验 ----------
+function validateNickname(nickname) {
+    // 长度检查
+    if (!nickname || nickname.trim().length === 0) {
+        return { valid: false, error: '昵称不能为空' };
+    }
+
+    const trimmedNickname = nickname.trim();
+    const length = [...trimmedNickname].length;
+
+    if (length < 2) {
+        return { valid: false, error: '昵称至少需要2个字符' };
+    }
+    if (length > 12) {
+        return { valid: false, error: '昵称最多12个字符（当前' + length + '个）' };
+    }
+
+    return { valid: true, trimmed: trimmedNickname };
+}
+
 // ---------- 辅助函数：创建通知 ----------
 async function createNotification(userId, type, sourceId, sourceUserId = null, content = null) {
     try {
@@ -436,13 +456,30 @@ app.post('/api/register', async (req, res) => {
         if (verifyRes.rows.length === 0) return res.status(400).json({ error: '验证码无效或已过期' });
         const userExist = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
         if (userExist.rows.length > 0) return res.status(400).json({ error: '该邮箱已注册，请直接登录' });
+        // 校验昵称（可选字段，填了才校验）
+        let finalNickname = nickname || email.split('@')[0];
+        if (nickname) {
+            const nicknameResult = validateNickname(nickname);
+            if (!nicknameResult.valid) {
+                return res.status(400).json({ error: nicknameResult.error });
+            }
+            finalNickname = nicknameResult.trimmed;
+            // 检查昵称是否已存在（大小写不敏感）
+            const nicknameCheck = await pool.query(
+                'SELECT id FROM users WHERE LOWER(nickname) = LOWER($1)',
+                [finalNickname]
+            );
+            if (nicknameCheck.rows.length > 0) {
+                return res.status(400).json({ error: '该昵称已被使用，请换一个' });
+            }
+        }
         const hashedPassword = await bcrypt.hash(password, 10);
-        const result = await pool.query('INSERT INTO users (email, password_hash, nickname) VALUES ($1, $2, $3) RETURNING id', [email, hashedPassword, nickname || email.split('@')[0]]);
+        const result = await pool.query('INSERT INTO users (email, password_hash, nickname) VALUES ($1, $2, $3) RETURNING id', [email, hashedPassword, finalNickname]);
         const userId = result.rows[0].id;
         const token = jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: '7d' });
         try { await pool.query("DELETE FROM email_verifications WHERE email = $1 AND type = 'register'", [email]); }
         catch (e) { await pool.query('DELETE FROM email_verifications WHERE email = $1', [email]); }
-        res.json({ token, user: { id: userId, email, nickname: nickname || email.split('@')[0] } });
+        res.json({ token, user: { id: userId, email, nickname: finalNickname } });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: '注册失败' });
@@ -533,7 +570,23 @@ app.put('/api/me/profile', authMiddleware, async (req, res) => {
                     return res.status(400).json({ error: '昵称7天内只能修改一次' });
                 }
             }
-            await client.query('UPDATE users SET nickname = $1, nickname_last_updated = NOW() WHERE id = $2', [nickname, userId]);
+            // 校验昵称格式
+            const nicknameResult = validateNickname(nickname);
+            if (!nicknameResult.valid) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ error: nicknameResult.error });
+            }
+            const finalNickname = nicknameResult.trimmed;
+            // 检查昵称是否已被其他用户使用
+            const nicknameCheck = await client.query(
+                'SELECT id FROM users WHERE LOWER(nickname) = LOWER($1) AND id != $2',
+                [finalNickname, userId]
+            );
+            if (nicknameCheck.rows.length > 0) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ error: '该昵称已被使用，请换一个' });
+            }
+            await client.query('UPDATE users SET nickname = $1, nickname_last_updated = NOW() WHERE id = $2', [finalNickname, userId]);
         }
 
         const updateFields = [];
