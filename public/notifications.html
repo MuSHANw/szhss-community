@@ -924,6 +924,14 @@
 
         // 初始加载
         loadNotifications();
+
+        // 进入通知页后，自动将所有未读通知标记为已读（后端异步处理，前端不等待）
+        if (token) {
+            fetch(`${window.API_BASE}/notifications/read-all`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(() => {}); // 静默处理错误，不影响用户体验
+        }
     </script>
 </body>
 
