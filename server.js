@@ -1386,6 +1386,35 @@ app.get('/api/posts', async (req, res) => {
     }
 });
 
+// 获取首页横幅帖子（置顶+精华）
+// 注意：必须放在 /api/posts/:id 之前，否则 Express 会把 "banner" 当作帖子ID匹配到 :id 路由
+app.get('/api/posts/banner', async (req, res) => {
+    try {
+        const query = `
+            (SELECT p.id, p.title, p.content, p.category, p.is_pinned, p.is_essence,
+                    p.created_at, p.images,
+                    u.nickname, u.avatar_url
+             FROM posts p JOIN users u ON p.user_id = u.id
+             WHERE p.is_pinned = true
+             ORDER BY p.pinned_at DESC NULLS LAST LIMIT 3)
+            UNION ALL
+            (SELECT p.id, p.title, p.content, p.category, p.is_pinned, p.is_essence,
+                    p.created_at, p.images,
+                    u.nickname, u.avatar_url
+             FROM posts p JOIN users u ON p.user_id = u.id
+             WHERE p.is_essence = true AND p.is_pinned = false
+             ORDER BY p.created_at DESC LIMIT 3)
+            LIMIT 6
+        `;
+        const result = await pool.query(query);
+        result.rows.forEach(fixPostMedia);
+        res.json({ posts: result.rows });
+    } catch (err) {
+        console.error('获取横幅帖子失败:', err);
+        res.status(500).json({ error: '获取横幅帖子失败' });
+    }
+});
+
 app.get('/api/posts/:id', async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: '无效的帖子ID' });
@@ -1552,33 +1581,6 @@ app.patch('/api/posts/:id/pin', authMiddleware, async (req, res) => {
 });
 
 // 获取首页横幅帖子（置顶+精华）
-app.get('/api/posts/banner', async (req, res) => {
-    try {
-        const query = `
-            (SELECT p.id, p.title, p.content, p.category, p.is_pinned, p.is_essence,
-                    p.created_at, p.images,
-                    u.nickname, u.avatar_url
-             FROM posts p JOIN users u ON p.user_id = u.id
-             WHERE p.is_pinned = true
-             ORDER BY p.pinned_at DESC NULLS LAST LIMIT 3)
-            UNION ALL
-            (SELECT p.id, p.title, p.content, p.category, p.is_pinned, p.is_essence,
-                    p.created_at, p.images,
-                    u.nickname, u.avatar_url
-             FROM posts p JOIN users u ON p.user_id = u.id
-             WHERE p.is_essence = true AND p.is_pinned = false
-             ORDER BY p.created_at DESC LIMIT 3)
-            LIMIT 6
-        `;
-        const result = await pool.query(query);
-        result.rows.forEach(fixPostMedia);
-        res.json({ posts: result.rows });
-    } catch (err) {
-        console.error('获取横幅帖子失败:', err);
-        res.status(500).json({ error: '获取横幅帖子失败' });
-    }
-});
-
 app.delete('/api/posts/:id', authMiddleware, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: '无效的帖子ID' });
