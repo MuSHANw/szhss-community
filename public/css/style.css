@@ -227,3 +227,14 @@ body {
 .post-meta a:hover {
     text-decoration: underline;
 }
+
+/* ---------- 侧边栏赞助按钮 ---------- */
+.sidebar-link.sponsor-link {
+    color: #e53e3e;
+}
+.sidebar-link.sponsor-link:hover {
+    background: #ffe5e5;
+}
+.sidebar-link.sponsor-link i {
+    color: #e53e3e;
+}
