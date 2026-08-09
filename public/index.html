@@ -722,6 +722,7 @@
         }
         .banner-badge.pinned { background: rgba(255,255,255,0.3); color: white; }
         .banner-badge.essence { background: rgba(245,158,11,0.8); color: white; }
+        .banner-badge.activity { background: rgba(239,68,68,0.9); color: white; }
         .banner-title {
             font-size: 1.3rem; font-weight: 700; margin-bottom: 6px;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -1305,10 +1306,10 @@
 
                         <div class="sidebar-card">
                             <h3><i class="fas fa-calendar-alt"></i> 近期活动</h3>
-                            <div class="activity-item">
-                                <p><strong>摄影大赛</strong> - 4月10日截止</p>
-                                <p><strong>校园辩论赛</strong> - 4月15日报名</p>
+                            <div id="activityList" style="font-size:0.85rem;color:#6B7280;">
+                                <div class="loading" style="padding:10px;">加载中...</div>
                             </div>
+                            <a href="/events.html" style="display:inline-block;margin-top:10px;font-size:0.8rem;color:#1E88E5;text-decoration:none;">📅 查看活动日历 →</a>
                         </div>
                     </div>
 
@@ -1583,17 +1584,38 @@
 
         async function loadBanner() {
             try {
-                const res = await fetch(`${window.API_BASE}/posts/banner`);
-                const data = await res.json();
+                const [postsRes, activitiesRes] = await Promise.all([
+                    fetch(`${window.API_BASE}/posts/banner`),
+                    fetch(`${window.API_BASE}/activities/active`)
+                ]);
 
-                if (!res.ok || !data.posts || data.posts.length === 0) {
-                    // 没有置顶/精华帖子，或接口报错时隐藏横幅
-                    if (!res.ok) console.warn('横幅接口错误:', data);
+                const postsData = await postsRes.json();
+                const activitiesData = await activitiesRes.json();
+
+                // 合并数据：活动在前，置顶/精华帖在后
+                const activities = (activitiesData.activities || []).map(a => ({
+                    ...a,
+                    bannerType: 'activity',
+                    title: a.title,
+                    badge: '🎉 活动',
+                    badgeClass: 'banner-badge activity'
+                }));
+
+                const posts = (postsData.posts || []).map(p => ({
+                    ...p,
+                    bannerType: p.is_pinned ? 'pinned' : 'essence',
+                    badge: p.is_pinned ? '📌 置顶' : '⭐ 精华',
+                    badgeClass: p.is_pinned ? 'banner-badge pinned' : 'banner-badge essence'
+                }));
+
+                const allBanners = [...activities, ...posts].slice(0, 6);
+
+                if (allBanners.length === 0) {
                     document.getElementById('postBanner').style.display = 'none';
                     return;
                 }
 
-                bannerPosts = data.posts;
+                bannerPosts = allBanners;
                 document.getElementById('postBanner').style.display = 'block';
                 renderBanner();
                 startBannerAutoPlay();
@@ -1607,22 +1629,29 @@
             const track = document.getElementById('bannerTrack');
             const dots = document.getElementById('bannerDots');
 
-            track.innerHTML = bannerPosts.map(post => {
-                const badge = post.is_pinned ?
-                    '<span class="banner-badge pinned">📌 置顶</span>' :
-                    '<span class="banner-badge essence">⭐ 精华</span>';
+            track.innerHTML = bannerPosts.map(item => {
+                const isActivity = item.bannerType === 'activity';
+                const bgGradient = isActivity ?
+                    'linear-gradient(135deg, rgba(220,38,38,0.85), rgba(239,68,68,0.85))' :  // 活动：红色
+                    'linear-gradient(135deg, rgba(30,64,175,0.85), rgba(59,130,246,0.85))';   // 帖子：蓝色
 
-                const imageHtml = post.images && post.images.length > 0 ?
-                    `<img src="${getFullUrl(post.images[0])}" class="banner-image" alt="" onerror="this.style.display='none'">` :
-                    '';
+                const linkUrl = isActivity ?
+                    `/activity.html?id=${item.id}` :
+                    `/post-detail.html?id=${item.id}`;
+
+                const imageHtml = item.cover_url ?
+                    `<img src="${getFullUrl(item.cover_url)}" class="banner-image" alt="" onerror="this.style.display='none'">` :
+                    (item.images && item.images.length > 0 ?
+                        `<img src="${getFullUrl(item.images[0])}" class="banner-image" alt="" onerror="this.style.display='none'">` :
+                        '');
 
                 return `
-                    <div class="banner-slide" onclick="location.href='/post-detail.html?id=${post.id}'">
+                    <div class="banner-slide" onclick="location.href='${linkUrl}'" style="background:${bgGradient};">
                         <div class="banner-content">
-                            ${badge}
-                            <div class="banner-title">${escapeHtml(post.title)}</div>
-                            <div class="banner-excerpt">${escapeHtml(String(post.content || '').replace(/<[^>]*>/g, '').substring(0, 100))}</div>
-                            <div class="banner-meta">${escapeHtml(post.nickname)} · ${escapeHtml(post.category || '综合')}</div>
+                            <span class="${item.badgeClass}">${item.badge}</span>
+                            <div class="banner-title">${escapeHtml(item.title)}</div>
+                            <div class="banner-excerpt">${escapeHtml((item.description || item.content || '').replace(/<[^>]*>/g, '').substring(0, 100))}</div>
+                            <div class="banner-meta">${escapeHtml(item.creator_nickname || item.nickname || '')} · ${isActivity ? formatDate(item.start_time) + ' ~ ' + formatDate(item.end_time) : escapeHtml(item.category || '综合')}</div>
                         </div>
                         ${imageHtml}
                     </div>
@@ -1712,6 +1741,29 @@
                 }
             } catch (e) {
                 console.warn('加载最新公告失败:', e);
+            }
+        }
+
+        // ---------- 近期活动 ----------
+        async function loadSidebarActivities() {
+            const box = document.getElementById('activityList');
+            if (!box) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/activities/active`);
+                const data = await res.json();
+                const acts = (data.activities || []).slice(0, 3);
+                if (acts.length === 0) {
+                    box.innerHTML = '<div style="padding:6px 0;">暂无进行中的活动</div>';
+                    return;
+                }
+                box.innerHTML = acts.map(a => `
+                    <a href="/activity.html?id=${a.id}" style="display:block;text-decoration:none;color:inherit;padding:5px 0;border-bottom:1px dashed #f0f2f5;">
+                        <strong style="color:#DC2626;">🎉 ${escapeHtml(a.title)}</strong>
+                        <div style="font-size:0.75rem;color:#9CA3AF;">${formatDate(a.start_time)} 开始</div>
+                    </a>
+                `).join('');
+            } catch (e) {
+                box.innerHTML = '<div style="padding:6px 0;">暂无进行中的活动</div>';
             }
         }
 
@@ -1926,6 +1978,7 @@
         loadBanner();
         loadHotCircles();
         loadLatestAnnouncement();
+        loadSidebarActivities();
 
         // ---------- 内测公告弹窗逻辑 ----------
         (function () {

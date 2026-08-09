@@ -3616,6 +3616,344 @@ app.delete('/api/announcements/:id', authMiddleware, adminMiddleware, async (req
 
 // ---------- 公告 API 结束 ----------
 
+// ---------- 活动/比赛 API ----------
+
+// 创建活动（管理员专用）
+app.post('/api/activities', authMiddleware, adminMiddleware, async (req, res) => {
+    const { title, type, cover_url, description, rules, start_time, end_time, config, reward_coins, reward_badge } = req.body;
+
+    if (!title || !title.trim()) return res.status(400).json({ error: '活动标题不能为空' });
+    if (!type) return res.status(400).json({ error: '请选择活动类型' });
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO activities (title, type, cover_url, description, rules, start_time, end_time, config, reward_coins, reward_badge, created_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+            [title.trim(), type, cover_url, description || '', rules || '', start_time, end_time,
+             JSON.stringify(config || {}), reward_coins || 0, reward_badge || null, req.user.userId]
+        );
+        res.json({ id: result.rows[0].id, message: '活动创建成功' });
+    } catch (err) {
+        console.error('创建活动失败:', err);
+        res.status(500).json({ error: '创建活动失败' });
+    }
+});
+
+// 获取活动列表
+app.get('/api/activities', async (req, res) => {
+    const { status, page = 1, limit = 20 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    try {
+        let whereClause = '';
+        const params = [];
+        if (status && status !== 'all') {
+            whereClause = 'WHERE a.status = $1';
+            params.push(status);
+        }
+
+        const query = `
+            SELECT a.*, u.nickname as creator_nickname,
+                   (a.start_time AT TIME ZONE 'Asia/Shanghai') as start_time,
+                   (a.end_time AT TIME ZONE 'Asia/Shanghai') as end_time,
+                   (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id) as participant_count
+            FROM activities a
+            JOIN users u ON a.created_by = u.id
+            ${whereClause}
+            ORDER BY a.created_at DESC
+            LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+        `;
+        const countQuery = `SELECT COUNT(*) as total FROM activities a ${whereClause}`;
+
+        const result = await pool.query(query, [...params, parseInt(limit), offset]);
+        const countResult = await pool.query(countQuery, params);
+        const total = parseInt(countResult.rows[0].total);
+
+        res.json({
+            activities: result.rows,
+            page: parseInt(page), limit: parseInt(limit), total,
+            totalPages: Math.ceil(total / parseInt(limit))
+        });
+    } catch (err) {
+        console.error('获取活动列表失败:', err);
+        res.status(500).json({ error: '获取活动列表失败' });
+    }
+});
+
+// 获取进行中的活动（用于首页横幅）
+app.get('/api/activities/active', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT a.*, u.nickname as creator_nickname,
+                    (a.start_time AT TIME ZONE 'Asia/Shanghai') as start_time,
+                    (a.end_time AT TIME ZONE 'Asia/Shanghai') as end_time,
+                    (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id) as participant_count
+             FROM activities a
+             JOIN users u ON a.created_by = u.id
+             WHERE a.status = 'active'
+               AND NOW() AT TIME ZONE 'Asia/Shanghai' >= a.start_time
+               AND NOW() AT TIME ZONE 'Asia/Shanghai' <= a.end_time
+             ORDER BY a.created_at DESC LIMIT 3`
+        );
+        res.json({ activities: result.rows });
+    } catch (err) {
+        console.error('获取进行中活动失败:', err);
+        res.status(500).json({ error: '获取进行中活动失败' });
+    }
+});
+
+// 获取活动详情
+app.get('/api/activities/:id', async (req, res) => {
+    const activityId = parseInt(req.params.id);
+    if (isNaN(activityId)) return res.status(400).json({ error: '无效的活动ID' });
+
+    try {
+        const query = `
+            SELECT a.*, u.nickname as creator_nickname,
+                   (a.start_time AT TIME ZONE 'Asia/Shanghai') as start_time,
+                   (a.end_time AT TIME ZONE 'Asia/Shanghai') as end_time,
+                   (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id) as participant_count
+            FROM activities a
+            JOIN users u ON a.created_by = u.id
+            WHERE a.id = $1
+        `;
+        const result = await pool.query(query, [activityId]);
+        if (result.rows.length === 0) return res.status(404).json({ error: '活动不存在' });
+
+        const activity = result.rows[0];
+
+        // 检查当前用户是否已参与
+        const token = req.headers.authorization?.split(' ')[1];
+        let currentUserId = null;
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                currentUserId = decoded.userId;
+                const partCheck = await pool.query(
+                    'SELECT id, action_type FROM activity_participants WHERE activity_id = $1 AND user_id = $2',
+                    [activityId, decoded.userId]
+                );
+                activity.user_participation = partCheck.rows.length > 0 ? partCheck.rows[0] : null;
+            } catch (e) {}
+        }
+
+        // 投票活动：附加实时票数统计和当前用户已投选项
+        if (activity.type === 'vote') {
+            const votesRes = await pool.query(
+                'SELECT option_id, COUNT(*) as votes FROM activity_votes WHERE activity_id = $1 GROUP BY option_id',
+                [activityId]
+            );
+            activity.vote_counts = {};
+            votesRes.rows.forEach(r => { activity.vote_counts[r.option_id] = parseInt(r.votes); });
+            if (currentUserId) {
+                const myVote = await pool.query(
+                    'SELECT option_id FROM activity_votes WHERE activity_id = $1 AND user_id = $2',
+                    [activityId, currentUserId]
+                );
+                activity.user_vote = myVote.rows.length > 0 ? myVote.rows[0].option_id : null;
+            } else {
+                activity.user_vote = null;
+            }
+        }
+
+        res.json({ activity });
+    } catch (err) {
+        console.error('获取活动详情失败:', err);
+        res.status(500).json({ error: '获取活动详情失败' });
+    }
+});
+
+// 编辑活动（管理员专用）
+app.put('/api/activities/:id', authMiddleware, adminMiddleware, async (req, res) => {
+    const activityId = parseInt(req.params.id);
+    if (isNaN(activityId)) return res.status(400).json({ error: '无效的活动ID' });
+
+    const { title, type, cover_url, description, rules, start_time, end_time, config, reward_coins, reward_badge, status } = req.body;
+
+    try {
+        const updates = [];
+        const values = [];
+
+        if (title !== undefined) { updates.push(`title = $${values.length + 1}`); values.push(title.trim()); }
+        if (type !== undefined) { updates.push(`type = $${values.length + 1}`); values.push(type); }
+        if (cover_url !== undefined) { updates.push(`cover_url = $${values.length + 1}`); values.push(cover_url); }
+        if (description !== undefined) { updates.push(`description = $${values.length + 1}`); values.push(description); }
+        if (rules !== undefined) { updates.push(`rules = $${values.length + 1}`); values.push(rules); }
+        if (start_time !== undefined) { updates.push(`start_time = $${values.length + 1}`); values.push(start_time); }
+        if (end_time !== undefined) { updates.push(`end_time = $${values.length + 1}`); values.push(end_time); }
+        if (config !== undefined) { updates.push(`config = $${values.length + 1}`); values.push(JSON.stringify(config)); }
+        if (reward_coins !== undefined) { updates.push(`reward_coins = $${values.length + 1}`); values.push(reward_coins); }
+        if (reward_badge !== undefined) { updates.push(`reward_badge = $${values.length + 1}`); values.push(reward_badge); }
+        if (status !== undefined) { updates.push(`status = $${values.length + 1}`); values.push(status); }
+
+        if (updates.length === 0) return res.status(400).json({ error: '没有需要更新的字段' });
+
+        values.push(activityId);
+        await pool.query(`UPDATE activities SET ${updates.join(', ')} WHERE id = $${values.length}`, values);
+
+        res.json({ message: '活动已更新' });
+    } catch (err) {
+        console.error('编辑活动失败:', err);
+        res.status(500).json({ error: '编辑活动失败' });
+    }
+});
+
+// 删除活动（管理员专用）
+app.delete('/api/activities/:id', authMiddleware, adminMiddleware, async (req, res) => {
+    const activityId = parseInt(req.params.id);
+    if (isNaN(activityId)) return res.status(400).json({ error: '无效的活动ID' });
+
+    try {
+        const result = await pool.query('DELETE FROM activities WHERE id = $1 RETURNING id', [activityId]);
+        if (result.rows.length === 0) return res.status(404).json({ error: '活动不存在' });
+        res.json({ message: '活动已删除' });
+    } catch (err) {
+        console.error('删除活动失败:', err);
+        res.status(500).json({ error: '删除活动失败' });
+    }
+});
+
+// 用户参与活动
+app.post('/api/activities/:id/participate', authMiddleware, async (req, res) => {
+    const activityId = parseInt(req.params.id);
+    const userId = req.user.userId;
+    const { action_type, content } = req.body;
+
+    if (isNaN(activityId)) return res.status(400).json({ error: '无效的活动ID' });
+
+    try {
+        // 检查活动是否存在且进行中
+        const activityCheck = await pool.query(
+            "SELECT * FROM activities WHERE id = $1 AND status = 'active' AND NOW() AT TIME ZONE 'Asia/Shanghai' >= start_time AND NOW() AT TIME ZONE 'Asia/Shanghai' <= end_time",
+            [activityId]
+        );
+        if (activityCheck.rows.length === 0) return res.status(400).json({ error: '活动不存在或已结束' });
+
+        // 记录参与
+        await pool.query(
+            'INSERT INTO activity_participants (activity_id, user_id, action_type, content) VALUES ($1, $2, $3, $4)',
+            [activityId, userId, action_type || 'participate', content || '']
+        );
+
+        res.json({ message: '参与成功' });
+    } catch (err) {
+        console.error('参与活动失败:', err);
+        res.status(500).json({ error: '参与活动失败' });
+    }
+});
+
+// 用户投票
+app.post('/api/activities/:id/vote', authMiddleware, async (req, res) => {
+    const activityId = parseInt(req.params.id);
+    const userId = req.user.userId;
+    const { option_id } = req.body;
+
+    if (isNaN(activityId) || !option_id) return res.status(400).json({ error: '参数错误' });
+
+    try {
+        await pool.query(
+            'INSERT INTO activity_votes (activity_id, user_id, option_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+            [activityId, userId, option_id]
+        );
+        res.json({ message: '投票成功' });
+    } catch (err) {
+        console.error('投票失败:', err);
+        res.status(500).json({ error: '投票失败' });
+    }
+});
+
+// 获取活动排行榜
+app.get('/api/activities/:id/leaderboard', async (req, res) => {
+    const activityId = parseInt(req.params.id);
+    if (isNaN(activityId)) return res.status(400).json({ error: '无效的活动ID' });
+
+    try {
+        const result = await pool.query(
+            `SELECT u.id, u.nickname, u.avatar_url, COUNT(ap.id) as score
+             FROM activity_participants ap
+             JOIN users u ON ap.user_id = u.id
+             WHERE ap.activity_id = $1
+             GROUP BY u.id, u.nickname, u.avatar_url
+             ORDER BY score DESC LIMIT 20`,
+            [activityId]
+        );
+        res.json({ leaderboard: result.rows });
+    } catch (err) {
+        console.error('获取排行榜失败:', err);
+        res.status(500).json({ error: '获取排行榜失败' });
+    }
+});
+
+// 获取活动参与记录（投稿/打卡/报名列表）
+app.get('/api/activities/:id/participants', async (req, res) => {
+    const activityId = parseInt(req.params.id);
+    if (isNaN(activityId)) return res.status(400).json({ error: '无效的活动ID' });
+    const { action_type, limit = 100 } = req.query;
+
+    try {
+        let sql = `
+            SELECT ap.id, ap.action_type, ap.content,
+                   (ap.created_at AT TIME ZONE 'Asia/Shanghai') as created_at,
+                   u.id as user_id, u.nickname, u.avatar_url
+            FROM activity_participants ap
+            JOIN users u ON ap.user_id = u.id
+            WHERE ap.activity_id = $1`;
+        const params = [activityId];
+        if (action_type) {
+            sql += ' AND ap.action_type = $' + (params.length + 1);
+            params.push(action_type);
+        }
+        sql += ' ORDER BY ap.created_at DESC LIMIT $' + (params.length + 1);
+        params.push(parseInt(limit));
+
+        const result = await pool.query(sql, params);
+        res.json({ participants: result.rows });
+    } catch (err) {
+        console.error('获取活动参与记录失败:', err);
+        res.status(500).json({ error: '获取活动参与记录失败' });
+    }
+});
+
+// 管理员发放活动奖励
+app.post('/api/activities/:id/reward', authMiddleware, adminMiddleware, async (req, res) => {
+    const activityId = parseInt(req.params.id);
+    if (isNaN(activityId)) return res.status(400).json({ error: '无效的活动ID' });
+
+    try {
+        const activity = await pool.query('SELECT * FROM activities WHERE id = $1', [activityId]);
+        if (activity.rows.length === 0) return res.status(404).json({ error: '活动不存在' });
+
+        const act = activity.rows[0];
+
+        // 获取所有参与者
+        const participants = await pool.query(
+            'SELECT DISTINCT user_id FROM activity_participants WHERE activity_id = $1',
+            [activityId]
+        );
+
+        // 发放奖励
+        for (const p of participants.rows) {
+            if (act.reward_coins > 0) {
+                await awardCoin(p.user_id, act.reward_coins, 'activity_reward', `参与活动：${act.title}`);
+            }
+            if (act.reward_badge) {
+                await pool.query(
+                    'INSERT INTO task_completions (user_id, task_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+                    [p.user_id, act.reward_badge]
+                );
+            }
+        }
+
+        await pool.query("UPDATE activities SET status = 'completed' WHERE id = $1", [activityId]);
+        res.json({ message: `奖励已发放给 ${participants.rows.length} 位参与者` });
+    } catch (err) {
+        console.error('发放奖励失败:', err);
+        res.status(500).json({ error: '发放奖励失败' });
+    }
+});
+
+// ---------- 活动/比赛 API 结束 ----------
+
 // ---------- 圈子相关 API ----------
 
 // 获取所有圈子（支持分页、搜索、排序）

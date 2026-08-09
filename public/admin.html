@@ -256,6 +256,63 @@
             padding: 40px;
         }
 
+        /* ========== 管理后台侧边导航布局 ========== */
+        .admin-layout {
+            display: flex; gap: 0; background: white;
+            border-radius: 16px; overflow: hidden; border: 1px solid #eef2f6;
+            margin-top: 20px;
+        }
+        .admin-sidebar {
+            width: 200px; flex-shrink: 0;
+            border-right: 1px solid #F3F4F6; padding: 16px 0;
+            background: #FAFBFC;
+        }
+        .admin-nav-item {
+            padding: 10px 20px; cursor: pointer; font-size: 0.9rem;
+            color: #6B7280; transition: all 0.15s;
+            border-left: 3px solid transparent;
+        }
+        .admin-nav-item:hover { background: #F0F4FF; color: #1E88E5; }
+        .admin-nav-item.active {
+            background: #EFF6FF; color: #1E88E5;
+            border-left-color: #1E88E5; font-weight: 600;
+        }
+        .admin-content { flex: 1; padding: 24px; min-height: 500px; }
+        .admin-content .tab-content {
+            background: transparent; border: none; padding: 0; border-radius: 0;
+        }
+        .form-row { display: flex; gap: 16px; }
+        .form-row .form-group { flex: 1; }
+        .form-group select,
+        .form-group input[type="datetime-local"],
+        .form-group input[type="number"] {
+            width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0;
+            border-radius: 12px; font-size: 0.95rem; outline: none;
+            font-family: inherit; background: white;
+        }
+        .form-group select:focus,
+        .form-group input[type="datetime-local"]:focus,
+        .form-group input[type="number"]:focus { border-color: #1E88E5; }
+        .btn-secondary {
+            background: #f0f2f5; color: #374151; border: none;
+            padding: 10px 24px; border-radius: 40px; font-size: 0.95rem;
+            font-weight: 600; cursor: pointer; transition: background 0.2s;
+        }
+        .btn-secondary:hover { background: #e2e8f0; }
+
+        @media (max-width: 768px) {
+            .admin-layout { flex-direction: column; }
+            .admin-sidebar {
+                width: 100%; display: flex; flex-wrap: wrap;
+                gap: 4px; padding: 8px 12px; border-right: none;
+                border-bottom: 1px solid #F3F4F6;
+            }
+            .admin-nav-item {
+                padding: 6px 12px; font-size: 0.8rem;
+                border-radius: 16px; border-left: none;
+            }
+        }
+
         /* ========== 顶部栏和侧边栏（与 index 一致） ========== */
         /* 顶部铃铛链接 */
         .notifications-icon {
@@ -631,12 +688,15 @@
             </div>
         </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="reports">举报受理</button>
-            <button class="tab-btn" data-tab="feedbacks">反馈受理</button>
-            <button class="tab-btn" data-tab="circle-applications">圈子申请</button>
-            <button class="tab-btn" data-tab="announcements">公告管理</button>
-        </div>
+        <div class="admin-layout">
+            <div class="admin-sidebar">
+                <div class="admin-nav-item active" data-tab="reports">举报受理</div>
+                <div class="admin-nav-item" data-tab="feedbacks">反馈受理</div>
+                <div class="admin-nav-item" data-tab="circle-applications">圈子审批</div>
+                <div class="admin-nav-item" data-tab="announcements">公告管理</div>
+                <div class="admin-nav-item" data-tab="activities">活动管理</div>
+            </div>
+            <div class="admin-content">
         <div id="reportsTab" class="tab-content active">
             <div id="reportsList">加载中...</div>
         </div>
@@ -667,6 +727,80 @@
                 <div id="announcementsList">
                     <div class="loading">加载中...</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 活动管理标签页 -->
+        <div id="activitiesTab" class="tab-content">
+            <!-- 创建/编辑活动表单 -->
+            <div class="card" style="margin-bottom:20px;" id="activityFormCard">
+                <h3 id="activityFormTitle">创建活动</h3>
+                <div class="form-group">
+                    <label>活动标题 *</label>
+                    <input type="text" id="activityTitle" placeholder="如：2026社娘形象征集大赛" maxlength="200">
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label>活动类型 *</label>
+                        <select id="activityType">
+                            <option value="">请选择</option>
+                            <option value="vote">投票评选类</option>
+                            <option value="submit">投稿征集类</option>
+                            <option value="checkin">打卡挑战类</option>
+                            <option value="signup">报名参与类</option>
+                            <option value="quiz">答题竞赛类</option>
+                            <option value="pk">校际PK类</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>封面图（可选）</label>
+                        <input type="text" id="activityCover" placeholder="图片URL或上传">
+                    </div>
+                </div>
+                <!-- 投票选项配置（仅投票类活动显示） -->
+                <div id="voteOptionsSection" style="display:none;">
+                    <div class="form-group">
+                        <label>投票选项</label>
+                        <div id="voteOptionsList"></div>
+                        <button type="button" class="btn-sm" id="addVoteOptionBtn" style="margin-top:8px;">+ 添加选项</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>活动规则（富文本）</label>
+                    <div id="activityEditor" style="min-height:150px;background:white;"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label>开始时间</label>
+                        <input type="datetime-local" id="activityStart">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>结束时间</label>
+                        <input type="datetime-local" id="activityEnd">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label>鹏城币奖励</label>
+                        <input type="number" id="activityRewardCoins" value="0" min="0">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>限定勋章（可选）</label>
+                        <input type="text" id="activityRewardBadge" placeholder="如：activity_star">
+                    </div>
+                </div>
+                <button class="btn-primary" id="saveActivityBtn">创建活动</button>
+                <button class="btn-secondary" id="cancelActivityBtn" style="display:none;margin-left:8px;">取消编辑</button>
+            </div>
+
+            <!-- 活动列表 -->
+            <div class="card">
+                <h3>活动列表</h3>
+                <div id="activitiesList">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
             </div>
         </div>
     </div>
@@ -1270,13 +1404,268 @@
 
         document.getElementById('publishAnnouncementBtn').addEventListener('click', publishAnnouncement);
 
-        // 标签页切换
-        const tabBtns = document.querySelectorAll('.tab-btn');
+        // ---------- 活动管理 ----------
+        const ACTIVITY_TYPE_NAMES = { vote: '投票评选', submit: '投稿征集', checkin: '打卡挑战', signup: '报名参与', quiz: '答题竞赛', pk: '校际PK' };
+        let activityQuill = null;
+        function initActivityEditor() {
+            if (!activityQuill) {
+                activityQuill = new Quill('#activityEditor', {
+                    theme: 'snow',
+                    placeholder: '活动规则和详细说明...',
+                    modules: {
+                        toolbar: [
+                            ['bold', 'italic', 'underline'],
+                            [{ 'header': 1 }, { 'header': 2 }],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            ['link', 'image', 'video', 'clean']
+                        ]
+                    }
+                });
+            }
+        }
+
+        // 将 UTC ISO 时间转为 datetime-local 格式（本地显示）
+        function toLocalDatetimeInput(isoString) {
+            if (!isoString) return '';
+            const d = new Date(isoString);
+            if (isNaN(d.getTime())) return '';
+            const pad = n => n.toString().padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        // ---------- 投票选项管理 ----------
+        let voteOptions = [];
+
+        // 活动类型切换时控制投票选项区域显示
+        document.getElementById('activityType').addEventListener('change', function() {
+            const show = this.value === 'vote';
+            document.getElementById('voteOptionsSection').style.display = show ? 'block' : 'none';
+        });
+
+        // 添加选项
+        document.getElementById('addVoteOptionBtn').addEventListener('click', () => {
+            voteOptions.push({ id: Date.now(), title: '', description: '' });
+            renderVoteOptions();
+        });
+
+        // 删除选项
+        function removeVoteOption(id) {
+            voteOptions = voteOptions.filter(o => o.id !== id);
+            renderVoteOptions();
+        }
+
+        // 渲染选项列表
+        function renderVoteOptions() {
+            const container = document.getElementById('voteOptionsList');
+            container.innerHTML = voteOptions.map((opt, index) => `
+                <div class="vote-option-item" style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+                    <span style="font-weight:600;color:#6B7280;width:24px;">${index + 1}.</span>
+                    <input type="text" value="${escapeHtml(opt.title).replace(/"/g, '&quot;')}"
+                           placeholder="选项名称（如：深中街舞社）"
+                           onchange="updateVoteOption(${opt.id}, 'title', this.value)"
+                           style="flex:1;">
+                    <input type="text" value="${escapeHtml(opt.description || '').replace(/"/g, '&quot;')}"
+                           placeholder="简介（可选）"
+                           onchange="updateVoteOption(${opt.id}, 'description', this.value)"
+                           style="flex:2;">
+                    <button type="button" onclick="removeVoteOption(${opt.id})"
+                            style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:1.2rem;">×</button>
+                </div>
+            `).join('');
+        }
+
+        // 更新选项数据
+        function updateVoteOption(id, field, value) {
+            const opt = voteOptions.find(o => o.id === id);
+            if (opt) opt[field] = value;
+        }
+
+        // 保存活动
+        let editingActivityId = null;
+        document.getElementById('saveActivityBtn').addEventListener('click', async () => {
+            const title = document.getElementById('activityTitle').value.trim();
+            const type = document.getElementById('activityType').value;
+            const cover_url = document.getElementById('activityCover').value.trim();
+            const rules = activityQuill.root.innerHTML.trim();
+            const start_time = document.getElementById('activityStart').value;
+            const end_time = document.getElementById('activityEnd').value;
+            const reward_coins = parseInt(document.getElementById('activityRewardCoins').value) || 0;
+            const reward_badge = document.getElementById('activityRewardBadge').value.trim();
+
+            if (!title) { alert('请输入活动标题'); return; }
+            if (!type) { alert('请选择活动类型'); return; }
+            if (!start_time || !end_time) { alert('请选择开始和结束时间'); return; }
+            if (type === 'vote') {
+                const filled = voteOptions.filter(o => o.title.trim());
+                if (filled.length < 2) { alert('投票活动至少需要 2 个选项'); return; }
+            }
+
+            let config = {};
+            if (type === 'vote') {
+                config.options = voteOptions
+                    .filter(o => o.title.trim())
+                    .map(o => ({ title: o.title.trim(), description: o.description || '' }));
+            }
+
+            const body = { title, type, cover_url, rules, start_time, end_time, reward_coins, reward_badge: reward_badge || null, config };
+
+            const method = editingActivityId ? 'PUT' : 'POST';
+            const url = editingActivityId ? `${window.API_BASE}/activities/${editingActivityId}` : `${window.API_BASE}/activities`;
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(body)
+            });
+
+            if (res.ok) {
+                alert(editingActivityId ? '活动已更新' : '活动创建成功');
+                resetActivityForm();
+                loadActivities();
+            } else {
+                const data = await res.json();
+                alert(data.error || '操作失败');
+            }
+        });
+
+        // 取消编辑
+        document.getElementById('cancelActivityBtn').addEventListener('click', () => {
+            resetActivityForm();
+        });
+
+        // 加载活动列表
+        async function loadActivities() {
+            const container = document.getElementById('activitiesList');
+            if (!container) return;
+            container.innerHTML = '<div class="loading">加载中...</div>';
+
+            try {
+                const res = await fetch(`${window.API_BASE}/activities?limit=50`);
+                const data = await res.json();
+
+                if (data.activities.length === 0) {
+                    container.innerHTML = '<div class="loading">暂无活动</div>';
+                    return;
+                }
+
+                container.innerHTML = data.activities.map(a => `
+                    <div class="list-item">
+                        <div class="item-meta">
+                            <span><strong>${escapeHtml(a.title)}</strong></span>
+                            <span>类型：${ACTIVITY_TYPE_NAMES[a.type] || a.type}</span>
+                            <span>状态：${a.status === 'active' ? '进行中' : a.status === 'completed' ? '已完成' : '未开始'}</span>
+                            <span>${a.participant_count} 人参与</span>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-sm" onclick="editActivity(${a.id})">编辑</button>
+                            <button class="btn-sm primary" onclick="location.href='/activity.html?id=${a.id}'">查看</button>
+                            <button class="btn-sm" onclick="viewActivityLeaderboard(${a.id})">排行</button>
+                            <button class="btn-sm primary" onclick="rewardActivity(${a.id})">发放奖励</button>
+                            <button class="btn-sm danger" onclick="deleteActivity(${a.id})">删除</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                container.innerHTML = '<div class="loading">加载失败</div>';
+            }
+        }
+
+        // 删除活动
+        async function deleteActivity(id) {
+            if (!confirm('确定要删除这个活动吗？')) return;
+            const res = await fetch(`${window.API_BASE}/activities/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) { loadActivities(); }
+        }
+
+        // 编辑活动（填充表单）
+        async function editActivity(id) {
+            const res = await fetch(`${window.API_BASE}/activities/${id}`);
+            const data = await res.json();
+            const a = data.activity;
+
+            document.getElementById('activityTitle').value = a.title;
+            document.getElementById('activityType').value = a.type;
+            document.getElementById('activityCover').value = a.cover_url || '';
+            activityQuill.root.innerHTML = a.rules || '';
+            document.getElementById('activityStart').value = toLocalDatetimeInput(a.start_time);
+            document.getElementById('activityEnd').value = toLocalDatetimeInput(a.end_time);
+            document.getElementById('activityRewardCoins').value = a.reward_coins || 0;
+            document.getElementById('activityRewardBadge').value = a.reward_badge || '';
+
+            // 回填投票选项
+            voteOptions = [];
+            document.getElementById('voteOptionsSection').style.display = 'none';
+            if (a.type === 'vote' && a.config && Array.isArray(a.config.options)) {
+                voteOptions = a.config.options.map(o => ({ id: Date.now() + Math.random(), title: o.title || '', description: o.description || '' }));
+                renderVoteOptions();
+                document.getElementById('voteOptionsSection').style.display = 'block';
+            }
+
+            editingActivityId = id;
+            document.getElementById('activityFormTitle').textContent = '编辑活动';
+            document.getElementById('saveActivityBtn').textContent = '保存修改';
+            document.getElementById('cancelActivityBtn').style.display = 'inline-block';
+        }
+
+        // 重置表单
+        function resetActivityForm() {
+            document.getElementById('activityTitle').value = '';
+            document.getElementById('activityType').value = '';
+            document.getElementById('activityCover').value = '';
+            activityQuill.root.innerHTML = '';
+            document.getElementById('activityStart').value = '';
+            document.getElementById('activityEnd').value = '';
+            document.getElementById('activityRewardCoins').value = '0';
+            document.getElementById('activityRewardBadge').value = '';
+            // 清空投票选项
+            voteOptions = [];
+            renderVoteOptions();
+            document.getElementById('voteOptionsSection').style.display = 'none';
+            editingActivityId = null;
+            document.getElementById('activityFormTitle').textContent = '创建活动';
+            document.getElementById('saveActivityBtn').textContent = '创建活动';
+            document.getElementById('cancelActivityBtn').style.display = 'none';
+        }
+
+        // 发放奖励
+        async function rewardActivity(id) {
+            if (!confirm('确定向所有参与者发放奖励吗？此操作不可撤销。')) return;
+            const res = await fetch(`${window.API_BASE}/activities/${id}/reward`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) { alert('奖励已发放'); loadActivities(); }
+        }
+
+        // 查看排行榜
+        async function viewActivityLeaderboard(id) {
+            try {
+                const res = await fetch(`${window.API_BASE}/activities/${id}/leaderboard`);
+                const data = await res.json();
+                if (!data.leaderboard || data.leaderboard.length === 0) {
+                    alert('暂无排行数据');
+                    return;
+                }
+                const lines = data.leaderboard.slice(0, 10).map((u, i) =>
+                    `${i + 1}. ${u.nickname || '用户' + u.id}（${u.score} 次参与）`
+                );
+                alert('活动排行榜 TOP10：\n\n' + lines.join('\n'));
+            } catch (e) {
+                alert('加载排行榜失败');
+            }
+        }
+
+        // 侧边导航切换
+        const tabBtns = document.querySelectorAll('.admin-nav-item');
         const tabs = {
             reports: document.getElementById('reportsTab'),
             feedbacks: document.getElementById('feedbacksTab'),
             'circle-applications': document.getElementById('circleApplicationsTab'),
-            announcements: document.getElementById('announcementsTab')
+            announcements: document.getElementById('announcementsTab'),
+            activities: document.getElementById('activitiesTab')
         };
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1291,6 +1680,9 @@
                 } else if (tab === 'announcements') {
                     initAnnouncementEditor();
                     loadAnnouncements();
+                } else if (tab === 'activities') {
+                    initActivityEditor();
+                    loadActivities();
                 }
             });
         });
