@@ -449,6 +449,10 @@
             </div>
         </div>
 
+        <!-- 自己未开启私信提示 -->
+        <div id="selfDisabledNotice" style="display:none;background:#FFF3CD;padding:8px 16px;text-align:center;font-size:0.85rem;color:#856404;">
+            ⚠️ 你暂未开启私信功能，对方无法回复你。<a href="/settings.html" style="color:#1E88E5;font-weight:600;">点击开启私信</a>
+        </div>
         <!-- 回复限制提示 -->
         <div id="replyNotice" style="display:none;background:#FFF3CD;padding:8px 16px;text-align:center;font-size:0.85rem;color:#856404;">
             ⚠️ 对方尚未回复你，暂时无法发送第二条消息。请耐心等待对方回复。
@@ -590,6 +594,20 @@
         let isLoadingMessages = false;
         let pollInterval = null;
         let isInputBlocked = false;
+        let myAllowMessages = true; // 当前用户是否开启私信
+
+        // 获取当前用户自己的私信状态
+        async function loadMyStatus() {
+            try {
+                const res = await fetch(`${window.API_BASE}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                myAllowMessages = data.allow_messages === true;
+            } catch (e) {
+                console.warn('获取个人私信状态失败:', e);
+            }
+        }
 
         function escapeHtml(str) {
             if (!str) return '';
@@ -842,8 +860,12 @@
                 const data = await res.json();
                 if (res.ok) {
                     input.value = '';
-                    // 如果对方尚未回复，显示提示并禁用输入
-                    if (data.receiver_has_not_replied) {
+                    // 自己未开启私信：对方无法回复自己，优先提示去开启私信
+                    if (myAllowMessages === false) {
+                        document.getElementById('selfDisabledNotice').style.display = 'block';
+                        showInputBlocked('你暂未开启私信功能，对方无法回复你');
+                    } else if (data.receiver_has_not_replied) {
+                        // 对方尚未回复，显示提示并禁用输入
                         document.getElementById('replyNotice').style.display = 'block';
                         showInputBlocked('对方回复后即可继续发送');
                     }
@@ -933,6 +955,7 @@
         loadOtherUser();
         loadMessages(1);
         initInput();
+        loadMyStatus();
 
         // 自动标记已读
         setTimeout(markAsRead, 1000);
