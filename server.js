@@ -497,7 +497,8 @@ app.post('/api/login', async (req, res) => {
         if (!valid) return res.status(401).json({ error: '邮箱或密码错误' });
         const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
         addExp(user.id, 'login');
-        await awardDailyTask(user.id, 'daily_login');
+        // 已移除：登录不再自动触发每日签到，需手动点击签到按钮（修复"一登录就自动签到+领金币"Bug）
+        // await awardDailyTask(user.id, 'daily_login');
         res.json({ token, user: { id: user.id, email: user.email, nickname: user.nickname } });
     } catch (err) {
         console.error(err);
