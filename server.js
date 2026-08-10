@@ -680,12 +680,12 @@ app.get('/api/my-posts', authMiddleware, async (req, res) => {
             SELECT id, title, content, category, tags, view_count, created_at,
                    (SELECT COUNT(*) FROM replies WHERE post_id = posts.id) as reply_count
             FROM posts
-            WHERE user_id = $1
+            WHERE user_id = $1 AND is_hidden = false
             ORDER BY created_at DESC
             LIMIT $2 OFFSET $3
         `;
         const result = await pool.query(query, [userId, limit, offset]);
-        const countQuery = `SELECT COUNT(*) as total FROM posts WHERE user_id = $1`;
+        const countQuery = `SELECT COUNT(*) as total FROM posts WHERE user_id = $1 AND is_hidden = false`;
         const countResult = await pool.query(countQuery, [userId]);
         const total = parseInt(countResult.rows[0].total);
         res.json({
@@ -939,6 +939,7 @@ app.get('/api/following-posts', authMiddleware, async (req, res) => {
             FROM posts p
             JOIN users u ON p.user_id = u.id
             WHERE p.user_id IN (SELECT followee_id FROM user_follows WHERE follower_id = $1)
+              AND p.is_hidden = false
             ORDER BY p.created_at DESC
             LIMIT $2 OFFSET $3
         `;
@@ -946,6 +947,7 @@ app.get('/api/following-posts', authMiddleware, async (req, res) => {
             SELECT COUNT(*) as total
             FROM posts
             WHERE user_id IN (SELECT followee_id FROM user_follows WHERE follower_id = $1)
+              AND is_hidden = false
         `;
 
         const result = await pool.query(query, [userId, limit, offset]);
@@ -1110,7 +1112,7 @@ app.get('/api/users/:id', async (req, res) => {
         // ---- 最近动态 ----
         const activitiesRes = await pool.query(
             `SELECT 'post' as type, id, title as target_title, created_at
-             FROM posts WHERE user_id = $1
+             FROM posts WHERE user_id = $1 AND is_hidden = false
              UNION ALL
              SELECT 'reply' as type, r.id, p.title as target_title, r.created_at
              FROM replies r JOIN posts p ON r.post_id = p.id
@@ -1143,12 +1145,12 @@ app.get('/api/users/:id/posts', async (req, res) => {
             SELECT id, title, content, category, tags, view_count, created_at,
                    (SELECT COUNT(*) FROM replies WHERE post_id = posts.id) as reply_count
             FROM posts
-            WHERE user_id = $1
+            WHERE user_id = $1 AND is_hidden = false
             ORDER BY created_at DESC
             LIMIT $2 OFFSET $3
         `;
         const result = await pool.query(query, [userId, limit, offset]);
-        const countQuery = `SELECT COUNT(*) as total FROM posts WHERE user_id = $1`;
+        const countQuery = `SELECT COUNT(*) as total FROM posts WHERE user_id = $1 AND is_hidden = false`;
         const countResult = await pool.query(countQuery, [userId]);
         const total = parseInt(countResult.rows[0].total);
         res.json({
@@ -1429,6 +1431,8 @@ app.get('/api/posts', async (req, res) => {
     try {
         let whereClauses = [];
         let params = [];
+        // 过滤被风纪系统隐藏的违规帖子
+        whereClauses.push('p.is_hidden = false');
         if (isLearning) {
             whereClauses.push(`(p.category = '学习' OR p.title ILIKE '%学习%' OR p.content ILIKE '%学习%' OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE '%学习%'))`);
         } else if (category) {
@@ -1492,14 +1496,14 @@ app.get('/api/posts/banner', async (req, res) => {
                     p.created_at, p.images,
                     u.nickname, u.avatar_url
              FROM posts p JOIN users u ON p.user_id = u.id
-             WHERE p.is_pinned = true
+             WHERE p.is_pinned = true AND p.is_hidden = false
              ORDER BY p.pinned_at DESC NULLS LAST LIMIT 3)
             UNION ALL
             (SELECT p.id, p.title, p.content, p.category, p.is_pinned, p.is_essence,
                     p.created_at, p.images,
                     u.nickname, u.avatar_url
              FROM posts p JOIN users u ON p.user_id = u.id
-             WHERE p.is_essence = true AND p.is_pinned = false
+             WHERE p.is_essence = true AND p.is_pinned = false AND p.is_hidden = false
              ORDER BY p.created_at DESC LIMIT 3)
             LIMIT 6
         `;
@@ -1520,7 +1524,7 @@ app.get('/api/posts/:id', async (req, res) => {
             `SELECT p.*, u.nickname, u.avatar_url, u.id as user_id, u.exp, u.has_passed_quiz
              FROM posts p
              JOIN users u ON p.user_id = u.id
-             WHERE p.id = $1`,
+             WHERE p.id = $1 AND p.is_hidden = false`,
             [id]
         );
         if (postResult.rows.length === 0) return res.status(404).json({ error: '帖子不存在' });
@@ -1530,7 +1534,7 @@ app.get('/api/posts/:id', async (req, res) => {
                     (SELECT u2.nickname FROM replies r2 JOIN users u2 ON r2.user_id = u2.id WHERE r2.id = r.parent_id) as parent_nickname
              FROM replies r
              JOIN users u ON r.user_id = u.id
-             WHERE r.post_id = $1
+             WHERE r.post_id = $1 AND r.is_hidden = false
              ORDER BY r.created_at ASC`,
             [id]
         );
@@ -2094,7 +2098,12 @@ app.put('/api/admin/reports/:id', authMiddleware, adminMiddleware, async (req, r
             await client.query('COMMIT');
             res.json({ message: content });
         } else {
-            // reject：仅更新状态，不删除内容
+            // reject：仅更新状态，不删除内容；若内容此前被风纪系统隐藏，则恢复可见
+            if (report.target_type === 'post') {
+                await client.query('UPDATE posts SET is_hidden = false WHERE id = $1', [report.target_id]);
+            } else if (report.target_type === 'reply') {
+                await client.query('UPDATE replies SET is_hidden = false WHERE id = $1', [report.target_id]);
+            }
             await client.query(
                 `UPDATE reports SET status = 'rejected', resolved_at = NOW(), resolved_by = $1 WHERE id = $2`,
                 [req.user.userId, reportId]
@@ -2229,10 +2238,11 @@ app.get('/api/search', async (req, res) => {
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM posts p
             JOIN users u ON p.user_id = u.id
-            WHERE p.title ILIKE $1
+            WHERE (p.title ILIKE $1
                 OR p.content ILIKE $1
                 OR p.category ILIKE $1
-                OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE $1)
+                OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE $1))
+              AND p.is_hidden = false
             ORDER BY p.created_at DESC
             LIMIT $2 OFFSET $3
         `;
@@ -2240,10 +2250,11 @@ app.get('/api/search', async (req, res) => {
         const countQuery = `
             SELECT COUNT(*) as total
             FROM posts p
-            WHERE p.title ILIKE $1
+            WHERE (p.title ILIKE $1
                OR p.content ILIKE $1
                OR p.category ILIKE $1
-               OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE $1)
+               OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE $1))
+              AND p.is_hidden = false
         `;
         const countResult = await pool.query(countQuery, [searchPattern]);
         const total = parseInt(countResult.rows[0].total);
@@ -2280,15 +2291,17 @@ app.get('/api/search/all', async (req, res) => {
                        (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
-                WHERE p.title ILIKE $1 OR p.content ILIKE $1 OR p.category ILIKE $1
-                   OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE $1)
+                WHERE (p.title ILIKE $1 OR p.content ILIKE $1 OR p.category ILIKE $1
+                   OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE $1))
+                  AND p.is_hidden = false
                 ORDER BY p.created_at DESC
                 LIMIT $2 OFFSET $3
             `;
             const countQuery = `
                 SELECT COUNT(*) as total FROM posts p
-                WHERE p.title ILIKE $1 OR p.content ILIKE $1 OR p.category ILIKE $1
-                   OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE $1)
+                WHERE (p.title ILIKE $1 OR p.content ILIKE $1 OR p.category ILIKE $1
+                   OR EXISTS (SELECT 1 FROM unnest(p.tags) AS tag WHERE tag ILIKE $1))
+                  AND p.is_hidden = false
             `;
             const result = await pool.query(query, [searchPattern, limit, offset]);
             const countResult = await pool.query(countQuery, [searchPattern]);
@@ -4088,6 +4101,294 @@ app.post('/api/activities/:id/reward', authMiddleware, adminMiddleware, async (r
 
 // ---------- 活动/比赛 API 结束 ----------
 
+// ---------- 风纪广场 API ----------
+
+// 申请成为风纪委员
+app.post('/api/fengji/apply', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const { reason } = req.body;
+
+    try {
+        // 申请条件：LV3（exp>=400）+ 通过入站答题
+        const userRes = await pool.query(
+            'SELECT exp, has_passed_quiz, is_fengji, is_admin FROM users WHERE id = $1',
+            [userId]
+        );
+        const user = userRes.rows[0];
+        if (!user) return res.status(404).json({ error: '用户不存在' });
+        if (user.is_admin) return res.status(400).json({ error: '管理员无需申请风纪委员' });
+        if (user.is_fengji) return res.status(400).json({ error: '你已经是风纪委员了' });
+        if (!user.has_passed_quiz) {
+            return res.status(400).json({ error: '请先通过入站答题再申请' });
+        }
+        if ((user.exp || 0) < 400) {
+            return res.status(400).json({ error: '需要达到 LV3（经验值 400+）才能申请' });
+        }
+
+        // 检查该用户发布的内容是否有被举报且已确认违规的记录（被举报者视角）
+        const violationCheck = await pool.query(
+            `SELECT COUNT(*) as cnt FROM reports r
+             WHERE r.status IN ('resolved', 'processed')
+               AND (
+                 (r.target_type = 'post' AND EXISTS (SELECT 1 FROM posts p WHERE p.id = r.target_id AND p.user_id = $1))
+                 OR (r.target_type = 'reply' AND EXISTS (SELECT 1 FROM replies rp WHERE rp.id = r.target_id AND rp.user_id = $1))
+                 OR (r.target_type = 'user' AND r.target_id = $1)
+               )`,
+            [userId]
+        );
+        if (parseInt(violationCheck.rows[0].cnt) > 0) {
+            return res.status(400).json({ error: '你有违规记录，暂不能申请风纪委员' });
+        }
+
+        // 检查是否已有待审核申请
+        const existingCheck = await pool.query(
+            "SELECT id FROM fengji_applications WHERE user_id = $1 AND status = 'pending'",
+            [userId]
+        );
+        if (existingCheck.rows.length > 0) {
+            return res.status(400).json({ error: '你已经提交过申请，请等待审核' });
+        }
+
+        await pool.query(
+            'INSERT INTO fengji_applications (user_id, reason) VALUES ($1, $2)',
+            [userId, reason || '']
+        );
+        res.json({ message: '申请已提交，请等待管理员审核' });
+    } catch (err) {
+        console.error('申请风纪委员失败:', err);
+        res.status(500).json({ error: '申请失败' });
+    }
+});
+
+// 获取当前用户的风纪委员状态
+app.get('/api/fengji/status', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    try {
+        const userRes = await pool.query('SELECT is_fengji, is_admin FROM users WHERE id = $1', [userId]);
+        const appRes = await pool.query(
+            "SELECT status FROM fengji_applications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1",
+            [userId]
+        );
+        res.json({
+            is_fengji: userRes.rows[0]?.is_fengji || false,
+            is_admin: userRes.rows[0]?.is_admin || false,
+            application_status: appRes.rows.length > 0 ? appRes.rows[0].status : null
+        });
+    } catch (err) {
+        console.error('获取风纪状态失败:', err);
+        res.status(500).json({ error: '获取状态失败' });
+    }
+});
+
+// 获取风纪委员晋升榜（所有现任风纪委员）
+app.get('/api/fengji/members', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT id, nickname, avatar_url, created_at
+             FROM users
+             WHERE is_fengji = true
+             ORDER BY created_at ASC`
+        );
+        res.json({ members: result.rows });
+    } catch (err) {
+        console.error('获取风纪委员列表失败:', err);
+        res.status(500).json({ error: '获取列表失败' });
+    }
+});
+
+// 管理员获取风纪委员申请列表
+app.get('/api/admin/fengji-applications', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT fa.*, u.nickname, u.avatar_url, u.exp, u.has_passed_quiz
+             FROM fengji_applications fa
+             JOIN users u ON fa.user_id = u.id
+             ORDER BY fa.created_at DESC`
+        );
+        res.json({ applications: result.rows });
+    } catch (err) {
+        console.error('获取申请列表失败:', err);
+        res.status(500).json({ error: '获取申请列表失败' });
+    }
+});
+
+// 管理员审批风纪委员申请
+app.patch('/api/admin/fengji-applications/:id', authMiddleware, adminMiddleware, async (req, res) => {
+    const applicationId = parseInt(req.params.id);
+    const { action } = req.body;
+    const reviewerId = req.user.userId;
+
+    if (isNaN(applicationId)) return res.status(400).json({ error: '无效的申请ID' });
+    if (!['approve', 'reject'].includes(action)) return res.status(400).json({ error: '无效的操作' });
+
+    try {
+        const appRes = await pool.query('SELECT * FROM fengji_applications WHERE id = $1', [applicationId]);
+        if (appRes.rows.length === 0) return res.status(404).json({ error: '申请不存在' });
+
+        if (action === 'approve') {
+            await pool.query('UPDATE users SET is_fengji = true WHERE id = $1', [appRes.rows[0].user_id]);
+            await pool.query(
+                'UPDATE fengji_applications SET status = $1, reviewed_by = $2, reviewed_at = NOW() WHERE id = $3',
+                ['approved', reviewerId, applicationId]
+            );
+        } else {
+            await pool.query(
+                'UPDATE fengji_applications SET status = $1, reviewed_by = $2, reviewed_at = NOW() WHERE id = $3',
+                ['rejected', reviewerId, applicationId]
+            );
+        }
+
+        res.json({ message: action === 'approve' ? '已批准为风纪委员' : '已驳回申请' });
+    } catch (err) {
+        console.error('审批申请失败:', err);
+        res.status(500).json({ error: '审批失败' });
+    }
+});
+
+// 风纪检查站：获取举报列表（含投票统计与当前用户的投票记录）
+app.get('/api/fengji/reports', async (req, res) => {
+    try {
+        // 可选解析登录用户，用于返回"我是否已投票"
+        let myUserId = null;
+        const authHeader = req.headers.authorization;
+        if (authHeader) {
+            try {
+                const token = authHeader.split(' ')[1];
+                const decoded = jwt.verify(token, JWT_SECRET);
+                myUserId = decoded.userId;
+            } catch (e) { /* 无效 token 忽略，按游客处理 */ }
+        }
+
+        const query = `
+            SELECT r.*,
+                   u1.nickname as reporter_nickname,
+                   u2.nickname as target_nickname,
+                   COUNT(CASE WHEN fv.vote_type = 'violation' THEN 1 END) as violation_votes,
+                   COUNT(CASE WHEN fv.vote_type = 'compliance' THEN 1 END) as compliance_votes,
+                   SUM(CASE WHEN fv.vote_type = 'violation' AND voter.is_admin = true THEN 999
+                            WHEN fv.vote_type = 'violation' AND voter.is_fengji = true THEN 50
+                            WHEN fv.vote_type = 'violation' THEN 1
+                            ELSE 0 END) as weighted_violation_votes
+            FROM reports r
+            LEFT JOIN users u1 ON r.reporter_id = u1.id
+            LEFT JOIN users u2 ON r.target_id = u2.id
+            LEFT JOIN fengji_votes fv ON r.id = fv.report_id
+            LEFT JOIN users voter ON fv.user_id = voter.id
+            GROUP BY r.id, u1.nickname, u2.nickname
+            ORDER BY r.created_at DESC
+        `;
+        const result = await pool.query(query);
+
+        // 当前用户的投票记录
+        let myVotes = {};
+        if (myUserId) {
+            const myVoteRes = await pool.query(
+                'SELECT report_id, vote_type FROM fengji_votes WHERE user_id = $1',
+                [myUserId]
+            );
+            myVoteRes.rows.forEach(v => { myVotes[v.report_id] = v.vote_type; });
+        }
+
+        res.json({
+            reports: result.rows.map(r => ({ ...r, my_vote: myVotes[r.id] || null }))
+        });
+    } catch (err) {
+        console.error('获取风纪检查站举报列表失败:', err);
+        res.status(500).json({ error: '获取举报列表失败' });
+    }
+});
+
+// 风纪投票
+app.post('/api/fengji/vote', authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const { report_id, vote_type } = req.body;
+
+    if (!report_id || !['violation', 'compliance'].includes(vote_type)) {
+        return res.status(400).json({ error: '参数错误' });
+    }
+
+    try {
+        // 检查案件是否存在且未处理
+        const reportRes = await pool.query(
+            "SELECT * FROM reports WHERE id = $1",
+            [report_id]
+        );
+        if (reportRes.rows.length === 0) return res.status(404).json({ error: '案件不存在' });
+        if (reportRes.rows[0].status !== 'pending') {
+            return res.status(400).json({ error: '该案件已处理，无法投票' });
+        }
+
+        // 检查是否已投票
+        const existing = await pool.query(
+            'SELECT id FROM fengji_votes WHERE report_id = $1 AND user_id = $2',
+            [report_id, userId]
+        );
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ error: '你已经对这个案件投过票了' });
+        }
+
+        // 管理员投票 → 一票定违纪
+        const userCheck = await pool.query('SELECT is_admin, is_fengji FROM users WHERE id = $1', [userId]);
+        const isAdmin = userCheck.rows[0]?.is_admin;
+        const isFengji = userCheck.rows[0]?.is_fengji;
+        const report = reportRes.rows[0];
+
+        // 管理员投违纪票，直接标记为已处理，隐藏对应内容
+        if (isAdmin && vote_type === 'violation') {
+            if (report.target_type === 'post') {
+                await pool.query('UPDATE posts SET is_hidden = true WHERE id = $1', [report.target_id]);
+            } else if (report.target_type === 'reply') {
+                await pool.query('UPDATE replies SET is_hidden = true WHERE id = $1', [report.target_id]);
+            }
+            await pool.query(
+                "UPDATE reports SET status = 'processed', resolved_at = NOW(), resolved_by = $1 WHERE id = $2",
+                [userId, report_id]
+            );
+        }
+
+        // 记录投票
+        await pool.query(
+            'INSERT INTO fengji_votes (report_id, user_id, vote_type) VALUES ($1, $2, $3)',
+            [report_id, userId, vote_type]
+        );
+
+        // 风纪委员或管理员投违纪票时，计算加权总票数是否达到 60 票阈值
+        if (vote_type === 'violation' && (isFengji || isAdmin)) {
+            const voteStats = await pool.query(
+                `SELECT
+                    SUM(CASE WHEN voter.is_admin = true THEN 999
+                             WHEN voter.is_fengji = true THEN 50
+                             ELSE 1 END) as total_weight
+                 FROM fengji_votes fv
+                 JOIN users voter ON fv.user_id = voter.id
+                 WHERE fv.report_id = $1 AND fv.vote_type = 'violation'`,
+                [report_id]
+            );
+            const totalWeight = parseInt(voteStats.rows[0].total_weight) || 0;
+
+            if (totalWeight >= 60) {
+                // 达到60票，自动隐藏违规内容，标记为已处理（移交管理员后台二轮处理）
+                if (report.target_type === 'post') {
+                    await pool.query('UPDATE posts SET is_hidden = true WHERE id = $1', [report.target_id]);
+                } else if (report.target_type === 'reply') {
+                    await pool.query('UPDATE replies SET is_hidden = true WHERE id = $1', [report.target_id]);
+                }
+                await pool.query(
+                    "UPDATE reports SET status = 'processed', resolved_at = NOW() WHERE id = $1",
+                    [report_id]
+                );
+            }
+        }
+
+        res.json({ message: '投票成功' });
+    } catch (err) {
+        console.error('风纪投票失败:', err);
+        res.status(500).json({ error: '投票失败' });
+    }
+});
+
+// ---------- 风纪广场 API 结束 ----------
+
 // ---------- 圈子相关 API ----------
 
 // 获取所有圈子（支持分页、搜索、排序）
@@ -4139,7 +4440,7 @@ app.get('/api/circles', async (req, res) => {
                         p.title as activity_title, p.created_at as created_at
                  FROM posts p
                  JOIN circles c ON p.circle_id = c.id
-                 WHERE p.is_essence = true
+                 WHERE p.is_essence = true AND p.is_hidden = false
                  ORDER BY p.created_at DESC LIMIT 5)
                 UNION ALL
                 (SELECT id as circle_id, name as circle_name, icon_url as circle_icon,
@@ -4250,13 +4551,13 @@ app.get('/api/circles/:id/posts', async (req, res) => {
                    (SELECT COUNT(*) FROM replies WHERE post_id = p.id) as reply_count
             FROM posts p
             JOIN users u ON p.user_id = u.id
-            WHERE p.circle_id = $1
+            WHERE p.circle_id = $1 AND p.is_hidden = false
             ${orderBy}
             LIMIT $2 OFFSET $3
         `;
         const countQuery = sort === 'essence'
-            ? `SELECT COUNT(*) as total FROM posts WHERE circle_id = $1 AND is_essence = true`
-            : `SELECT COUNT(*) as total FROM posts WHERE circle_id = $1`;
+            ? `SELECT COUNT(*) as total FROM posts WHERE circle_id = $1 AND is_essence = true AND is_hidden = false`
+            : `SELECT COUNT(*) as total FROM posts WHERE circle_id = $1 AND is_hidden = false`;
 
         const result = await pool.query(query, [circleId, limit, offset]);
         const countResult = await pool.query(countQuery, [circleId]);

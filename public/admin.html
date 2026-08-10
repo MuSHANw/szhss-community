@@ -651,6 +651,7 @@
             <a href="gaokao.html" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
             <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
             <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="fengji.html" class="sidebar-link" title="风纪广场"><i class="fas fa-shield-alt"></i><span>风纪广场</span></a>
             <a href="admin.html" class="sidebar-link active" title="管理后台"><i
                     class="fas fa-shield-alt"></i><span>管理后台</span></a>
             <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信">
@@ -701,6 +702,7 @@
                 <div class="admin-nav-item" data-tab="circle-applications">圈子审批</div>
                 <div class="admin-nav-item" data-tab="announcements">公告管理</div>
                 <div class="admin-nav-item" data-tab="activities">活动管理</div>
+                <div class="admin-nav-item" data-tab="fengji-applications">风纪委员审批</div>
             </div>
             <div class="admin-content">
         <div id="reportsTab" class="tab-content active">
@@ -874,6 +876,16 @@
             <div class="card">
                 <h3>活动列表</h3>
                 <div id="activitiesList">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 风纪委员审批标签页 -->
+        <div id="fengjiApplicationsTab" class="tab-content">
+            <div class="card">
+                <h3>风纪委员申请列表</h3>
+                <div id="fengjiApplicationsList">
                     <div class="loading">加载中...</div>
                 </div>
             </div>
@@ -1100,10 +1112,10 @@
                         </div>
                         <div class="item-content">说明：${escapeHtml(r.reason || '无')}</div>
                         <div class="item-meta">提交时间：${new Date(r.created_at).toLocaleString()}</div>
-                        ${r.status === 'pending' ? `
+                        ${(r.status === 'pending' || r.status === 'processed') ? `
                             <div class="item-actions">
                                 <button class="btn-sm primary resolve-btn" data-id="${r.id}" data-action="resolve">通过（删除内容）</button>
-                                <button class="btn-sm danger reject-btn" data-id="${r.id}" data-action="reject">驳回</button>
+                                <button class="btn-sm danger reject-btn" data-id="${r.id}" data-action="reject">驳回（恢复可见）</button>
                             </div>
                         ` : `<div class="item-actions"><span class="badge">已处理</span></div>`}
                     </div>
@@ -1272,6 +1284,7 @@
             switch (status) {
                 case 'pending': return '待处理';
                 case 'resolved': return '已处理';
+                case 'processed': return '风纪已隐藏';
                 case 'rejected': return '已驳回';
                 default: return status;
             }
@@ -2020,7 +2033,8 @@
             feedbacks: document.getElementById('feedbacksTab'),
             'circle-applications': document.getElementById('circleApplicationsTab'),
             announcements: document.getElementById('announcementsTab'),
-            activities: document.getElementById('activitiesTab')
+            activities: document.getElementById('activitiesTab'),
+            'fengji-applications': document.getElementById('fengjiApplicationsTab')
         };
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -2038,9 +2052,87 @@
                 } else if (tab === 'activities') {
                     initActivityEditor();
                     loadActivities();
+                } else if (tab === 'fengji-applications') {
+                    loadFengjiApplications();
                 }
             });
         });
+
+        // ---------- 风纪委员审批 ----------
+        async function loadFengjiApplications() {
+            const container = document.getElementById('fengjiApplicationsList');
+            container.innerHTML = '<div class="loading">加载中...</div>';
+
+            try {
+                const res = await fetch('/api/admin/fengji-applications', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (!data.applications || data.applications.length === 0) {
+                    container.innerHTML = '<div class="loading">暂无申请</div>';
+                    return;
+                }
+
+                container.innerHTML = data.applications.map(a => `
+                    <div class="list-item">
+                        <div class="item-meta">
+                            <span><strong>${escapeHtml(a.nickname)}</strong>${a.avatar_url ? `<img src="${a.avatar_url}" style="width:24px;height:24px;border-radius:50%;vertical-align:middle;margin-left:6px;" alt="">` : ''}</span>
+                            <span>答题：${a.has_passed_quiz ? '已通过' : '未通过'}</span>
+                            <span>申请时间：${formatDate(a.created_at)}</span>
+                            <span>状态：${a.status === 'pending' ? '待审核' : a.status === 'approved' ? '已通过' : '已驳回'}</span>
+                        </div>
+                        <div class="item-content">申请理由：${escapeHtml(a.reason || '无')}</div>
+                        ${a.status === 'pending' ? `
+                            <div class="item-actions">
+                                <button class="btn-sm primary" onclick="approveFengji(${a.id})">批准</button>
+                                <button class="btn-sm danger" onclick="rejectFengji(${a.id})">驳回</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (e) {
+                container.innerHTML = '<div class="loading">加载失败</div>';
+            }
+        }
+
+        async function approveFengji(id) {
+            if (!confirm('确定批准该用户成为风纪委员吗？')) return;
+            const res = await fetch(`/api/admin/fengji-applications/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ action: 'approve' })
+            });
+            if (res.ok) {
+                alert('已批准');
+                loadFengjiApplications();
+            } else {
+                const err = await res.json();
+                alert(err.error || '操作失败');
+            }
+        }
+
+        async function rejectFengji(id) {
+            if (!confirm('确定驳回该申请吗？')) return;
+            const res = await fetch(`/api/admin/fengji-applications/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ action: 'reject' })
+            });
+            if (res.ok) {
+                alert('已驳回');
+                loadFengjiApplications();
+            } else {
+                const err = await res.json();
+                alert(err.error || '操作失败');
+            }
+        }
 
         // 初始加载
         loadStats();
