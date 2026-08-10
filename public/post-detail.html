@@ -1620,25 +1620,42 @@
             `;
         }
 
-        // 嵌套评论渲染：一级评论 + 其下的所有回复（折叠展示）
+        // 嵌套评论渲染：一级评论 + 递归渲染其所有子孙回复（支持多级折叠展示）
         function renderReplies(replies) {
+            // 分离一级评论和所有嵌套评论
             const topLevelReplies = replies.filter(r => !r.parent_id);
             const nestedReplies = replies.filter(r => r.parent_id);
+
+            // 按 parent_id 分组嵌套评论，用于递归查找
+            const nestedMap = {};
+            nestedReplies.forEach(r => {
+                if (!nestedMap[r.parent_id]) nestedMap[r.parent_id] = [];
+                nestedMap[r.parent_id].push(r);
+            });
+
             let html = '';
 
-            topLevelReplies.forEach(reply => {
-                html += renderReply(reply, false);
-                const childReplies = nestedReplies.filter(r => r.parent_id === reply.id);
-                if (childReplies.length > 0) {
-                    html += `
+            // 递归渲染：一条评论 + 它下面的所有子评论（含孙评论……）
+            function renderReplyWithChildren(reply, depth) {
+                let result = renderReply(reply, depth > 0);
+
+                // 查找该评论的所有直接子评论
+                const children = nestedMap[reply.id] || [];
+                if (children.length > 0) {
+                    result += `
                         <div class="nested-replies-toggle" onclick="toggleNestedReplies(${reply.id})">
-                            <i class="fas fa-comments"></i> 展开 ${childReplies.length} 条回复
+                            <i class="fas fa-comments"></i> 展开 ${children.length} 条回复
                         </div>
                         <div class="nested-replies" id="nestedReplies${reply.id}" style="display:none;">
-                            ${childReplies.map(r => renderReply(r, true)).join('')}
+                            ${children.map(child => renderReplyWithChildren(child, depth + 1)).join('')}
                         </div>
                     `;
                 }
+                return result;
+            }
+
+            topLevelReplies.forEach(reply => {
+                html += renderReplyWithChildren(reply, 0);
             });
 
             return html;
@@ -1652,7 +1669,8 @@
                 toggle.innerHTML = '<i class="fas fa-chevron-up"></i> 收起回复';
             } else {
                 container.style.display = 'none';
-                const count = container.querySelectorAll('.reply-card').length;
+                // 只统计这一层的直接子回复，保证收起时显示的数量与展开时一致
+                const count = Array.from(container.children).filter(el => el.classList.contains('reply-card')).length;
                 toggle.innerHTML = `<i class="fas fa-comments"></i> 展开 ${count} 条回复`;
             }
         }
