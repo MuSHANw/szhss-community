@@ -92,6 +92,11 @@
             padding: 0 20px;
         }
 
+        /* 兜底：防止任何内容横向溢出产生滚动条 */
+        .main {
+            overflow-x: hidden;
+        }
+
         /* ========== 顶部栏 ========== */
         .top-bar-container {
             position: fixed;
@@ -343,10 +348,12 @@
 
         /* ========== 右侧面板 ========== */
         .right-sidebar {
-            flex: 1;
+            flex: 1.2;
+            min-width: 260px;
             position: sticky;
             top: 80px;
             align-self: flex-start;
+            overflow: hidden;
         }
 
         .info-card {
@@ -459,7 +466,9 @@
         }
 
         .posts-list {
-            flex: 2.5;
+            flex: 2;
+            min-width: 0;
+            overflow: hidden;
         }
 
         .post-card {
@@ -1181,35 +1190,30 @@
         </div>
         <nav class="sidebar-nav">
             <a href="index.html" class="sidebar-link active" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
-            <a href="learning.html" class="sidebar-link" title="学习"><i
-                    class="fas fa-graduation-cap"></i><span>学习</span></a>
-            <a href="circles.html" class="sidebar-link" title="圈子"><i class="fas fa-users"></i><span>圈子</span></a>
-            <a href="/study.html" class="sidebar-link" title="自习室">
-                <i class="fas fa-clock"></i><span>自习室</span>
-            </a>
-            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i class="fas fa-graduation-cap"></i><span>学习</span></a>
             <a href="life.html" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
             <a href="gaokao.html" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
-            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
-            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子"><i class="fas fa-users"></i><span>圈子</span></a>
+            <a href="study.html" class="sidebar-link" title="自习室"><i class="fas fa-clock"></i><span>自习室</span></a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
             <a href="fengji.html" class="sidebar-link" title="风纪广场"><i class="fas fa-shield-alt"></i><span>风纪广场</span></a>
-            <a href="admin.html" class="sidebar-link" title="管理后台"><i
-                    class="fas fa-shield-alt"></i><span>管理后台</span></a>
+            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
+            </a>
             <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信">
                 <i class="fas fa-envelope"></i><span>私信</span>
             </a>
             <a href="drafts.html" class="sidebar-link" title="草稿箱">
                 <i class="fas fa-edit"></i><span>草稿箱</span>
             </a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="admin.html" class="sidebar-link" id="sidebarAdminLink" title="管理后台"><i class="fas fa-lock"></i><span>管理后台</span></a>
             <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
                 <i class="fas fa-comment-dots"></i><span>反馈</span>
             </a>
             <a href="https://mushanw.github.io/MuShanblog/sponsor.html" class="sidebar-link sponsor-link" title="赞助" target="_blank"><i class="fas fa-heart"></i><span>赞助</span></a>
-
-            <a href="/notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
-                <i class="fas fa-bell"></i><span>通知</span>
-                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
-            </a>
         </nav>
         <div class="sidebar-footer">
             <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
@@ -1395,10 +1399,12 @@
         const nicknameSpan = document.getElementById('sidebarNickname');
         const emailSpan = document.getElementById('sidebarEmail');
         async function updateSidebarUser() {
+            const adminLink = document.getElementById('sidebarAdminLink');
             if (!token) {
                 nicknameSpan.innerText = '未登录';
                 emailSpan.innerText = '';
                 avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                if (adminLink) adminLink.style.display = 'none';
                 return;
             }
             try {
@@ -1414,6 +1420,8 @@
                     } else {
                         avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
                     }
+                    // 管理后台仅管理员可见
+                    if (adminLink) adminLink.style.display = user.is_admin ? 'block' : 'none';
                 }
             } catch (e) { console.warn(e); }
         }
