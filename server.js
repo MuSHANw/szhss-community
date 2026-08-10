@@ -2999,24 +2999,38 @@ app.get('/api/tasks', authMiddleware, async (req, res) => {
 app.post('/api/daily-checkin', authMiddleware, async (req, res) => {
     const userId = req.user.userId;
     const today = getBeijingDate();
-
+    const client = await pool.connect();
     try {
+        await client.query('BEGIN');
+        // 锁定用户行：同一用户的并发签到请求会串行执行，
+        // 第二个请求必须等第一个提交后才能检查，从而杜绝重复发鹏城币
+        await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [userId]);
+
         // 检查今日是否已签到
-        const existing = await pool.query(
+        const existing = await client.query(
             `SELECT id FROM coin_transactions
              WHERE user_id = $1 AND source = 'daily_login' AND created_at >= $2::date`,
             [userId, today]
         );
 
         if (existing.rows.length > 0) {
+            await client.query('ROLLBACK');
             return res.status(400).json({ error: '今日已签到' });
         }
 
-        await awardCoin(userId, 5, 'daily_login', '每日签到');
+        await client.query('UPDATE users SET coins = coins + 5 WHERE id = $1', [userId]);
+        await client.query(
+            'INSERT INTO coin_transactions (user_id, amount, type, source, description) VALUES ($1, $2, $3, $4, $5)',
+            [userId, 5, 'earn', 'daily_login', '每日签到']
+        );
+        await client.query('COMMIT');
         res.json({ message: '签到成功！+5 鹏城币' });
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('签到失败:', err);
         res.status(500).json({ error: '签到失败' });
+    } finally {
+        client.release();
     }
 });
 
