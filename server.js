@@ -43,6 +43,10 @@ const transporter = nodemailer.createTransport(
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
 
+// 和风天气API配置（每小时缓存一次，所有用户共享）
+const WEATHER_KEY = 'ff00642045fe45ae9a05411fc28a44d0';
+let weatherCache = { data: null, time: 0 };
+
 // ---------- 昵称校验 ----------
 function validateNickname(nickname) {
     // 长度检查
@@ -532,6 +536,32 @@ app.get('/api/users/search', async (req, res) => {
         res.status(500).json({ error: '搜索用户失败' });
     }
 });
+
+// ---------- 天气 API ----------
+
+// 天气接口：服务器每1小时从和风抓一次并缓存，所有用户同步
+app.get('/api/weather', async (req, res) => {
+    // 1小时内有缓存直接返回
+    if (weatherCache.data && Date.now() - weatherCache.time < 3600000) {
+        return res.json(weatherCache.data);
+    }
+    try {
+        const url = `https://devapi.qweather.com/v7/weather/now?location=101280601&key=${WEATHER_KEY}`;
+        const r = await fetch(url);
+        const d = await r.json();
+        if (d && d.now) {
+            weatherCache = { data: { temp: d.now.temp, text: d.now.text }, time: Date.now() };
+            return res.json(weatherCache.data);
+        }
+        return res.status(502).json({ error: 'weather upstream failed' });
+    } catch (e) {
+        // 失败时返回缓存，否则报错
+        if (weatherCache.data) return res.json(weatherCache.data);
+        return res.status(500).json({ error: 'weather failed' });
+    }
+});
+
+// ---------- 天气 API 结束 ----------
 
 app.get('/api/me', authMiddleware, async (req, res) => {
     try {
