@@ -299,6 +299,12 @@
             font-weight: 600; cursor: pointer; transition: background 0.2s;
         }
         .btn-secondary:hover { background: #e2e8f0; }
+        /* 活动类型配置区域 */
+        .type-config { padding: 14px; background: #FAFBFC; border-radius: 12px; margin-bottom: 16px; border: 1px solid #F3F4F6; }
+        .config-checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #374151; }
+        .option-image-upload:hover { border-color: #1E88E5; background: #EFF6FF; }
+        .vote-option-card input[type="text"] { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; outline: none; font-family: inherit; }
+        .vote-option-card input[type="text"]:focus { border-color: #1E88E5; }
 
         @media (max-width: 768px) {
             .admin-layout { flex-direction: column; }
@@ -739,32 +745,103 @@
                     <label>活动标题 *</label>
                     <input type="text" id="activityTitle" placeholder="如：2026社娘形象征集大赛" maxlength="200">
                 </div>
-                <div class="form-row">
-                    <div class="form-group" style="flex:1;">
-                        <label>活动类型 *</label>
-                        <select id="activityType">
-                            <option value="">请选择</option>
-                            <option value="vote">投票评选类</option>
-                            <option value="submit">投稿征集类</option>
-                            <option value="checkin">打卡挑战类</option>
-                            <option value="signup">报名参与类</option>
-                            <option value="quiz">答题竞赛类</option>
-                            <option value="pk">校际PK类</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>封面图（可选）</label>
-                        <input type="text" id="activityCover" placeholder="图片URL或上传">
+                <div class="form-group">
+                    <label>活动类型 *</label>
+                    <select id="activityType">
+                        <option value="">请选择</option>
+                        <option value="vote">投票评选类</option>
+                        <option value="submit">投稿征集类</option>
+                        <option value="checkin">打卡挑战类</option>
+                        <option value="signup">报名参与类</option>
+                        <option value="quiz">答题竞赛类</option>
+                        <option value="pk">校际PK类</option>
+                    </select>
+                </div>
+
+                <!-- 封面图上传组件 -->
+                <div class="form-group">
+                    <label>封面图</label>
+                    <div class="cover-upload-area" id="activityCoverUpload" onclick="document.getElementById('activityCoverInput').click()">
+                        <div id="coverPreview" style="height:120px;display:flex;align-items:center;justify-content:center;color:#9CA3AF;border:2px dashed #D1D5DB;border-radius:12px;cursor:pointer;background:#F9FAFB;overflow:hidden;">
+                            <span id="coverPlaceholder"><i class="fas fa-image"></i> 点击上传封面图</span>
+                            <img id="coverPreviewImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <input type="file" id="activityCoverInput" accept="image/*" style="display:none;">
                     </div>
                 </div>
-                <!-- 投票选项配置（仅投票类活动显示） -->
-                <div id="voteOptionsSection" style="display:none;">
-                    <div class="form-group">
-                        <label>投票选项</label>
-                        <div id="voteOptionsList"></div>
-                        <button type="button" class="btn-sm" id="addVoteOptionBtn" style="margin-top:8px;">+ 添加选项</button>
+
+                <!-- 按活动类型动态显示配置区域 -->
+                <div id="typeConfigSections">
+                    <!-- 投票评选类：选项列表 -->
+                    <div id="voteConfigSection" class="type-config" style="display:none;">
+                        <div class="form-group">
+                            <label>投票选项</label>
+                            <div id="voteOptionsList"></div>
+                            <button type="button" class="btn-sm" id="addVoteOptionBtn" style="margin-top:8px;">+ 添加选项</button>
+                        </div>
+                    </div>
+                    <!-- 投稿征集类：评论区/审核开关 -->
+                    <div id="submitConfigSection" class="type-config" style="display:none;">
+                        <div class="form-group">
+                            <label class="config-checkbox"><input type="checkbox" id="submitEnableComment"> 启用评论区（活动详情页显示评论区）</label>
+                        </div>
+                        <div class="form-group">
+                            <label class="config-checkbox"><input type="checkbox" id="submitNeedReview"> 投稿需管理员审核</label>
+                        </div>
+                    </div>
+                    <!-- 打卡挑战类：周期/天数 -->
+                    <div id="checkinConfigSection" class="type-config" style="display:none;">
+                        <div class="form-group">
+                            <label>打卡周期</label>
+                            <select id="checkinPeriod">
+                                <option value="daily">每日打卡</option>
+                                <option value="weekly">每周打卡</option>
+                                <option value="custom">自定义天数</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="checkinDaysGroup" style="display:none;">
+                            <label>打卡天数（天）</label>
+                            <input type="number" id="checkinDays" min="1" value="7">
+                        </div>
+                    </div>
+                    <!-- 报名参与类：字段/人数上限/截止时间 -->
+                    <div id="signupConfigSection" class="type-config" style="display:none;">
+                        <div class="form-group">
+                            <label>报名表单字段</label>
+                            <div id="signupFieldsList"></div>
+                            <button type="button" class="btn-sm" id="addSignupFieldBtn" style="margin-top:8px;">+ 添加字段</button>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex:1;">
+                                <label>人数上限</label>
+                                <input type="number" id="signupMaxCount" min="1" value="100">
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label>报名截止时间</label>
+                                <input type="datetime-local" id="signupDeadline">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 答题竞赛类：提示 -->
+                    <div id="quizConfigSection" class="type-config" style="display:none;">
+                        <div style="padding:12px;background:#F9FAFB;border-radius:8px;color:#6B7280;font-size:0.9rem;">
+                            <i class="fas fa-info-circle"></i> 请将答题链接写在活动规则中
+                        </div>
+                    </div>
+                    <!-- 校际PK类：预设阵营 + 待审核 -->
+                    <div id="pkConfigSection" class="type-config" style="display:none;">
+                        <div class="form-group">
+                            <label>预设阵营</label>
+                            <div id="pkFactionsList"></div>
+                            <button type="button" class="btn-sm" id="addPkFactionBtn" style="margin-top:8px;">+ 添加阵营</button>
+                        </div>
+                        <div class="form-group" id="pendingFactionsSection" style="display:none;">
+                            <label>待审核阵营申请</label>
+                            <div id="pendingFactionsList"></div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="form-group">
                     <label>活动规则（富文本）</label>
                     <div id="activityEditor" style="min-height:150px;background:white;"></div>
@@ -1433,51 +1510,264 @@
             return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
         }
 
-        // ---------- 投票选项管理 ----------
+        // ---------- 活动类型配置管理 ----------
         let voteOptions = [];
+        let pkFactions = [];
+        let signupFields = [];
+        let editingActivityConfig = null;
 
-        // 活动类型切换时控制投票选项区域显示
+        function getFullUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('http://') || url.startsWith('https://')) return url;
+            return url.startsWith('/') ? 'https://szhss-community.top' + url : 'https://szhss-community.top/' + url;
+        }
+
+        // 活动类型切换：显示对应配置区域
+        function showTypeConfig(type) {
+            ['vote', 'submit', 'checkin', 'signup', 'quiz', 'pk'].forEach(t => {
+                const el = document.getElementById(t + 'ConfigSection');
+                if (el) el.style.display = (t === type) ? 'block' : 'none';
+            });
+            if (type !== 'pk') document.getElementById('pendingFactionsSection').style.display = 'none';
+            toggleCheckinDays();
+        }
         document.getElementById('activityType').addEventListener('change', function() {
-            const show = this.value === 'vote';
-            document.getElementById('voteOptionsSection').style.display = show ? 'block' : 'none';
+            showTypeConfig(this.value);
+        });
+        document.getElementById('checkinPeriod').addEventListener('change', toggleCheckinDays);
+        function toggleCheckinDays() {
+            const period = document.getElementById('checkinPeriod').value;
+            document.getElementById('checkinDaysGroup').style.display = period === 'custom' ? 'block' : 'none';
+        }
+
+        // ---------- 封面图上传 ----------
+        document.getElementById('activityCoverInput').addEventListener('change', async function() {
+            const file = this.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            document.getElementById('coverPlaceholder').innerHTML = '<i class="fas fa-spinner fa-spin"></i> 上传中...';
+            try {
+                const res = await fetch(`${window.API_BASE}/upload/file`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok && data.url) {
+                    window._activityCoverUrl = data.url;
+                    document.getElementById('coverPreviewImg').src = getFullUrl(data.url);
+                    document.getElementById('coverPreviewImg').style.display = 'block';
+                    document.getElementById('coverPlaceholder').style.display = 'none';
+                } else {
+                    alert(data.error || '上传失败');
+                    document.getElementById('coverPlaceholder').innerHTML = '<i class="fas fa-image"></i> 点击上传封面图';
+                }
+            } catch (e) {
+                alert('上传失败');
+                document.getElementById('coverPlaceholder').innerHTML = '<i class="fas fa-image"></i> 点击上传封面图';
+            }
         });
 
-        // 添加选项
-        document.getElementById('addVoteOptionBtn').addEventListener('click', () => {
-            voteOptions.push({ id: Date.now(), title: '', description: '' });
+        // ---------- 投票选项管理 ----------
+        function addVoteOption() {
+            voteOptions.push({ id: Date.now(), title: '', description: '', image_url: '' });
             renderVoteOptions();
-        });
+        }
+        document.getElementById('addVoteOptionBtn').addEventListener('click', addVoteOption);
 
-        // 删除选项
         function removeVoteOption(id) {
             voteOptions = voteOptions.filter(o => o.id !== id);
             renderVoteOptions();
         }
 
-        // 渲染选项列表
+        function moveVoteOption(id, direction) {
+            const index = voteOptions.findIndex(o => o.id === id);
+            if (index === -1) return;
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= voteOptions.length) return;
+            [voteOptions[index], voteOptions[newIndex]] = [voteOptions[newIndex], voteOptions[index]];
+            renderVoteOptions();
+        }
+
+        function updateVoteOption(id, field, value) {
+            const opt = voteOptions.find(o => o.id === id);
+            if (opt) opt[field] = value;
+        }
+
         function renderVoteOptions() {
             const container = document.getElementById('voteOptionsList');
             container.innerHTML = voteOptions.map((opt, index) => `
-                <div class="vote-option-item" style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
-                    <span style="font-weight:600;color:#6B7280;width:24px;">${index + 1}.</span>
-                    <input type="text" value="${escapeHtml(opt.title).replace(/"/g, '&quot;')}"
-                           placeholder="选项名称（如：深中街舞社）"
-                           onchange="updateVoteOption(${opt.id}, 'title', this.value)"
-                           style="flex:1;">
-                    <input type="text" value="${escapeHtml(opt.description || '').replace(/"/g, '&quot;')}"
-                           placeholder="简介（可选）"
-                           onchange="updateVoteOption(${opt.id}, 'description', this.value)"
-                           style="flex:2;">
-                    <button type="button" onclick="removeVoteOption(${opt.id})"
-                            style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:1.2rem;">×</button>
+                <div class="vote-option-card" style="display:flex;gap:12px;padding:12px;background:#F9FAFB;border-radius:12px;margin-bottom:8px;align-items:center;">
+                    <span style="font-weight:700;color:#6B7280;min-width:20px;">${index + 1}.</span>
+                    <div class="option-image-upload" onclick="document.getElementById('optionImage_${opt.id}').click()" style="width:60px;height:60px;border:2px dashed #D1D5DB;border-radius:8px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:white;">
+                        ${opt.image_url ? `<img src="${escapeHtml(opt.image_url)}" style="width:100%;height:100%;object-fit:cover;">` : '<span style="font-size:1.5rem;">📷</span>'}
+                        <input type="file" id="optionImage_${opt.id}" accept="image/*" style="display:none;" onchange="uploadOptionImage(${opt.id}, this)">
+                    </div>
+                    <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                        <input type="text" value="${escapeHtml(opt.title).replace(/"/g, '&quot;')}" placeholder="选项名称（必填）" onchange="updateVoteOption(${opt.id}, 'title', this.value)">
+                        <input type="text" value="${escapeHtml(opt.description || '').replace(/"/g, '&quot;')}" placeholder="简介（可选）" onchange="updateVoteOption(${opt.id}, 'description', this.value)">
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                        <button type="button" onclick="moveVoteOption(${opt.id}, -1)" ${index === 0 ? 'disabled' : ''} style="background:none;border:none;cursor:pointer;color:#6B7280;">▲</button>
+                        <button type="button" onclick="moveVoteOption(${opt.id}, 1)" ${index === voteOptions.length - 1 ? 'disabled' : ''} style="background:none;border:none;cursor:pointer;color:#6B7280;">▼</button>
+                        <button type="button" onclick="removeVoteOption(${opt.id})" style="background:none;border:none;cursor:pointer;color:#EF4444;">×</button>
+                    </div>
                 </div>
             `).join('');
         }
 
-        // 更新选项数据
-        function updateVoteOption(id, field, value) {
-            const opt = voteOptions.find(o => o.id === id);
-            if (opt) opt[field] = value;
+        async function uploadOptionImage(optionId, input) {
+            const file = input.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const res = await fetch(`${window.API_BASE}/upload/file`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok && data.url) {
+                    const opt = voteOptions.find(o => o.id === optionId);
+                    if (opt) { opt.image_url = data.url; renderVoteOptions(); }
+                } else { alert(data.error || '上传失败'); }
+            } catch (e) { alert('上传失败'); }
+        }
+
+        // ---------- 校际PK阵营管理 ----------
+        function addPkFaction() {
+            pkFactions.push({ id: Date.now(), name: '', logo_url: '', description: '' });
+            renderPkFactions();
+        }
+        document.getElementById('addPkFactionBtn').addEventListener('click', addPkFaction);
+
+        function removePkFaction(id) {
+            pkFactions = pkFactions.filter(f => f.id !== id);
+            renderPkFactions();
+        }
+
+        function updatePkFaction(id, field, value) {
+            const f = pkFactions.find(o => o.id === id);
+            if (f) f[field] = value;
+        }
+
+        function renderPkFactions() {
+            const container = document.getElementById('pkFactionsList');
+            container.innerHTML = pkFactions.map((f, index) => `
+                <div class="vote-option-card" style="display:flex;gap:12px;padding:12px;background:#F9FAFB;border-radius:12px;margin-bottom:8px;align-items:center;">
+                    <div class="option-image-upload" onclick="document.getElementById('pkLogo_${f.id}').click()" style="width:60px;height:60px;border:2px dashed #D1D5DB;border-radius:8px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:white;">
+                        ${f.logo_url ? `<img src="${escapeHtml(f.logo_url)}" style="width:100%;height:100%;object-fit:cover;">` : '<span style="font-size:1.5rem;">🏫</span>'}
+                        <input type="file" id="pkLogo_${f.id}" accept="image/*" style="display:none;" onchange="uploadPkFactionLogo(${f.id}, this)">
+                    </div>
+                    <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                        <input type="text" value="${escapeHtml(f.name).replace(/"/g, '&quot;')}" placeholder="阵营名称（必填，如：深圳中学）" onchange="updatePkFaction(${f.id}, 'name', this.value)">
+                        <input type="text" value="${escapeHtml(f.description || '').replace(/"/g, '&quot;')}" placeholder="简介（可选）" onchange="updatePkFaction(${f.id}, 'description', this.value)">
+                    </div>
+                    <button type="button" onclick="removePkFaction(${f.id})" style="background:none;border:none;cursor:pointer;color:#EF4444;font-size:1.2rem;">×</button>
+                </div>
+            `).join('');
+        }
+
+        async function uploadPkFactionLogo(id, input) {
+            const file = input.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const res = await fetch(`${window.API_BASE}/upload/file`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok && data.url) {
+                    const f = pkFactions.find(o => o.id === id);
+                    if (f) { f.logo_url = data.url; renderPkFactions(); }
+                } else { alert(data.error || '上传失败'); }
+            } catch (e) { alert('上传失败'); }
+        }
+
+        // 加载待审核阵营（编辑PK活动时）
+        async function loadPendingFactions(activityId) {
+            try {
+                const res = await fetch(`${window.API_BASE}/activities/${activityId}/pending-factions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok && data.pending_factions && data.pending_factions.length > 0) {
+                    document.getElementById('pendingFactionsSection').style.display = 'block';
+                    renderPendingFactions(data.pending_factions);
+                } else {
+                    document.getElementById('pendingFactionsSection').style.display = 'none';
+                    document.getElementById('pendingFactionsList').innerHTML = '';
+                }
+            } catch (e) {
+                document.getElementById('pendingFactionsSection').style.display = 'none';
+            }
+        }
+
+        function renderPendingFactions(list) {
+            const container = document.getElementById('pendingFactionsList');
+            container.innerHTML = list.map(f => `
+                <div class="vote-option-card" style="display:flex;gap:12px;padding:12px;background:#F9FAFB;border-radius:12px;margin-bottom:8px;align-items:center;">
+                    <div style="flex:1;">
+                        <div style="font-weight:600;">${escapeHtml(f.name)}</div>
+                        <div style="font-size:0.75rem;color:#6B7280;">申请人：${escapeHtml(f.applicant_nickname)}${f.description ? ' · ' + escapeHtml(f.description) : ''}</div>
+                    </div>
+                    <button class="btn-sm primary" onclick="reviewFaction(${f.id}, 'approve')">通过</button>
+                    <button class="btn-sm danger" onclick="reviewFaction(${f.id}, 'reject')">驳回</button>
+                </div>
+            `).join('');
+        }
+
+        async function reviewFaction(factionId, action) {
+            const activityId = editingActivityId;
+            if (!activityId) return;
+            if (!confirm(action === 'approve' ? '确定通过这个阵营申请吗？' : '确定驳回这个阵营申请吗？')) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/activities/${activityId}/factions/${factionId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ action })
+                });
+                if (res.ok) { alert(action === 'approve' ? '阵营已通过' : '申请已驳回'); loadPendingFactions(activityId); }
+                else { const d = await res.json(); alert(d.error || '操作失败'); }
+            } catch (e) { alert('操作失败'); }
+        }
+
+        // ---------- 报名表单字段管理 ----------
+        function addSignupField() {
+            signupFields.push({ id: Date.now(), name: '', type: 'text', required: false });
+            renderSignupFields();
+        }
+        document.getElementById('addSignupFieldBtn').addEventListener('click', addSignupField);
+
+        function removeSignupField(id) {
+            signupFields = signupFields.filter(f => f.id !== id);
+            renderSignupFields();
+        }
+
+        function updateSignupField(id, field, value) {
+            const f = signupFields.find(o => o.id === id);
+            if (f) f[field] = value;
+        }
+
+        function renderSignupFields() {
+            const container = document.getElementById('signupFieldsList');
+            container.innerHTML = signupFields.map((f, index) => `
+                <div class="vote-option-card" style="display:flex;gap:10px;padding:10px;background:#F9FAFB;border-radius:12px;margin-bottom:8px;align-items:center;">
+                    <span style="font-weight:700;color:#6B7280;min-width:18px;">${index + 1}.</span>
+                    <input type="text" value="${escapeHtml(f.name).replace(/"/g, '&quot;')}" placeholder="字段名（如：真实姓名）" onchange="updateSignupField(${f.id}, 'name', this.value)" style="flex:2;">
+                    <select onchange="updateSignupField(${f.id}, 'type', this.value)" style="flex:1;padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;background:white;">
+                        <option value="text" ${f.type === 'text' ? 'selected' : ''}>文本</option>
+                        <option value="select" ${f.type === 'select' ? 'selected' : ''}>选择</option>
+                    </select>
+                    <label style="font-size:0.8rem;color:#6B7280;white-space:nowrap;cursor:pointer;"><input type="checkbox" ${f.required ? 'checked' : ''} onchange="updateSignupField(${f.id}, 'required', this.checked)"> 必填</label>
+                    <button type="button" onclick="removeSignupField(${f.id})" style="background:none;border:none;cursor:pointer;color:#EF4444;font-size:1.2rem;">×</button>
+                </div>
+            `).join('');
         }
 
         // 保存活动
@@ -1485,7 +1775,7 @@
         document.getElementById('saveActivityBtn').addEventListener('click', async () => {
             const title = document.getElementById('activityTitle').value.trim();
             const type = document.getElementById('activityType').value;
-            const cover_url = document.getElementById('activityCover').value.trim();
+            const cover_url = window._activityCoverUrl || '';
             const rules = activityQuill.root.innerHTML.trim();
             const start_time = document.getElementById('activityStart').value;
             const end_time = document.getElementById('activityEnd').value;
@@ -1495,16 +1785,32 @@
             if (!title) { alert('请输入活动标题'); return; }
             if (!type) { alert('请选择活动类型'); return; }
             if (!start_time || !end_time) { alert('请选择开始和结束时间'); return; }
-            if (type === 'vote') {
-                const filled = voteOptions.filter(o => o.title.trim());
-                if (filled.length < 2) { alert('投票活动至少需要 2 个选项'); return; }
-            }
 
             let config = {};
             if (type === 'vote') {
-                config.options = voteOptions
-                    .filter(o => o.title.trim())
-                    .map(o => ({ title: o.title.trim(), description: o.description || '' }));
+                const filled = voteOptions.filter(o => o.title.trim());
+                if (filled.length < 2) { alert('投票活动至少需要 2 个选项'); return; }
+                config.options = filled.map(o => ({ title: o.title.trim(), description: o.description || '', image_url: o.image_url || '' }));
+            } else if (type === 'submit') {
+                config.enable_comment = document.getElementById('submitEnableComment').checked;
+                config.need_review = document.getElementById('submitNeedReview').checked;
+            } else if (type === 'checkin') {
+                config.period = document.getElementById('checkinPeriod').value;
+                if (config.period === 'custom') config.days = parseInt(document.getElementById('checkinDays').value) || 7;
+            } else if (type === 'signup') {
+                const fields = signupFields.filter(f => f.name.trim()).map(f => ({ name: f.name.trim(), type: f.type, required: f.required }));
+                if (fields.length === 0) { alert('请至少添加一个报名字段'); return; }
+                config.fields = fields;
+                config.max_count = parseInt(document.getElementById('signupMaxCount').value) || 0;
+                config.deadline = document.getElementById('signupDeadline').value || '';
+            } else if (type === 'pk') {
+                const factions = pkFactions.filter(f => f.name.trim()).map(f => ({ name: f.name.trim(), logo_url: f.logo_url || '', description: f.description || '' }));
+                if (factions.length === 0) { alert('请至少添加一个预设阵营'); return; }
+                config.factions = factions;
+                // 编辑时保留原有待审核申请
+                if (editingActivityConfig && editingActivityConfig.pending_factions) {
+                    config.pending_factions = editingActivityConfig.pending_factions;
+                }
             }
 
             const body = { title, type, cover_url, rules, start_time, end_time, reward_coins, reward_badge: reward_badge || null, config };
@@ -1585,23 +1891,56 @@
             const res = await fetch(`${window.API_BASE}/activities/${id}`);
             const data = await res.json();
             const a = data.activity;
+            const config = a.config || {};
 
             document.getElementById('activityTitle').value = a.title;
             document.getElementById('activityType').value = a.type;
-            document.getElementById('activityCover').value = a.cover_url || '';
+            // 封面回填
+            window._activityCoverUrl = a.cover_url || '';
+            if (a.cover_url) {
+                document.getElementById('coverPreviewImg').src = getFullUrl(a.cover_url);
+                document.getElementById('coverPreviewImg').style.display = 'block';
+                document.getElementById('coverPlaceholder').style.display = 'none';
+            }
             activityQuill.root.innerHTML = a.rules || '';
             document.getElementById('activityStart').value = toLocalDatetimeInput(a.start_time);
             document.getElementById('activityEnd').value = toLocalDatetimeInput(a.end_time);
             document.getElementById('activityRewardCoins').value = a.reward_coins || 0;
             document.getElementById('activityRewardBadge').value = a.reward_badge || '';
 
-            // 回填投票选项
-            voteOptions = [];
-            document.getElementById('voteOptionsSection').style.display = 'none';
-            if (a.type === 'vote' && a.config && Array.isArray(a.config.options)) {
-                voteOptions = a.config.options.map(o => ({ id: Date.now() + Math.random(), title: o.title || '', description: o.description || '' }));
-                renderVoteOptions();
-                document.getElementById('voteOptionsSection').style.display = 'block';
+            // 重置所有类型配置
+            voteOptions = []; pkFactions = []; signupFields = [];
+            editingActivityConfig = config;
+            document.getElementById('pendingFactionsSection').style.display = 'none';
+            document.getElementById('pendingFactionsList').innerHTML = '';
+
+            // 显示对应类型配置区域并回填
+            showTypeConfig(a.type);
+            switch (a.type) {
+                case 'vote':
+                    voteOptions = (config.options || []).map(o => ({ id: Date.now() + Math.random(), title: o.title || '', description: o.description || '', image_url: o.image_url || '' }));
+                    renderVoteOptions();
+                    break;
+                case 'submit':
+                    document.getElementById('submitEnableComment').checked = !!config.enable_comment;
+                    document.getElementById('submitNeedReview').checked = !!config.need_review;
+                    break;
+                case 'checkin':
+                    document.getElementById('checkinPeriod').value = config.period || 'daily';
+                    document.getElementById('checkinDays').value = config.days || 7;
+                    toggleCheckinDays();
+                    break;
+                case 'signup':
+                    signupFields = (config.fields || []).map(f => ({ id: Date.now() + Math.random(), name: f.name || '', type: f.type || 'text', required: !!f.required }));
+                    renderSignupFields();
+                    document.getElementById('signupMaxCount').value = config.max_count || 100;
+                    document.getElementById('signupDeadline').value = config.deadline ? String(config.deadline).substring(0, 16) : '';
+                    break;
+                case 'pk':
+                    pkFactions = (config.factions || []).map(f => ({ id: Date.now() + Math.random(), name: f.name || '', logo_url: f.logo_url || '', description: f.description || '' }));
+                    renderPkFactions();
+                    loadPendingFactions(id);
+                    break;
             }
 
             editingActivityId = id;
@@ -1614,16 +1953,32 @@
         function resetActivityForm() {
             document.getElementById('activityTitle').value = '';
             document.getElementById('activityType').value = '';
-            document.getElementById('activityCover').value = '';
             activityQuill.root.innerHTML = '';
             document.getElementById('activityStart').value = '';
             document.getElementById('activityEnd').value = '';
             document.getElementById('activityRewardCoins').value = '0';
             document.getElementById('activityRewardBadge').value = '';
-            // 清空投票选项
-            voteOptions = [];
-            renderVoteOptions();
-            document.getElementById('voteOptionsSection').style.display = 'none';
+            // 清空封面
+            window._activityCoverUrl = '';
+            document.getElementById('coverPreviewImg').style.display = 'none';
+            document.getElementById('coverPreviewImg').src = '';
+            document.getElementById('coverPlaceholder').style.display = 'flex';
+            document.getElementById('coverPlaceholder').innerHTML = '<i class="fas fa-image"></i> 点击上传封面图';
+            // 清空各类型配置
+            voteOptions = []; renderVoteOptions();
+            pkFactions = []; renderPkFactions();
+            signupFields = []; renderSignupFields();
+            document.getElementById('pendingFactionsSection').style.display = 'none';
+            document.getElementById('pendingFactionsList').innerHTML = '';
+            editingActivityConfig = null;
+            document.getElementById('submitEnableComment').checked = false;
+            document.getElementById('submitNeedReview').checked = false;
+            document.getElementById('checkinPeriod').value = 'daily';
+            document.getElementById('checkinDays').value = '7';
+            document.getElementById('checkinDaysGroup').style.display = 'none';
+            document.getElementById('signupMaxCount').value = '100';
+            document.getElementById('signupDeadline').value = '';
+            showTypeConfig('');
             editingActivityId = null;
             document.getElementById('activityFormTitle').textContent = '创建活动';
             document.getElementById('saveActivityBtn').textContent = '创建活动';

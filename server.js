@@ -3855,14 +3855,144 @@ app.post('/api/activities/:id/vote', authMiddleware, async (req, res) => {
     if (isNaN(optionId)) return res.status(400).json({ error: '参数错误' });
 
     try {
-        await pool.query(
-            'INSERT INTO activity_votes (activity_id, user_id, option_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
-            [activityId, userId, optionId]
+        // 单人单票：先检查该用户是否已对该活动投过票
+        const check = await pool.query(
+            'SELECT id FROM activity_votes WHERE activity_id = $1 AND user_id = $2',
+            [activityId, userId]
         );
+        if (check.rows.length > 0) return res.status(400).json({ error: '你已经投过票了，不能重复投票' });
+
+        try {
+            await pool.query(
+                'INSERT INTO activity_votes (activity_id, user_id, option_id) VALUES ($1, $2, $3)',
+                [activityId, userId, optionId]
+            );
+        } catch (insertErr) {
+            // 并发下唯一约束冲突（23505），视为已投票
+            if (insertErr.code === '23505') return res.status(400).json({ error: '你已经投过票了，不能重复投票' });
+            throw insertErr;
+        }
         res.json({ message: '投票成功' });
     } catch (err) {
         console.error('投票失败:', err);
         res.status(500).json({ error: '投票失败' });
+    }
+});
+
+// 用户提交自定义阵营申请
+app.post('/api/activities/:id/custom-faction', authMiddleware, async (req, res) => {
+    const activityId = parseInt(req.params.id);
+    const userId = req.user.userId;
+    const { name, logo_url, description } = req.body;
+
+    if (isNaN(activityId)) return res.status(400).json({ error: '无效的活动ID' });
+    if (!name || !name.trim()) return res.status(400).json({ error: '阵营名称不能为空' });
+
+    try {
+        const activityCheck = await pool.query(
+            "SELECT * FROM activities WHERE id = $1 AND type = 'pk' AND status = 'active'",
+            [activityId]
+        );
+        if (activityCheck.rows.length === 0) return res.status(400).json({ error: '活动不存在或不是校际PK类型' });
+
+        const config = activityCheck.rows[0].config || {};
+        const pendingFactions = config.pending_factions || [];
+
+        // 检查是否已申请
+        const alreadyApplied = pendingFactions.some(f => f.user_id === userId);
+        if (alreadyApplied) return res.status(400).json({ error: '你已经提交过申请，请等待审核' });
+
+        pendingFactions.push({
+            id: Date.now(),
+            user_id: userId,
+            name: name.trim(),
+            logo_url: logo_url || '',
+            description: description || '',
+            applied_at: new Date().toISOString()
+        });
+
+        await pool.query('UPDATE activities SET config = $1 WHERE id = $2', [JSON.stringify({ ...config, pending_factions: pendingFactions }), activityId]);
+        res.json({ message: '申请已提交，请等待管理员审核' });
+    } catch (err) {
+        console.error('提交阵营申请失败:', err);
+        res.status(500).json({ error: '提交申请失败' });
+    }
+});
+
+// 管理员获取待审核阵营列表
+app.get('/api/activities/:id/pending-factions', authMiddleware, adminMiddleware, async (req, res) => {
+    const activityId = parseInt(req.params.id);
+    if (isNaN(activityId)) return res.status(400).json({ error: '无效的活动ID' });
+
+    try {
+        const result = await pool.query('SELECT config FROM activities WHERE id = $1', [activityId]);
+        if (result.rows.length === 0) return res.status(404).json({ error: '活动不存在' });
+
+        const config = result.rows[0].config || {};
+        const pendingFactions = config.pending_factions || [];
+
+        // 联查用户昵称
+        const userIds = pendingFactions.map(f => f.user_id);
+        let userMap = {};
+        if (userIds.length > 0) {
+            const usersRes = await pool.query('SELECT id, nickname FROM users WHERE id = ANY($1)', [userIds]);
+            usersRes.rows.forEach(u => { userMap[u.id] = u.nickname; });
+        }
+
+        const enriched = pendingFactions.map(f => ({
+            ...f,
+            applicant_nickname: userMap[f.user_id] || '未知用户'
+        }));
+
+        res.json({ pending_factions: enriched });
+    } catch (err) {
+        console.error('获取待审核阵营失败:', err);
+        res.status(500).json({ error: '获取待审核阵营失败' });
+    }
+});
+
+// 管理员审核阵营（通过/驳回）
+app.patch('/api/activities/:id/factions/:factionId', authMiddleware, adminMiddleware, async (req, res) => {
+    const activityId = parseInt(req.params.id);
+    const factionId = parseInt(req.params.factionId);
+    const { action } = req.body;
+
+    if (isNaN(activityId) || isNaN(factionId)) return res.status(400).json({ error: '无效的参数' });
+    if (!['approve', 'reject'].includes(action)) return res.status(400).json({ error: '无效的操作' });
+
+    try {
+        const result = await pool.query('SELECT config FROM activities WHERE id = $1', [activityId]);
+        if (result.rows.length === 0) return res.status(404).json({ error: '活动不存在' });
+
+        const config = result.rows[0].config || {};
+        const pendingFactions = config.pending_factions || [];
+        const approvedFactions = config.factions || [];
+
+        const factionIndex = pendingFactions.findIndex(f => f.id === factionId);
+        if (factionIndex === -1) return res.status(404).json({ error: '申请不存在' });
+
+        const faction = pendingFactions[factionIndex];
+        pendingFactions.splice(factionIndex, 1);
+
+        if (action === 'approve') {
+            approvedFactions.push({
+                id: faction.id,
+                name: faction.name,
+                logo_url: faction.logo_url,
+                description: faction.description,
+                approved_at: new Date().toISOString()
+            });
+        }
+
+        await pool.query('UPDATE activities SET config = $1 WHERE id = $2', [
+            JSON.stringify({ ...config, pending_factions: pendingFactions, factions: approvedFactions }),
+            activityId
+        ]);
+
+        res.json({ message: action === 'approve' ? '阵营已通过' : '申请已驳回' });
+    } catch (err) {
+        console.error('审核阵营失败:', err);
+        res.status(500).json({ error: '审核失败' });
     }
 });
 
