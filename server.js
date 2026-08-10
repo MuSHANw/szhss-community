@@ -1173,7 +1173,23 @@ app.get('/api/users/:id/activity', async (req, res) => {
     try {
         // 检查隐私设置
         const priv = await pool.query('SELECT show_activity FROM users WHERE id = $1', [userId]);
-        if (!priv.rows[0]?.show_activity) return res.json({ hidden: true, activity: [] });
+        const showActivity = priv.rows[0]?.show_activity;
+
+        // 判断请求者是否为本人（登录用户查看自己的主页时，始终能看到自己的活跃度日历）
+        let isSelf = false;
+        const authHeader = req.headers.authorization;
+        if (authHeader) {
+            try {
+                const token = authHeader.split(' ')[1];
+                const decoded = jwt.verify(token, JWT_SECRET);
+                if (decoded.userId === userId) isSelf = true;
+            } catch (e) { /* 无效 token 按游客处理 */ }
+        }
+
+        // 非本人 且 用户隐藏了活跃度 → 返回隐藏
+        if (!isSelf && !showActivity) {
+            return res.json({ hidden: true, activity: [] });
+        }
 
         // 查询最近365天的活跃数据
         const refDate = getBeijingDate();
