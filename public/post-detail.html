@@ -1307,6 +1307,18 @@
             });
         }
 
+        // 将 Quill 的视频 iframe（<iframe class="ql-video" src="xxx.mp4">）转换为原生 video 标签
+        // 否则 iframe 内嵌 mp4 在浏览器中不会正常播放
+        function fixContentVideos(html) {
+            if (!html) return html;
+            return html.replace(/<iframe\b[^>]*\bsrc="([^"]+)"[^>]*>[\s\S]*?<\/iframe>/gi, function(match, src) {
+                if (/\.(mp4|webm|mov|m4v|ogv|ogg)(\?|#|$)/i.test(src)) {
+                    return '<video src="' + src + '" controls preload="metadata"></video>';
+                }
+                return match; // 非视频 iframe（如外部链接）保持原样
+            });
+        }
+
         // 渲染帖子独立的图片/视频数组（App 端发帖时媒体放在独立数组中）
         // 自动跳过已经在正文 content 中内嵌的媒体 URL，避免 Web 端帖子重复显示
         function renderPostMedia(post) {
@@ -1438,7 +1450,7 @@
                                 ${!isAuthor && token ? '<a href="/chat.html?uid=' + post.user_id + '" class="action-btn" style="text-decoration:none;margin-left:auto;"><i class="fas fa-envelope"></i> 发私信</a>' : ''}
                             </div>
                         </div>
-                        <div class="post-content">${fixContentUrls(post.content || '')}</div>
+                        <div class="post-content">${fixContentVideos(fixContentUrls(post.content || ''))}</div>
                         ${renderPostMedia(post)}
                         <div class="post-actions">
                             <button class="like-btn ${isLiked ? 'liked' : ''}" data-id="${post.id}" id="likeBtn">

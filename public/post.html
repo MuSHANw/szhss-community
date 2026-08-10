@@ -568,13 +568,23 @@
         // ---------- 从 HTML 内容中提取图片和视频 URL ----------
         function extractMedia(content) {
             var images = [], videos = [];
+            var videoExt = /\.(mp4|webm|mov|m4v|ogv|ogg)$/i;
             var temp = document.createElement('div');
             temp.innerHTML = content;
+            // 图片：若 src 实际是视频文件则归入 videos，避免视频被当图片
             temp.querySelectorAll('img').forEach(function(img) {
-                if (img.src) images.push(img.src);
+                if (img.src) {
+                    if (videoExt.test(img.src)) videos.push(img.src);
+                    else images.push(img.src);
+                }
             });
+            // 原生 video 标签
             temp.querySelectorAll('video').forEach(function(video) {
                 if (video.src) videos.push(video.src);
+            });
+            // Quill 的 video 格式渲染为 <iframe class="ql-video" src="...">，需一并提取
+            temp.querySelectorAll('iframe.ql-video, iframe[src*=".mp4"], iframe[src*=".webm"], iframe[src*=".mov"], iframe[src*=".m4v"], iframe[src*=".ogv"]').forEach(function(fr) {
+                if (fr.src) videos.push(fr.src);
             });
             return { images: images, videos: videos };
         }
