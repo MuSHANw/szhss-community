@@ -528,7 +528,7 @@ app.get('/api/weather', async (req, res) => {
         return res.json(weatherCache.data);
     }
     try {
-        const url = `https://devapi.qweather.com/v7/weather/now?location=101280601&key=${WEATHER_KEY}`;
+        const url = `https://api.qweather.com/v7/weather/now?location=101280601&key=${WEATHER_KEY}`;
         const r = await fetch(url);
         const d = await r.json();
         if (d && d.now) {
