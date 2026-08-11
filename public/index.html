@@ -1300,10 +1300,8 @@
 
                         <div class="sidebar-card">
                             <h3><i class="fas fa-bullhorn"></i> 公告</h3>
-                            <ul class="announce-list">
-                                <li><a href="rules.html">社区公约（试行）</a><span>04-04</span></li>
-                                <li><a href="#">招募校园大使</a><span>04-01</span></li>
-                                <li><a href="#">功能更新日志</a><span>03-28</span></li>
+                            <ul class="announce-list" id="sidebarAnnouncements">
+                                <li><a href="rules.html">社区公约（试行）</a><span>必读</span></li>
                             </ul>
                         </div>
 
@@ -1770,6 +1768,29 @@
             }
         }
 
+        // ---------- 加载侧边栏公告（动态，保留社区公约） ----------
+        async function loadSidebarAnnouncements() {
+            const container = document.getElementById('sidebarAnnouncements');
+            if (!container) return;
+
+            // 社区公约为固定链接，始终保留在第一条
+            let html = '<li><a href="rules.html">社区公约（试行）</a><span>必读</span></li>';
+
+            try {
+                const res = await fetch(`${window.API_BASE}/announcements?limit=3`);
+                const data = await res.json();
+                if (data.announcements && data.announcements.length > 0) {
+                    data.announcements.forEach(a => {
+                        html += `<li><a href="/announcement.html?id=${a.id}">${escapeHtml(a.title)}</a><span>${formatDate(a.created_at)}</span></li>`;
+                    });
+                }
+            } catch (e) {
+                // 加载失败时保持社区公约，不显示额外内容
+            }
+
+            container.innerHTML = html;
+        }
+
         function renderMarkdown(text) {
             if (!text) return '';
             if (typeof marked !== 'undefined' && marked.parse) return marked.parse(text, { async: false });
@@ -1982,6 +2003,7 @@
         loadHotCircles();
         loadLatestAnnouncement();
         loadSidebarActivities();
+        loadSidebarAnnouncements();
 
         // ---------- 内测公告弹窗逻辑 ----------
         (function () {
