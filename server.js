@@ -529,17 +529,53 @@ app.get('/api/weather', async (req, res) => {
     }
     try {
         const url = `https://api.qweather.com/v7/weather/now?location=101280601&key=${WEATHER_KEY}`;
-        const r = await fetch(url);
+        let r = await fetch(url);
+        let d = await r.json();
+
+        // 如果第一次请求失败，尝试带 User-Agent 头重试一次（Node 18 fetch 兼容性兜底）
+        if (!d || !d.now) {
+            r = await fetch(url, {
+                headers: { 'User-Agent': 'SZHSS-Community/1.0' }
+            });
+            d = await r.json();
+        }
+
+        if (d && d.now) {
+            weatherCache = { data: { temp: d.now.temp, text: d.now.text }, time: Date.now() };
+            return res.json(weatherCache.data);
+        }
+        // 上游返回了数据但没有 now 字段，记录详情便于排查（如 Key 无效、额度耗尽等）
+        console.error('天气API上游响应异常:', JSON.stringify(d).substring(0, 300));
+        return res.status(502).json({ error: 'weather upstream failed' });
+    } catch (e) {
+        // 输出详细错误信息到控制台
+        console.error('天气API请求失败:', e.message);
+        console.error('错误详情:', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+        // 失败时返回缓存，否则返回更详细的错误
+        if (weatherCache.data) return res.json(weatherCache.data);
+        return res.status(500).json({ error: 'weather failed', detail: e.message });
+    }
+});
+
+// 手动刷新天气缓存（管理员专用）
+app.post('/api/weather/refresh', authMiddleware, adminMiddleware, async (req, res) => {
+    weatherCache = { data: null, time: 0 };
+    try {
+        const url = `https://api.qweather.com/v7/weather/now?location=101280601&key=${WEATHER_KEY}`;
+        const r = await fetch(url, {
+            headers: { 'User-Agent': 'SZHSS-Community/1.0' }
+        });
         const d = await r.json();
         if (d && d.now) {
             weatherCache = { data: { temp: d.now.temp, text: d.now.text }, time: Date.now() };
             return res.json(weatherCache.data);
         }
+        console.error('天气刷新上游响应异常:', JSON.stringify(d).substring(0, 300));
         return res.status(502).json({ error: 'weather upstream failed' });
     } catch (e) {
-        // 失败时返回缓存，否则报错
-        if (weatherCache.data) return res.json(weatherCache.data);
-        return res.status(500).json({ error: 'weather failed' });
+        console.error('天气刷新失败:', e.message);
+        console.error('错误详情:', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+        return res.status(500).json({ error: 'weather refresh failed', detail: e.message });
     }
 });
 
