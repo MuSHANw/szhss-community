@@ -2085,10 +2085,15 @@ app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) =>
 app.get('/api/admin/reports', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT r.*, u1.nickname as reporter_nickname, u2.nickname as resolver_nickname
+            SELECT r.*, u1.nickname as reporter_nickname, u2.nickname as resolver_nickname,
+                   CASE WHEN r.target_type = 'post' THEN p.is_hidden
+                        WHEN r.target_type = 'reply' THEN rp.is_hidden
+                        ELSE NULL END as target_is_hidden
             FROM reports r
             LEFT JOIN users u1 ON r.reporter_id = u1.id
             LEFT JOIN users u2 ON r.resolved_by = u2.id
+            LEFT JOIN posts p ON r.target_type = 'post' AND p.id = r.target_id
+            LEFT JOIN replies rp ON r.target_type = 'reply' AND rp.id = r.target_id
             ORDER BY r.created_at DESC
         `);
         res.json({ reports: result.rows });
@@ -4321,18 +4326,28 @@ app.get('/api/fengji/reports', async (req, res) => {
             SELECT r.*,
                    u1.nickname as reporter_nickname,
                    u2.nickname as target_nickname,
+                   p.title as target_title,
+                   p.content as target_post_content,
+                   rp.content as target_reply_content,
+                   rp.post_id as target_post_id,
                    COUNT(CASE WHEN fv.vote_type = 'violation' THEN 1 END) as violation_votes,
                    COUNT(CASE WHEN fv.vote_type = 'compliance' THEN 1 END) as compliance_votes,
                    SUM(CASE WHEN fv.vote_type = 'violation' AND voter.is_admin = true THEN 999
                             WHEN fv.vote_type = 'violation' AND voter.is_fengji = true THEN 50
                             WHEN fv.vote_type = 'violation' THEN 1
-                            ELSE 0 END) as weighted_violation_votes
+                            ELSE 0 END) as weighted_violation_votes,
+                   SUM(CASE WHEN fv.vote_type = 'compliance' AND voter.is_admin = true THEN 999
+                            WHEN fv.vote_type = 'compliance' AND voter.is_fengji = true THEN 50
+                            WHEN fv.vote_type = 'compliance' THEN 1
+                            ELSE 0 END) as weighted_compliance_votes
             FROM reports r
             LEFT JOIN users u1 ON r.reporter_id = u1.id
             LEFT JOIN users u2 ON r.target_id = u2.id
+            LEFT JOIN posts p ON r.target_type = 'post' AND p.id = r.target_id
+            LEFT JOIN replies rp ON r.target_type = 'reply' AND rp.id = r.target_id
             LEFT JOIN fengji_votes fv ON r.id = fv.report_id
             LEFT JOIN users voter ON fv.user_id = voter.id
-            GROUP BY r.id, u1.nickname, u2.nickname
+            GROUP BY r.id, u1.nickname, u2.nickname, p.title, p.content, rp.content, rp.post_id
             ORDER BY r.created_at DESC
         `;
         const result = await pool.query(query);
@@ -4385,57 +4400,85 @@ app.post('/api/fengji/vote', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: '你已经对这个案件投过票了' });
         }
 
-        // 管理员投票 → 一票定违纪
-        const userCheck = await pool.query('SELECT is_admin, is_fengji FROM users WHERE id = $1', [userId]);
+        const userCheck = await pool.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
         const isAdmin = userCheck.rows[0]?.is_admin;
-        const isFengji = userCheck.rows[0]?.is_fengji;
         const report = reportRes.rows[0];
 
-        // 管理员投违纪票，直接标记为已处理，隐藏对应内容
-        if (isAdmin && vote_type === 'violation') {
-            if (report.target_type === 'post') {
-                await pool.query('UPDATE posts SET is_hidden = true WHERE id = $1', [report.target_id]);
-            } else if (report.target_type === 'reply') {
-                await pool.query('UPDATE replies SET is_hidden = true WHERE id = $1', [report.target_id]);
-            }
+        // 管理员一票决定（违纪/合规均适用）
+        if (isAdmin) {
             await pool.query(
-                "UPDATE reports SET status = 'processed', resolved_at = NOW(), resolved_by = $1 WHERE id = $2",
-                [userId, report_id]
+                'INSERT INTO fengji_votes (report_id, user_id, vote_type) VALUES ($1, $2, $3)',
+                [report_id, userId, vote_type]
             );
-        }
-
-        // 记录投票
-        await pool.query(
-            'INSERT INTO fengji_votes (report_id, user_id, vote_type) VALUES ($1, $2, $3)',
-            [report_id, userId, vote_type]
-        );
-
-        // 风纪委员或管理员投违纪票时，计算加权总票数是否达到 60 票阈值
-        if (vote_type === 'violation' && (isFengji || isAdmin)) {
-            const voteStats = await pool.query(
-                `SELECT
-                    SUM(CASE WHEN voter.is_admin = true THEN 999
-                             WHEN voter.is_fengji = true THEN 50
-                             ELSE 1 END) as total_weight
-                 FROM fengji_votes fv
-                 JOIN users voter ON fv.user_id = voter.id
-                 WHERE fv.report_id = $1 AND fv.vote_type = 'violation'`,
-                [report_id]
-            );
-            const totalWeight = parseInt(voteStats.rows[0].total_weight) || 0;
-
-            if (totalWeight >= 60) {
-                // 达到60票，自动隐藏违规内容，标记为已处理（移交管理员后台二轮处理）
+            if (vote_type === 'violation') {
+                // 管理员一票定违纪：隐藏内容，移交管理员后台做最终裁决
                 if (report.target_type === 'post') {
                     await pool.query('UPDATE posts SET is_hidden = true WHERE id = $1', [report.target_id]);
                 } else if (report.target_type === 'reply') {
                     await pool.query('UPDATE replies SET is_hidden = true WHERE id = $1', [report.target_id]);
                 }
                 await pool.query(
-                    "UPDATE reports SET status = 'processed', resolved_at = NOW() WHERE id = $1",
-                    [report_id]
+                    "UPDATE reports SET status = 'processed', resolved_at = NOW(), resolved_by = $1 WHERE id = $2",
+                    [userId, report_id]
                 );
+                return res.json({ message: '投票成功，管理员已一票定违纪，内容已隐藏并移交裁决' });
+            } else {
+                // 管理员一票定合规：不隐藏内容，标记为已处理（建议驳回），移交管理员后台最终裁决
+                await pool.query(
+                    "UPDATE reports SET status = 'processed', resolved_at = NOW(), resolved_by = $1 WHERE id = $2",
+                    [userId, report_id]
+                );
+                return res.json({ message: '投票成功，管理员已一票定合规，案件已移交裁决' });
             }
+        }
+
+        // 普通用户 / 风纪委员投票
+        await pool.query(
+            'INSERT INTO fengji_votes (report_id, user_id, vote_type) VALUES ($1, $2, $3)',
+            [report_id, userId, vote_type]
+        );
+
+        // 重新统计加权票数（违纪/合规均按权重计算）
+        const stats = await pool.query(
+            `SELECT
+                COUNT(*) FILTER (WHERE fv.vote_type = 'violation') as violation_count,
+                COUNT(*) FILTER (WHERE fv.vote_type = 'compliance') as compliance_count,
+                COALESCE(SUM(CASE WHEN fv.vote_type = 'violation' AND voter.is_admin = true THEN 999
+                                  WHEN fv.vote_type = 'violation' AND voter.is_fengji = true THEN 50
+                                  WHEN fv.vote_type = 'violation' THEN 1 ELSE 0 END), 0) as violation_weight,
+                COALESCE(SUM(CASE WHEN fv.vote_type = 'compliance' AND voter.is_admin = true THEN 999
+                                  WHEN fv.vote_type = 'compliance' AND voter.is_fengji = true THEN 50
+                                  WHEN fv.vote_type = 'compliance' THEN 1 ELSE 0 END), 0) as compliance_weight
+             FROM fengji_votes fv
+             JOIN users voter ON fv.user_id = voter.id
+             WHERE fv.report_id = $1`,
+            [report_id]
+        );
+        const violationWeight = parseInt(stats.rows[0].violation_weight) || 0;
+        const complianceWeight = parseInt(stats.rows[0].compliance_weight) || 0;
+        const totalVoters = (parseInt(stats.rows[0].violation_count) || 0) + (parseInt(stats.rows[0].compliance_count) || 0);
+
+        // 违纪加权票数达到 60 票 → 自动隐藏内容，标记为已处理，移交管理员最终裁决
+        if (violationWeight >= 60) {
+            if (report.target_type === 'post') {
+                await pool.query('UPDATE posts SET is_hidden = true WHERE id = $1', [report.target_id]);
+            } else if (report.target_type === 'reply') {
+                await pool.query('UPDATE replies SET is_hidden = true WHERE id = $1', [report.target_id]);
+            }
+            await pool.query(
+                "UPDATE reports SET status = 'processed', resolved_at = NOW() WHERE id = $1",
+                [report_id]
+            );
+            return res.json({ message: '投票成功，违纪加权票数已达60票，内容已自动隐藏并移交管理员裁决' });
+        }
+
+        // 合规加权票数超过违纪 且 总投票人数 >= 10 → 标记为已处理（建议驳回），移交管理员最终裁决
+        if (complianceWeight > violationWeight && totalVoters >= 10) {
+            await pool.query(
+                "UPDATE reports SET status = 'processed', resolved_at = NOW() WHERE id = $1",
+                [report_id]
+            );
+            return res.json({ message: '投票成功，合规票数占优，案件已移交管理员裁决' });
         }
 
         res.json({ message: '投票成功' });

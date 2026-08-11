@@ -745,8 +745,9 @@
             <div class="fengji-section">
                 <h2>⚖️ 风纪检查站</h2>
                 <div class="checkpoint-tip">
-                    📢 每人一个案件限投一票：普通用户 1 票，风纪委员 1 票 = 50 票，管理员一票定违纪（999 票）。
-                    <br>违纪加权票数达到 <strong>60 票</strong> 时，对应内容将被自动隐藏，并移交管理员后台做二轮处理。
+                    📢 每人一个案件限投一票：普通用户 1 票，风纪委员 1 票 = 50 票，管理员一票定案（999 票）。
+                    <br>违纪加权票数达到 <strong>60 票</strong> → 内容自动隐藏并移交管理员裁决。
+                    <br>合规加权票数超过违纪 且 总投票人数 ≥ 10 → 案件移交管理员裁决（建议驳回）。
                 </div>
                 <div id="reportsList">
                     <div class="loading">加载中...</div>
@@ -974,11 +975,30 @@
                 container.innerHTML = reports.map(r => {
                     const processed = r.status === 'processed' || r.status === 'resolved' || r.status === 'rejected';
                     const weightedViolation = parseInt(r.weighted_violation_votes) || 0;
+                    const weightedCompliance = parseInt(r.weighted_compliance_votes) || 0;
                     const violationCount = parseInt(r.violation_votes) || 0;
                     const complianceCount = parseInt(r.compliance_votes) || 0;
                     const myVote = r.my_vote;
                     const targetDesc = r.target_type === 'post' ? '帖子'
                         : r.target_type === 'reply' ? '回复' : '用户';
+
+                    // 被举报内容导向链接
+                    let targetLink = '';
+                    if (r.target_type === 'post') {
+                        targetLink = `<a href="/post-detail.html?id=${r.target_id}" target="_blank" class="report-target-link">📝 查看被举报帖子</a>`;
+                    } else if (r.target_type === 'reply') {
+                        targetLink = `<a href="/post-detail.html?id=${r.target_post_id || ''}#reply-${r.target_id}" target="_blank" class="report-target-link">💬 查看被举报回复</a>`;
+                    }
+                    // 被举报内容摘要
+                    let targetSnippet = '';
+                    if (r.target_type === 'post') {
+                        targetSnippet = r.target_title ? '标题：' + escapeHtml(r.target_title) : '';
+                        if (r.target_post_content) {
+                            targetSnippet += (targetSnippet ? ' · ' : '') + escapeHtml((r.target_post_content || '').substring(0, 60));
+                        }
+                    } else if (r.target_type === 'reply') {
+                        targetSnippet = escapeHtml((r.target_reply_content || '').substring(0, 80));
+                    }
 
                     return `
                         <div class="report-card ${processed ? 'processed' : ''}">
@@ -988,13 +1008,15 @@
                             </div>
                             <div style="color:#6B7280;margin-bottom:4px;">
                                 被举报${targetDesc} · 类型：${escapeHtml(r.reason_type || '未指定')}
+                                ${targetLink}
                             </div>
-                            <div style="color:#6B7280;margin-bottom:8px;">${escapeHtml((r.reason || '').substring(0, 120))}</div>
+                            ${targetSnippet ? `<div style="background:#F9FAFB;border-radius:8px;padding:8px 10px;font-size:0.85rem;color:#4B5563;margin-bottom:8px;">${targetSnippet}</div>` : ''}
+                            <div style="color:#6B7280;margin-bottom:8px;">举报原因：${escapeHtml((r.reason || '').substring(0, 120))}</div>
                             <div style="font-size:0.85rem;color:#9CA3AF;margin-bottom:8px;">
-                                🔴 违纪 ${violationCount} 票（加权：${weightedViolation} 票） · 🟢 合规 ${complianceCount} 票
+                                🔴 违纪 ${violationCount} 票（加权：${weightedViolation} 票） · 🟢 合规 ${complianceCount} 票（加权：${weightedCompliance} 票）
                             </div>
                             ${processed
-                                ? '<span style="color:#9CA3AF;font-weight:600;">✅ 已处理（移交管理员二轮裁决）</span>'
+                                ? '<span style="color:#9CA3AF;font-weight:600;">✅ 已处理，等待管理员最终裁决</span>'
                                 : `
                                     <div class="vote-buttons" id="voteBtns${r.id}">
                                         <button class="vote-btn violation ${myVote === 'violation' ? 'voted' : ''}"
@@ -1020,11 +1042,14 @@
         async function castVote(reportId, voteType) {
             if (!token) { alert('请先登录'); return; }
 
-            // 管理员投违纪票时确认
-            if (window._isAdmin && voteType === 'violation') {
+            // 管理员一票决定，投票前需要确认
+            if (window._isAdmin) {
+                const isViolation = voteType === 'violation';
                 const confirmed = await showAdminConfirmDialog(
-                    '管理员一票定违纪',
-                    '确认后该内容将被自动隐藏，并移交二轮处理。是否继续？'
+                    isViolation ? '管理员一票定违纪' : '管理员一票定合规',
+                    isViolation
+                        ? '确认后该内容将被自动隐藏，并移交最终裁决。是否继续？'
+                        : '确认后将标记为合规（不隐藏内容），并移交最终裁决。是否继续？'
                 );
                 if (!confirmed) return;
             }

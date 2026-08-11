@@ -1506,6 +1506,8 @@
                 if (replies.length > 0) {
                     repliesList.innerHTML = renderReplies(replies);
                     handleReplyContentExpand();
+                    // 若通过 #reply-xxx 锚点进入，滚动并高亮对应回复
+                    scrollToReplyAnchor();
                 }
 
                 // 绑定事件
@@ -1662,7 +1664,7 @@
                 ? `<span class="reply-to">回复 <strong>${escapeHtml(reply.parent_nickname || '用户')}</strong>：</span>`
                 : '';
             return `
-                <div class="reply-card" data-reply-id="${reply.id}"${marginStyle}>
+                <div class="reply-card" data-reply-id="${reply.id}" id="reply-${reply.id}"${marginStyle}>
                     <div class="reply-header">
                         <div class="reply-avatar">
                             ${avatarHtml}
@@ -1735,6 +1737,30 @@
                 const count = Array.from(container.children).filter(el => el.classList.contains('reply-card')).length;
                 toggle.innerHTML = `<i class="fas fa-comments"></i> 展开 ${count} 条回复`;
             }
+        }
+
+        // 从 URL 锚点 #reply-<id> 定位到对应回复并滚动高亮
+        function scrollToReplyAnchor() {
+            const match = window.location.hash.match(/^#reply-(\d+)$/);
+            if (!match) return;
+            const targetCard = document.getElementById('reply-' + match[1]);
+            if (!targetCard) return;
+            // 若回复被折叠在嵌套容器中，先依次展开所有祖先层
+            let nested = targetCard.closest('.nested-replies');
+            while (nested) {
+                if (nested.style.display === 'none') {
+                    nested.style.display = 'block';
+                    const toggle = nested.previousElementSibling;
+                    if (toggle) toggle.innerHTML = '<i class="fas fa-chevron-up"></i> 收起回复';
+                }
+                nested = nested.parentElement ? nested.parentElement.closest('.nested-replies') : null;
+            }
+            setTimeout(() => {
+                targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetCard.style.boxShadow = '0 0 0 3px rgba(30,136,229,0.5)';
+                targetCard.style.transition = 'box-shadow 0.6s';
+                setTimeout(() => { targetCard.style.boxShadow = ''; }, 2500);
+            }, 150);
         }
 
         // 侧边栏加载最新和热门帖子
