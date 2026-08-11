@@ -8,6 +8,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 const QUIZ_ANSWERS = require('./quiz-bank-data.js');
 
 // 获取北京时间日期字符串 (YYYY-MM-DD)
@@ -527,31 +528,42 @@ app.get('/api/weather', async (req, res) => {
     if (weatherCache.data && Date.now() - weatherCache.time < 3600000) {
         return res.json(weatherCache.data);
     }
+
+    // 使用 https.get 替代 fetch，规避 Node 内置 fetch 的 TLS/网络兼容性问题
+    const url = `https://api.qweather.com/v7/weather/now?location=101280601&key=${WEATHER_KEY}`;
+
     try {
-        const url = `https://api.qweather.com/v7/weather/now?location=101280601&key=${WEATHER_KEY}`;
-        let r = await fetch(url);
-        let d = await r.json();
-
-        // 如果第一次请求失败，尝试带 User-Agent 头重试一次（Node 18 fetch 兼容性兜底）
-        if (!d || !d.now) {
-            r = await fetch(url, {
-                headers: { 'User-Agent': 'SZHSS-Community/1.0' }
+        const weatherData = await new Promise((resolve, reject) => {
+            https.get(url, (response) => {
+                let data = '';
+                response.on('data', (chunk) => { data += chunk; });
+                response.on('end', () => {
+                    try {
+                        const parsed = JSON.parse(data);
+                        resolve(parsed);
+                    } catch (e) {
+                        reject(new Error('JSON解析失败: ' + data.substring(0, 100)));
+                    }
+                });
+            }).on('error', (err) => {
+                reject(new Error('https请求失败: ' + err.message));
             });
-            d = await r.json();
-        }
+        });
 
-        if (d && d.now) {
-            weatherCache = { data: { temp: d.now.temp, text: d.now.text }, time: Date.now() };
+        if (weatherData && weatherData.now) {
+            weatherCache = {
+                data: { temp: weatherData.now.temp, text: weatherData.now.text },
+                time: Date.now()
+            };
             return res.json(weatherCache.data);
         }
-        // 上游返回了数据但没有 now 字段，记录详情便于排查（如 Key 无效、额度耗尽等）
-        console.error('天气API上游响应异常:', JSON.stringify(d).substring(0, 300));
-        return res.status(502).json({ error: 'weather upstream failed' });
+
+        console.error('和风天气返回异常数据:', JSON.stringify(weatherData).substring(0, 200));
+        if (weatherCache.data) return res.json(weatherCache.data);
+        return res.status(502).json({ error: 'weather upstream failed', detail: '数据格式异常' });
+
     } catch (e) {
-        // 输出详细错误信息到控制台
         console.error('天气API请求失败:', e.message);
-        console.error('错误详情:', JSON.stringify(e, Object.getOwnPropertyNames(e)));
-        // 失败时返回缓存，否则返回更详细的错误
         if (weatherCache.data) return res.json(weatherCache.data);
         return res.status(500).json({ error: 'weather failed', detail: e.message });
     }
