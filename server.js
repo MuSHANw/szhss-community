@@ -545,6 +545,22 @@ app.get('/api/weather', async (req, res) => {
 
 // ---------- 天气 API 结束 ----------
 
+// ---------- App 版本更新 API ----------
+
+// 版本更新检查接口
+const APP_VERSION = '1.2.0';
+const APP_DOWNLOAD_URL = 'https://szhss-community.top/uploads/szhss-community.apk';
+
+app.get('/api/app/version', (req, res) => {
+    res.json({
+        latest_version: APP_VERSION,
+        download_url: APP_DOWNLOAD_URL,
+        update_note: '更新内容：修复若干 bug，新增功能，优化用户体验'
+    });
+});
+
+// ---------- App 版本更新 API 结束 ----------
+
 app.get('/api/me', authMiddleware, async (req, res) => {
     try {
         const result = await pool.query(
