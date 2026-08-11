@@ -446,6 +446,7 @@
 
         .apply-section {
             background: #EFF6FF;
+            border: 1px solid #BFDBFE;
         }
 
         .apply-requirements {
@@ -875,12 +876,17 @@
                 window._isFengji = data.is_fengji;
                 window._isAdmin = data.is_admin;
 
-                // 显示/隐藏申请区域
+                // 显示/隐藏申请区域（仅非风纪委员、非管理员可见）
                 if (!data.is_fengji && !data.is_admin) {
                     document.getElementById('applySection').style.display = 'block';
                     if (data.application_status === 'pending') {
+                        // 已提交申请，等待审核
                         document.getElementById('applyForm').style.display = 'none';
                         document.getElementById('applyPending').style.display = 'block';
+                    } else {
+                        // 未申请或申请已被驳回 → 显示申请表单
+                        document.getElementById('applyForm').style.display = 'block';
+                        document.getElementById('applyPending').style.display = 'none';
                     }
                 }
 
