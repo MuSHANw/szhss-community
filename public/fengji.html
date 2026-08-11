@@ -718,15 +718,16 @@
             <div id="applySection" class="fengji-section apply-section" style="display:none;">
                 <h2>🪪 申请成为风纪委员</h2>
                 <ul class="apply-requirements">
-                    <li>✅ LV3 以上（经验值 400+）</li>
-                    <li>✅ 已通过入站答题</li>
-                    <li>✅ 无违规记录</li>
+                    <li id="condLevel3">加载中...</li>
+                    <li id="condQuiz">加载中...</li>
+                    <li id="condViolation">✅ 无违规记录</li>
                 </ul>
                 <div id="applyForm">
                     <textarea id="applyReason" class="apply-reason-input" maxlength="300" placeholder="说说你为什么要加入风纪委员，以及你打算如何守护社区氛围……（可选）"></textarea>
                     <div style="margin-top:12px;">
-                        <button class="btn-primary" onclick="submitFengjiApply()">📝 申请成为风纪委员</button>
+                        <button class="btn-primary" id="submitApplyBtn" onclick="submitFengjiApply()">📝 申请成为风纪委员</button>
                     </div>
+                    <p id="applyConditionWarning" style="display:none;color:#EF4444;font-size:0.85rem;margin-top:8px;">⚠️ 你尚未满足所有申请条件，请先提升等级并通过入站答题</p>
                 </div>
                 <div id="applyPending" style="display:none;">
                     <div class="apply-pending-tip">⏳ 你的申请正在审核中，请耐心等待管理员审批。</div>
@@ -884,9 +885,10 @@
                         document.getElementById('applyForm').style.display = 'none';
                         document.getElementById('applyPending').style.display = 'block';
                     } else {
-                        // 未申请或申请已被驳回 → 显示申请表单
+                        // 未申请或申请已被驳回 → 显示申请表单，并按用户实际状态动态更新条件
                         document.getElementById('applyForm').style.display = 'block';
                         document.getElementById('applyPending').style.display = 'none';
+                        updateApplyConditions();
                     }
                 }
 
@@ -896,6 +898,41 @@
                 }
             } catch (e) {
                 console.warn('获取风纪状态失败:', e);
+            }
+        }
+
+        // ---------- 动态判断申请条件是否满足 ----------
+        async function updateApplyConditions() {
+            const condLevel3 = document.getElementById('condLevel3');
+            const condQuiz = document.getElementById('condQuiz');
+            const submitBtn = document.getElementById('submitApplyBtn');
+            const warning = document.getElementById('applyConditionWarning');
+            if (!condLevel3 || !condQuiz || !submitBtn) return;
+
+            try {
+                const meRes = await fetch('/api/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const userData = await meRes.json();
+
+                // LV3 需要 400 经验
+                const hasLevel3 = (userData.exp || 0) >= 400;
+                const hasPassedQuiz = !!userData.has_passed_quiz;
+                const allConditionsMet = hasLevel3 && hasPassedQuiz;
+
+                condLevel3.innerHTML = hasLevel3
+                    ? '✅ LV3 以上（经验值 400+）'
+                    : `❌ LV3 以上（当前经验 ${userData.exp || 0}/400，经验不足）`;
+                condQuiz.innerHTML = hasPassedQuiz
+                    ? '✅ 已通过入站答题'
+                    : '❌ 已通过入站答题（未通过，请先完成入站答题）';
+
+                // 只有所有条件满足才显示申请按钮
+                submitBtn.style.display = allConditionsMet ? 'inline-block' : 'none';
+                if (warning) warning.style.display = allConditionsMet ? 'none' : 'block';
+            } catch (e) {
+                console.warn('获取申请条件失败:', e);
+                // 接口失败时保守处理：不隐藏按钮，由后端兜底校验
             }
         }
 

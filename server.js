@@ -4182,10 +4182,10 @@ app.post('/api/fengji/apply', authMiddleware, async (req, res) => {
         if (user.is_admin) return res.status(400).json({ error: '管理员无需申请风纪委员' });
         if (user.is_fengji) return res.status(400).json({ error: '你已经是风纪委员了' });
         if (!user.has_passed_quiz) {
-            return res.status(400).json({ error: '请先通过入站答题再申请' });
+            return res.status(400).json({ error: '你尚未通过入站答题，暂不能申请风纪委员。请先去完成入站答题' });
         }
         if ((user.exp || 0) < 400) {
-            return res.status(400).json({ error: '需要达到 LV3（经验值 400+）才能申请' });
+            return res.status(400).json({ error: '你的等级未达到LV3，暂不能申请风纪委员。当前经验：' + (user.exp || 0) + '，需要400经验' });
         }
 
         // 检查该用户发布的内容是否有被举报且已确认违规的记录（被举报者视角）
