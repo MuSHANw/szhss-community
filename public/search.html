@@ -939,8 +939,18 @@
         async function fetchOtherCounts(q) {
             for (const type of ['posts', 'users', 'circles']) {
                 try {
-                    const res = await fetch(`${window.API_BASE}/search/all?q=${encodeURIComponent(q)}&type=${type}&page=1&limit=1`);
-                    if (res.ok) { const data = await res.json(); counts[type] = data.total; }
+                    // users 需要多取几条来做昵称匹配过滤，避免邮箱匹配导致数量虚高
+                    const limit = type === 'users' ? 10 : 1;
+                    const res = await fetch(`${window.API_BASE}/search/all?q=${encodeURIComponent(q)}&type=${type}&page=1&limit=${limit}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (type === 'users') {
+                            const kw = (q || '').toLowerCase();
+                            counts.users = (data.results || []).filter(u => u.nickname && u.nickname.toLowerCase().includes(kw)).length;
+                        } else {
+                            counts[type] = data.total;
+                        }
+                    }
                 } catch (e) {}
             }
             updateTabCounts();
@@ -1083,7 +1093,13 @@
                 if (!res.ok) throw new Error('搜索失败');
                 const data = await res.json();
 
-                counts[data.type] = data.total;
+                // users 类型只统计昵称匹配的数量（后端可能匹配到邮箱，这里前端兜底过滤）
+                if (data.type === 'users') {
+                    const kw = (q || '').toLowerCase();
+                    counts.users = (data.results || []).filter(u => u.nickname && u.nickname.toLowerCase().includes(kw)).length;
+                } else {
+                    counts[data.type] = data.total;
+                }
                 updateTabCounts();
                 fetchOtherCounts(q);
 
