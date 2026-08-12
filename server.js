@@ -611,7 +611,7 @@ app.post('/api/weather/refresh', authMiddleware, adminMiddleware, async (req, re
 // ---------- App 版本更新 API ----------
 
 // 版本更新检查接口
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.1.7';
 const APP_DOWNLOAD_URL = 'https://szhss-community.top/uploads/szhss-community.apk';
 
 app.get('/api/app/version', (req, res) => {
