@@ -44,8 +44,8 @@ const transporter = nodemailer.createTransport(
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
 
-// 和风天气API配置（每小时缓存一次，所有用户共享）
-const WEATHER_KEY = 'ff00642045fe45ae9a05411fc28a44d0';
+// 高德天气API配置（每小时缓存一次，所有用户共享）
+const WEATHER_KEY = 'ba6ede950ab8bdb7a0a91c272e459f49';
 let weatherCache = { data: null, time: 0 };
 
 // ---------- 昵称校验 ----------
@@ -522,15 +522,15 @@ app.get('/api/users/search', async (req, res) => {
 
 // ---------- 天气 API ----------
 
-// 天气接口：服务器每1小时从和风抓一次并缓存，所有用户同步
+// 天气接口：服务器每1小时从高德抓一次并缓存，所有用户同步
 app.get('/api/weather', async (req, res) => {
     // 1小时内有缓存直接返回
     if (weatherCache.data && Date.now() - weatherCache.time < 3600000) {
         return res.json(weatherCache.data);
     }
 
-    // 使用 https.get 替代 fetch，规避 Node 内置 fetch 的 TLS/网络兼容性问题
-    const url = `https://api.qweather.com/v7/weather/now?location=101280601&key=${WEATHER_KEY}`;
+    // 使用 https.get 请求高德天气 API（city=440300 为深圳市）
+    const url = `https://restapi.amap.com/v3/weather/weatherInfo?city=440300&key=${WEATHER_KEY}&extensions=base`;
 
     try {
         const weatherData = await new Promise((resolve, reject) => {
@@ -550,15 +550,17 @@ app.get('/api/weather', async (req, res) => {
             });
         });
 
-        if (weatherData && weatherData.now) {
+        // 高德返回格式：status='1' 表示成功，lives[0] 含实时天气
+        if (weatherData && weatherData.status === '1' && weatherData.lives && weatherData.lives[0]) {
+            const live = weatherData.lives[0];
             weatherCache = {
-                data: { temp: weatherData.now.temp, text: weatherData.now.text },
+                data: { temp: live.temperature, text: live.weather },
                 time: Date.now()
             };
             return res.json(weatherCache.data);
         }
 
-        console.error('和风天气返回异常数据:', JSON.stringify(weatherData).substring(0, 200));
+        console.error('高德天气返回异常数据:', JSON.stringify(weatherData).substring(0, 200));
         if (weatherCache.data) return res.json(weatherCache.data);
         return res.status(502).json({ error: 'weather upstream failed', detail: '数据格式异常' });
 
@@ -573,16 +575,29 @@ app.get('/api/weather', async (req, res) => {
 app.post('/api/weather/refresh', authMiddleware, adminMiddleware, async (req, res) => {
     weatherCache = { data: null, time: 0 };
     try {
-        const url = `https://api.qweather.com/v7/weather/now?location=101280601&key=${WEATHER_KEY}`;
-        const r = await fetch(url, {
-            headers: { 'User-Agent': 'SZHSS-Community/1.0' }
+        const url = `https://restapi.amap.com/v3/weather/weatherInfo?city=440300&key=${WEATHER_KEY}&extensions=base`;
+        const weatherData = await new Promise((resolve, reject) => {
+            https.get(url, (response) => {
+                let data = '';
+                response.on('data', (chunk) => { data += chunk; });
+                response.on('end', () => {
+                    try {
+                        const parsed = JSON.parse(data);
+                        resolve(parsed);
+                    } catch (e) {
+                        reject(new Error('JSON解析失败: ' + data.substring(0, 100)));
+                    }
+                });
+            }).on('error', (err) => {
+                reject(new Error('https请求失败: ' + err.message));
+            });
         });
-        const d = await r.json();
-        if (d && d.now) {
-            weatherCache = { data: { temp: d.now.temp, text: d.now.text }, time: Date.now() };
+        if (weatherData && weatherData.status === '1' && weatherData.lives && weatherData.lives[0]) {
+            const live = weatherData.lives[0];
+            weatherCache = { data: { temp: live.temperature, text: live.weather }, time: Date.now() };
             return res.json(weatherCache.data);
         }
-        console.error('天气刷新上游响应异常:', JSON.stringify(d).substring(0, 300));
+        console.error('天气刷新上游响应异常:', JSON.stringify(weatherData).substring(0, 300));
         return res.status(502).json({ error: 'weather upstream failed' });
     } catch (e) {
         console.error('天气刷新失败:', e.message);
