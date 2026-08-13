@@ -988,7 +988,7 @@
                                     ? `<img src="${m.avatar_url}" alt="头像">`
                                     : '<span class="member-avatar-icon"><i class="fas fa-user-shield"></i></span>'}
                                 <div class="member-name">${escapeHtml(m.nickname || '用户')}</div>
-                                <div class="member-time">${formatDate(m.created_at)} 加入</div>
+                                <div class="member-time">🛡️ 贡献 ${m.vote_count || 0} 票</div>
                             </div>
                         `).join('')}
                     </div>

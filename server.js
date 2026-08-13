@@ -4306,19 +4306,23 @@ app.get('/api/fengji/status', authMiddleware, async (req, res) => {
     }
 });
 
-// 获取风纪委员晋升榜（所有现任风纪委员）
+// 获取风纪委员晋升榜（按投票贡献数排序）
 app.get('/api/fengji/members', async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT id, nickname, avatar_url, created_at
-             FROM users
-             WHERE is_fengji = true
-             ORDER BY created_at ASC`
+            `SELECT u.id, u.nickname, u.avatar_url, u.exp,
+                    (SELECT COUNT(*) FROM fengji_votes fv WHERE fv.user_id = u.id) as vote_count
+             FROM users u
+             WHERE u.is_fengji = true
+             ORDER BY
+                 (SELECT COUNT(*) FROM fengji_votes fv WHERE fv.user_id = u.id) DESC,
+                 u.exp DESC
+             LIMIT 50`
         );
         res.json({ members: result.rows });
     } catch (err) {
-        console.error('获取风纪委员列表失败:', err);
-        res.status(500).json({ error: '获取列表失败' });
+        console.error('获取风纪委员晋升榜失败:', err);
+        res.status(500).json({ error: '获取晋升榜失败' });
     }
 });
 
