@@ -3982,29 +3982,58 @@ app.post('/api/activities/:id/participate', authMiddleware, async (req, res) => 
 });
 
 // 用户投票
-app.post('/api/activities/:id/vote', authMiddleware, async (req, res) => {
+app.post('/api/activities/:id/vote', async (req, res) => {
     const activityId = parseInt(req.params.id);
-    const userId = req.user.userId;
     const { option_id } = req.body;
 
     if (isNaN(activityId)) return res.status(400).json({ error: '参数错误' });
+
+    // 手动解析 token：登录用户记录 userId，未登录为 null（允许匿名投票）
+    let userId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+        try {
+            const token = authHeader.split(' ')[1];
+            const decoded = jwt.verify(token, JWT_SECRET);
+            userId = decoded.userId;
+        } catch (e) { /* 无效 token 按游客处理 */ }
+    }
+
+    // 获取客户端 IP（考虑反向代理 X-Forwarded-For，取第一个 IP）
+    const ip = (req.headers['x-forwarded-for'] || req.ip || '').toString().split(',')[0].trim();
 
     // 注意：option_id 从 0 开始（选项索引），不能用 !option_id 判断空值
     const optionId = parseInt(option_id);
     if (isNaN(optionId)) return res.status(400).json({ error: '参数错误' });
 
     try {
-        // 单人单票：先检查该用户是否已对该活动投过票
-        const check = await pool.query(
-            'SELECT id FROM activity_votes WHERE activity_id = $1 AND user_id = $2',
-            [activityId, userId]
-        );
-        if (check.rows.length > 0) return res.status(400).json({ error: '你已经投过票了，不能重复投票' });
+        if (userId) {
+            // 登录用户：同一活动只能投 1 票
+            const check = await pool.query(
+                'SELECT id FROM activity_votes WHERE activity_id = $1 AND user_id = $2',
+                [activityId, userId]
+            );
+            if (check.rows.length > 0) return res.status(400).json({ error: '你已经投过票了，不能重复投票' });
+        } else {
+            // 未登录用户：同一 IP 24小时内最多投 3 票（防刷）
+            if (!ip || ip === 'unknown' || ip === '::1' || ip === '127.0.0.1') {
+                return res.status(400).json({ error: '当前环境无法识别来源，请登录后投票' });
+            }
+            const ipCount = await pool.query(
+                `SELECT COUNT(*) as cnt FROM activity_votes
+                 WHERE activity_id = $1 AND ip_address = $2 AND created_at > NOW() - interval '24 hours'`,
+                [activityId, ip]
+            );
+            if (parseInt(ipCount.rows[0].cnt) >= 3) {
+                return res.status(400).json({ error: '投票次数已达上限，24小时内最多投3次' });
+            }
+        }
 
         try {
+            // 登录用户记录 userId（ip 留空），匿名用户记录 ip（userId 留空）
             await pool.query(
-                'INSERT INTO activity_votes (activity_id, user_id, option_id) VALUES ($1, $2, $3)',
-                [activityId, userId, optionId]
+                'INSERT INTO activity_votes (activity_id, user_id, option_id, ip_address) VALUES ($1, $2, $3, $4)',
+                [activityId, userId, optionId, userId ? null : ip]
             );
         } catch (insertErr) {
             // 并发下唯一约束冲突（23505），视为已投票

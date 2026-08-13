@@ -541,7 +541,11 @@
         function renderVote(a, participated) {
             var options = (a.config && a.config.options) || [];
             if (options.length === 0) return '<div class="action-hint">暂未设置候选选项</div>';
-            var votedOption = a.user_vote;
+            // 登录用户以服务端为准；未登录用户参考本浏览器 localStorage 记录（防止重复投票）
+            var localVotedIndex = localStorage.getItem('activityVote_' + a.id);
+            var votedOption = (a.user_vote !== null && a.user_vote !== undefined)
+                ? a.user_vote
+                : (localVotedIndex !== null ? parseInt(localVotedIndex) : null);
             var hasVoted = votedOption !== null && votedOption !== undefined;
             var counts = a.vote_counts || {};
             var total = options.reduce(function(s, _, i) { return s + (counts[i] || 0); }, 0) || 1;
@@ -608,14 +612,18 @@
 
         async function confirmVote() {
             if (selectedVoteIndex === null) return;
-            if (!token) { alert('请先登录'); closeVoteConfirm(); return; }
+            // 登录用户带 token，未登录游客匿名投票（支持朋友圈拉票场景）
+            var headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = 'Bearer ' + token;
             var res = await fetch(window.API_BASE + '/activities/' + activityId + '/vote', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                headers: headers,
                 body: JSON.stringify({ option_id: selectedVoteIndex })
             });
             if (res.ok) {
                 closeVoteConfirm();
+                // 未登录用户用 localStorage 记录本浏览器已投选项，防止重复投票
+                localStorage.setItem('activityVote_' + activityId, String(selectedVoteIndex));
                 selectedVoteIndex = null;
                 alert('投票成功！');
                 loadActivity();
