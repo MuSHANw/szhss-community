@@ -911,6 +911,19 @@
                 padding-left: 0;
             }
         }
+    
+        /* ========== 移动端专项优化（第二批） ========== */
+@media (max-width: 768px) {
+    .post-title { font-size: 1.3rem; }
+    .reply-card { padding-left: 8px; padding-right: 8px; }
+    .nested-replies { margin-left: 25px; }
+    .reply-content { padding-left: 20px; }
+    .reply-footer button { padding: 8px 12px; }
+    .post-content img, .post-content video, .reply-content img, .reply-content video { max-width: 100%; height: auto; }
+    .post-actions { flex-wrap: wrap; gap: 6px; }
+    .post-actions button, .post-actions a { font-size: 0.75rem; padding: 6px 8px; }
+    .post-actions button i, .post-actions a i { margin-right: 2px; }
+}
     </style>
 </head>
 

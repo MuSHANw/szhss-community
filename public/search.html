@@ -661,6 +661,14 @@
                 width: 150px;
             }
         }
+    
+        /* ========== 移动端专项优化（第二批） ========== */
+@media (max-width: 768px) {
+    .search-header { display: none; }
+    #resultsArea { width: 100%; padding: 0 4px; }
+    .search-tabs { flex-wrap: nowrap; overflow-x: auto; }
+    .search-tab { white-space: nowrap; min-height: 44px; flex-shrink: 0; }
+}
     </style>
 </head>
 

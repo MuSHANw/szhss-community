@@ -1188,6 +1188,49 @@
         .form-group select:focus {
             border-color: #1E88E5;
         }
+    
+        /* ========== 移动端专项优化（第二批） ========== */
+@media (max-width: 768px) {
+    .seats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .seat-card { width: 100%; }
+    .sound-btn { min-height: 44px; }
+    #leaderboardModal .modal-dialog { width: 100%; height: 100%; max-height: none; max-width: none; margin: 0; border-radius: 0; padding: 16px; }
+    #mobileTimerFab { display: none; }
+    .control-panel {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 997;
+        max-height: 60vh;
+        overflow-y: auto;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+        background: white;
+        padding: 16px;
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+    }
+    .control-panel.mobile-open { transform: translateY(0); }
+    #mobileTimerFab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        bottom: 76px;
+        right: 16px;
+        z-index: 998;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #1E88E5, #1565C0);
+        color: white;
+        border: none;
+        font-size: 1.3rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    #mobileTimerFab.active { transform: rotate(45deg); }
+}
     </style>
 </head>
 
@@ -2527,6 +2570,31 @@
             }
         })();
     </script>
+
+    <button id="mobileTimerFab" aria-label="番茄钟" title="番茄钟">⏱️</button>
+
+    <script>
+        // 移动端番茄钟折叠面板
+        (function() {
+            if (window.innerWidth > 768) return;
+            const panel = document.getElementById('controlPanel');
+            const fab = document.getElementById('mobileTimerFab');
+            if (!panel || !fab) return;
+            fab.addEventListener('click', function() {
+                panel.classList.toggle('mobile-open');
+                fab.classList.toggle('active');
+            });
+            // 计时结束时收起面板
+            const stopBtn = document.getElementById('stopTimerBtn');
+            if (stopBtn) {
+                stopBtn.addEventListener('click', function() {
+                    panel.classList.remove('mobile-open');
+                    fab.classList.remove('active');
+                });
+            }
+        })();
+    </script>
+
 </body>
 
 </html>

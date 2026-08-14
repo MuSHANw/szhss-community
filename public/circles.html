@@ -162,6 +162,15 @@
             .search-area { width: 140px; }
             .category-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
         }
+    
+        /* ========== 移动端专项优化（第二批） ========== */
+@media (max-width: 768px) {
+    .circles-grid { grid-template-columns: 1fr; }
+    .search-sort-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+    .sort-bar { flex-wrap: nowrap; overflow-x: auto; }
+    .sort-btn { white-space: nowrap; min-height: 40px; flex-shrink: 0; }
+    .search-input { width: 100%; }
+}
     </style>
 </head>
 <body id="appBody">

@@ -157,7 +157,7 @@
 
     // 登录/注册页不跳转
     const currentPath = window.location.pathname;
-    const excludedPaths = ['/login.html', '/register.html', '/reset-password.html', '/forgot-password.html', '/splash.html'];
+    const excludedPaths = ['/login.html', '/register.html', '/reset-password.html', '/forgot-password.html', '/splash.html', '/mobile-profile.html'];
     if (excludedPaths.includes(currentPath)) return;
 
     // 仪表盘页面本身不跳转

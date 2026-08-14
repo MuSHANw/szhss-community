@@ -869,6 +869,17 @@
                 white-space: nowrap;
             }
         }
+    
+        /* ========== 移动端专项优化（第二批） ========== */
+@media (max-width: 768px) {
+    .circle-hero { height: 140px; }
+    .circle-hero-name { font-size: 1.3rem; }
+    .modal-dialog { max-height: 80vh; overflow-y: auto; }
+    .mgmt-member-item, .member-list-item { flex-wrap: wrap; }
+    .mgmt-member-actions { width: 100%; justify-content: flex-end; margin-top: 8px; }
+    #circlePostList, .post-list, .circle-posts { width: 100%; }
+    .member-avatars { flex-wrap: nowrap; overflow-x: auto; }
+}
     </style>
 </head>
 

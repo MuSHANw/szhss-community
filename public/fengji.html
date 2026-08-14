@@ -628,6 +628,16 @@
                 grid-template-columns: repeat(3, 1fr);
             }
         }
+    
+        /* ========== 移动端专项优化（第二批） ========== */
+@media (max-width: 768px) {
+    .report-card { width: 100%; }
+    .vote-buttons { flex-direction: column; }
+    .vote-btn { width: 100%; min-height: 44px; }
+    .application-form input, .application-form textarea { font-size: 16px; }
+    .application-conditions { font-size: 0.8rem; }
+    .member-grid { grid-template-columns: 1fr; }
+}
     </style>
 </head>
 

@@ -568,6 +568,15 @@
                 padding: 24px;
             }
         }
+    
+        /* ========== 移动端专项优化（第二批） ========== */
+@media (max-width: 768px) {
+    input, textarea, select { font-size: 16px; }
+    .upload-item, .upload-btn { min-height: 44px; min-width: 44px; }
+    .selected-members { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+    .member-tag { flex-shrink: 0; }
+    .member-search input { font-size: 16px; }
+}
     </style>
 </head>
 

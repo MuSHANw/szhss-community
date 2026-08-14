@@ -103,6 +103,17 @@
             .form-card { padding:16px; }
             #editor-container .ql-editor { min-height:200px; font-size:16px; }
         }
+    
+        /* ========== 移动端专项优化（第二批） ========== */
+@media (max-width: 768px) {
+    #editor-container .ql-toolbar, .ql-toolbar { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+    #editor-container .ql-toolbar button { width: 44px; height: 44px; }
+    #postTitle { font-size: 16px; }
+    .preset-tags { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+    .preset-tag { min-height: 40px; display: inline-flex; align-items: center; flex-shrink: 0; white-space: nowrap; }
+    .ql-editor { font-size: 16px; }
+    #customTagInput { font-size: 16px; }
+}
     </style>
 </head>
 <body id="appBody">

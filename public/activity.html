@@ -257,6 +257,17 @@
             .activity-card { padding: 18px; }
             .form-row { flex-direction: column; gap: 0; }
         }
+    
+        /* ========== 移动端专项优化（第二批） ========== */
+@media (max-width: 768px) {
+    .activity-hero { height: auto; max-height: 200px; }
+    .activity-hero img, .activity-hero.has-cover img { width: 100%; height: auto; max-height: 200px; object-fit: cover; }
+    .vote-option { width: 100%; }
+    #voteArea, .vote-area { grid-template-columns: 1fr; }
+    #signupForm input, #signupForm textarea, #signupForm select { font-size: 16px; }
+    .confirm-vote-btn, #confirmVoteBtn { width: 100%; min-height: 44px; }
+    .activity-rules { overflow-wrap: break-word; word-break: break-all; }
+}
     </style>
 </head>
 <body id="appBody">
