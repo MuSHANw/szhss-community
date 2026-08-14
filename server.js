@@ -103,6 +103,9 @@ const transporter = nodemailer.createTransport(
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
 
+// 推送服务云函数URL（等MING提供实际地址后替换）
+const PUSH_URL = 'https://你的云函数URL地址';
+
 // 高德天气API配置（每小时缓存一次，所有用户共享）
 const WEATHER_KEY = process.env.GAODE_WEATHER_KEY || 'ba6ede950ab8bdb7a0a91c272e459f49';
 let weatherCache = { data: null, time: 0 };
@@ -135,8 +138,66 @@ async function createNotification(userId, type, sourceId, sourceUserId = null, c
              VALUES ($1, $2, $3, $4, $5)`,
             [userId, type, sourceId, sourceUserId, content]
         );
+
+        // 触发推送通知（不同通知类型对应不同文案）
+        const pushTitles = {
+            'like': '收到点赞',
+            'favorite': '收到收藏',
+            'reply': '收到回复',
+            'follow': '收到关注',
+            'message': '新私信',
+            'circle_event': '圈子新活动',
+            'circle_invite': '圈子邀请',
+            'circle_approved': '圈子通过',
+            'circle_rejected': '圈子驳回',
+            'report_resolved': '举报处理结果',
+            'feedback_resolved': '反馈回复',
+            'system': '社区公告'
+        };
+
+        const pushContents = {
+            'like': '有人点赞了你的帖子',
+            'favorite': '有人收藏了你的帖子',
+            'reply': '有人回复了你的帖子',
+            'follow': '有人关注了你',
+            'message': '你收到一条新消息',
+            'circle_event': '圈子里有新活动',
+            'circle_invite': '有人邀请你加入圈子',
+            'circle_approved': '你的圈子申请已通过',
+            'circle_rejected': '你的圈子申请被驳回',
+            'report_resolved': '你的举报有了处理结果',
+            'feedback_resolved': '你的反馈有了回复',
+            'system': '社区发布了新公告'
+        };
+
+        if (pushTitles[type]) {
+            const pushUrl = sourceId ? `/post-detail.html?id=${sourceId}` : '';
+            sendPushToUser(userId, pushTitles[type], pushContents[type], pushUrl);
+        }
     } catch (err) {
         console.error('创建通知失败:', err);
+    }
+}
+
+// 推送通知给指定用户
+async function sendPushToUser(userId, title, content, payload) {
+    try {
+        const r = await pool.query('SELECT cid FROM user_push_cid WHERE user_id = $1', [userId]);
+        if (!r.rows.length || !r.rows[0].cid) return;
+
+        await fetch(PUSH_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cids: [r.rows[0].cid],
+                title: title,
+                content: content,
+                payload: { url: payload || '' }
+            })
+        });
+    } catch (e) {
+        console.error('推送失败:', e);
+        // 推送失败不阻塞主流程
     }
 }
 
@@ -679,6 +740,27 @@ app.get('/api/app/version', (req, res) => {
 });
 
 // ---------- App 版本更新 API 结束 ----------
+
+// 保存用户推送设备标识
+app.post('/api/push/cid', authMiddleware, async (req, res) => {
+    const cid = ((req.body && req.body.cid) || '').trim();
+    const platform = (req.body && req.body.platform) || 'android';
+
+    if (!cid) return res.status(400).json({ error: 'cid不能为空' });
+
+    try {
+        await pool.query(
+            `INSERT INTO user_push_cid (user_id, cid, platform, updated_at)
+             VALUES ($1, $2, $3, NOW())
+             ON CONFLICT (user_id) DO UPDATE SET cid=EXCLUDED.cid, platform=EXCLUDED.platform, updated_at=NOW()`,
+            [req.user.userId, cid, platform]
+        );
+        res.json({ message: 'ok' });
+    } catch (e) {
+        console.error('保存推送CID失败:', e);
+        res.status(500).json({ error: '服务器错误' });
+    }
+});
 
 app.get('/api/me', authMiddleware, async (req, res) => {
     try {
@@ -3604,6 +3686,9 @@ app.post('/api/messages', writeLimiter, authMiddleware, quizRequired, async (req
 
         // 发送通知给接收者（私信通知）
         await createNotification(receiver_id, 'message', result.rows[0].id, senderId, content.trim().substring(0, 50));
+
+        // 触发私信推送（App 端）
+        sendPushToUser(receiver_id, '新私信', '你收到一条新消息', '/messages.html');
 
         res.json({
             id: result.rows[0].id,
