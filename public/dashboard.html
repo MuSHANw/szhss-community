@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>数据仪表盘 - 深圳高中生社区</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- 移动端适配 -->
+    <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/device-detect.js"></script>
+    <script src="/js/mobile.js" defer></script>
+    <script src="/js/level-utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ========== 全局布局（与 index 一致） ========== */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            background-color: #F5F7FA;
+            color: #1f2d3d;
+            line-height: 1.5;
+            padding-top: 60px;
+            margin-left: 260px;
+            transition: margin-left 0.3s ease;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        body.sidebar-collapsed {
+            margin-left: 70px;
+        }
+
+        /* 背景装饰 */
+        .bg-decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-decorations .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .bg-decorations .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(30, 136, 229, 0.05);
+        }
+
+        .bg-decorations .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .bg-decorations .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .bg-decorations .circle3 {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: 10%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .main {
+            overflow-x: hidden;
+        }
+
+        /* ========== 顶部栏 ========== */
+        .top-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-right: 20px;
+            color: #4a5568;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1E88E5;
+            text-decoration: none;
+            margin-right: auto;
+        }
+
+        .search-area {
+            display: flex;
+            align-items: center;
+            background: #f1f3f5;
+            border-radius: 24px;
+            padding: 4px 12px;
+            width: 260px;
+        }
+
+        .search-area input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .search-area button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .about-link {
+            margin-left: 16px;
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .about-link:hover {
+            color: #1E88E5;
+        }
+
+        .about-link i {
+            margin-right: 4px;
+        }
+
+        .notifications-icon {
+            position: relative;
+            margin-left: 16px;
+            font-size: 1.4rem;
+            color: #6c757d;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== 侧边栏 ========== */
+        #sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: white;
+            border-right: 1px solid #eef2f6;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            z-index: 99;
+            overflow-x: hidden;
+        }
+
+        #sidebar.collapsed {
+            width: 70px;
+        }
+
+        #sidebar.collapsed .sidebar-user-info,
+        #sidebar.collapsed .sidebar-link span {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-logout {
+            font-size: 0;
+            padding: 8px;
+        }
+
+        #sidebar.collapsed .sidebar-logout::before {
+            content: "🚪";
+            font-size: 1.2rem;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            padding: 20px 16px;
+            border-bottom: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .sidebar-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-avatar i {
+            font-size: 48px;
+            color: #1E88E5;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-nickname {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .sidebar-email {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 0;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a5568;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar-link i {
+            width: 28px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            margin-left: 12px;
+        }
+
+        .sidebar-link:hover {
+            background: #f0f2f5;
+        }
+
+        .sidebar-link.active {
+            background: #e9f0fe;
+            color: #1E88E5;
+        }
+
+        .notif-dot {
+            color: #e53e3e;
+            font-size: 0.7rem;
+            margin-left: 4px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #eef2f6;
+        }
+
+        .sidebar-logout {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: #e53e3e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .sidebar-logout:hover {
+            background: #ffe5e5;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin-left: 0;
+            }
+
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px !important;
+            }
+
+            #sidebar.open-mobile {
+                transform: translateX(0);
+            }
+        }
+
+        /* ========== 仪表盘专用样式 ========== */
+        .dashboard-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .dashboard-back-btn {
+            display: inline-block;
+            margin-bottom: 12px;
+            color: #6B7280;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .dashboard-back-btn:hover {
+            color: #1E88E5;
+        }
+
+        .dashboard-overview-card {
+            background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .weather-row {
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .date-row {
+            font-size: 0.9rem;
+            color: #6B7280;
+            margin-bottom: 4px;
+        }
+
+        .countdown-row {
+            font-size: 0.9rem;
+            color: #4B5563;
+            margin-bottom: 4px;
+        }
+
+        .countdown-row strong {
+            color: #1E88E5;
+            font-size: 1.1rem;
+        }
+
+        .poem-row {
+            font-size: 0.85rem;
+            color: #6B7280;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .sheniang-row {
+            background: white;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            color: #4B5563;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dashboard-stats {
+            margin-bottom: 16px;
+        }
+
+        .dashboard-stats h3 {
+            font-size: 1.05rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stats-overview-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .stat-mini-card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            border: 1px solid #eef2f6;
+        }
+
+        .stat-number {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1E88E5;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6B7280;
+            margin-top: 2px;
+        }
+
+        .dashboard-charts {
+            margin: 16px 0;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #eef2f6;
+        }
+
+        .chart-card h4 {
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+        }
+
+        .charts-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .charts-row .chart-card {
+            flex: 1;
+        }
+
+        .dashboard-tabs {
+            display: flex;
+            border-bottom: 2px solid #F3F4F6;
+            background: white;
+            border-radius: 12px 12px 0 0;
+            margin-top: 16px;
+        }
+
+        .dashboard-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #6B7280;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+        }
+
+        .dashboard-tab.active {
+            color: #1E88E5;
+            border-bottom-color: #1E88E5;
+        }
+
+        #dashboardRecords {
+            background: white;
+            border-radius: 0 0 12px 12px;
+            padding: 12px 16px;
+            border: 1px solid #eef2f6;
+            border-top: none;
+            min-height: 120px;
+        }
+
+        .dash-record-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #F3F4F6;
+        }
+
+        .dash-record-item:last-child {
+            border-bottom: none;
+        }
+
+        .dash-record-title {
+            font-weight: 500;
+            color: #1f2d3d;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .dash-record-title:hover {
+            color: #1E88E5;
+        }
+
+        .dash-record-content {
+            font-size: 0.85rem;
+            color: #4a5568;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .dash-record-meta {
+            font-size: 0.75rem;
+            color: #9CA3AF;
+        }
+
+        .dash-record-meta a {
+            color: #1E88E5;
+            text-decoration: none;
+        }
+
+        .dash-load-more {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            background: #f1f3f5;
+            border: none;
+            border-radius: 8px;
+            color: #4a5568;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .dash-load-more:hover {
+            background: #e9f0fe;
+            color: #1E88E5;
+        }
+
+        .login-prompt-card {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #eef2f6;
+        }
+
+        .login-prompt-card .lp-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        .login-prompt-card p {
+            color: #6B7280;
+            margin-bottom: 16px;
+        }
+
+        .lp-btn {
+            display: inline-block;
+            padding: 10px 24px;
+            background: #1E88E5;
+            color: white;
+            border-radius: 24px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .stats-overview-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .charts-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body id="appBody">
+    <div id="androidBanner" style="display:none;background:linear-gradient(135deg,#1E88E5,#1565C0);color:white;padding:10px 16px;text-align:center;position:fixed;top:0;left:0;right:0;z-index:9999;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+        📱 深圳高中生社区 App 已上线！
+        <a href="https://szhss-community.top/uploads/szhss-community.apk" style="color:#FFD93D;font-weight:700;text-decoration:underline;">点击下载安卓版</a>
+        <button onclick="closeAndroidBanner()" style="background:none;border:none;color:white;margin-left:12px;cursor:pointer;font-size:1.2rem;">✕</button>
+    </div>
+    <div id="iosBanner" style="display:none;background:#F3F4F6;color:#333;padding:10px 16px;text-align:center;position:fixed;top:0;left:0;right:0;z-index:9999;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        📱 <span id="iosBannerText">在 Safari 浏览器中打开，点击底部分享按钮添加到桌面</span>
+        <button onclick="closeIOSBanner()" style="background:none;border:none;color:#999;margin-left:12px;cursor:pointer;font-size:1.2rem;">✕</button>
+    </div>
+
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
+    <!-- 顶部栏 -->
+    <div class="top-bar-container">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="/" class="logo">深圳高中生社区</a>
+            <div class="search-area">
+                <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <a href="/about.html" class="about-link" id="aboutLink">
+                <i class="fas fa-info-circle"></i> 关于
+            </a>
+            <a href="/notifications.html" class="notifications-icon" id="notifLink">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div id="sidebar">
+        <div class="sidebar-user" id="sidebarUserBtn">
+            <div class="sidebar-avatar" id="sidebarAvatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-nickname" id="sidebarNickname">未登录</div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
+            <a href="dashboard.html" class="sidebar-link active" title="仪表盘"><i class="fas fa-tachometer-alt"></i><span>仪表盘</span></a>
+            <a href="learning.html" class="sidebar-link" title="学习"><i class="fas fa-graduation-cap"></i><span>学习</span></a>
+            <a href="life.html" class="sidebar-link" title="生活"><i class="fas fa-life-ring"></i><span>生活</span></a>
+            <a href="gaokao.html" class="sidebar-link" title="升学"><i class="fas fa-chart-line"></i><span>升学</span></a>
+            <a href="circles.html" class="sidebar-link" title="圈子"><i class="fas fa-users"></i><span>圈子</span></a>
+            <a href="study.html" class="sidebar-link" title="自习室"><i class="fas fa-clock"></i><span>自习室</span></a>
+            <a href="feed.html" class="sidebar-link" title="动态"><i class="fas fa-bolt"></i><span>动态</span></a>
+            <a href="fengji.html" class="sidebar-link" title="风纪广场"><i class="fas fa-shield-alt"></i><span>风纪广场</span></a>
+            <a href="notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
+                <i class="fas fa-bell"></i><span>通知</span>
+            </a>
+            <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信">
+                <i class="fas fa-envelope"></i><span>私信</span>
+            </a>
+            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
+                <i class="fas fa-comment-dots"></i><span>反馈</span>
+            </a>
+            <a href="https://mushanw.github.io/MuShanblog/sponsor.html" class="sidebar-link sponsor-link" title="赞助" target="_blank">
+                <i class="fas fa-heart"></i><span>赞助</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <!-- 主内容 -->
+    <main class="main container">
+        <div class="dashboard-container">
+            <a href="/index.html" class="dashboard-back-btn">🏠 回到首页</a>
+
+            <!-- 今日概览卡片 -->
+            <div class="dashboard-overview-card">
+                <div class="weather-row">
+                    <span id="weatherIcon">☀️</span>
+                    <span id="weatherText">--</span>
+                    <span id="weatherTemp">--°C</span>
+                    <span style="font-size:0.8rem;color:#6B7280;">深圳</span>
+                </div>
+                <div class="date-row" id="todayDate">--</div>
+                <div class="countdown-row">🎓 距离高考还有 <strong id="gaokaoCountdown">--</strong> 天</div>
+                <div class="poem-row" id="dailyPoem">--</div>
+                <div class="sheniang-row">
+                    <span>🕊️</span>
+                    <span id="sheniangMessage">--</span>
+                </div>
+            </div>
+
+            <!-- 数据概览 -->
+            <div id="statsSection">
+                <div class="dashboard-stats">
+                    <h3>📊 数据概览</h3>
+                    <div class="stats-overview-grid">
+                        <div class="stat-mini-card"><div class="stat-number" id="statPosts">--</div><div class="stat-label">发帖</div></div>
+                        <div class="stat-mini-card"><div class="stat-number" id="statReplies">--</div><div class="stat-label">回复</div></div>
+                        <div class="stat-mini-card"><div class="stat-number" id="statLikes">--</div><div class="stat-label">获赞</div></div>
+                        <div class="stat-mini-card"><div class="stat-number" id="statFavorites">--</div><div class="stat-label">被收藏</div></div>
+                        <div class="stat-mini-card"><div class="stat-number" id="statFollowing">--</div><div class="stat-label">关注</div></div>
+                        <div class="stat-mini-card"><div class="stat-number" id="statFollowers">--</div><div class="stat-label">粉丝</div></div>
+                    </div>
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="dashboard-charts">
+                    <div class="chart-card"><h4>📈 发帖趋势</h4><canvas id="postsChart" height="200"></canvas></div>
+                    <div class="charts-row">
+                        <div class="chart-card"><h4>🎯 互动构成</h4><canvas id="interactionChart" height="200"></canvas></div>
+                        <div class="chart-card"><h4>🕐 活跃时段</h4><canvas id="hourlyChart" height="200"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 我的记录 Tab -->
+            <div class="dashboard-tabs">
+                <button class="dashboard-tab active" data-tab="posts">📝 帖子</button>
+                <button class="dashboard-tab" data-tab="replies">💬 回复</button>
+                <button class="dashboard-tab" data-tab="favorites">⭐ 收藏</button>
+            </div>
+            <div id="dashboardRecords">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        window.API_BASE = window.API_BASE || '/api';
+        const token = localStorage.getItem('token');
+        let currentUid = null;
+        let currentTab = 'posts';
+        let currentPage = 1;
+        let totalPages = 1;
+        let loadingRecords = false;
+
+        // ---------- 今日概览（无需登录） ----------
+        function updateDate() {
+            const now = new Date();
+            const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${weekdays[now.getDay()]}`;
+            const el = document.getElementById('todayDate');
+            if (el) el.innerText = dateStr;
+        }
+
+        function updateGaokaoCountdown() {
+            const now = new Date();
+            let gaokaoDate = new Date(now.getFullYear(), 5, 7);
+            if (now > gaokaoDate) gaokaoDate = new Date(now.getFullYear() + 1, 5, 7);
+            const diff = Math.ceil((gaokaoDate - now) / (1000 * 60 * 60 * 24));
+            const el = document.getElementById('gaokaoCountdown');
+            if (el) el.innerText = diff;
+        }
+
+        const poemList = [
+            { line: "长风破浪会有时，直挂云帆济沧海。", author: "李白《行路难》" },
+            { line: "读书破万卷，下笔如有神。", author: "杜甫《奉赠韦左丞丈二十二韵》" },
+            { line: "黑发不知勤学早，白首方悔读书迟。", author: "颜真卿《劝学》" },
+            { line: "宝剑锋从磨砺出，梅花香自苦寒来。", author: "佚名" },
+            { line: "业精于勤，荒于嬉；行成于思，毁于随。", author: "韩愈《进学解》" },
+            { line: "青春须早为，岂能长少年。", author: "孟郊《劝学》" },
+            { line: "纸上得来终觉浅，绝知此事要躬行。", author: "陆游《冬夜读书示子聿》" },
+            { line: "莫等闲，白了少年头，空悲切。", author: "岳飞《满江红》" }
+        ];
+
+        function updateDailyPoem() {
+            const today = new Date().toISOString().slice(0, 10);
+            let index = 0;
+            for (let i = 0; i < today.length; i++) index += today.charCodeAt(i);
+            index = index % poemList.length;
+            const poem = poemList[index];
+            const el = document.getElementById('dailyPoem');
+            if (el) el.innerHTML = `“${poem.line}” — ${poem.author}`;
+        }
+
+        function getWeatherIcon(text) {
+            if (!text) return '🌈';
+            if (text.includes('晴')) return '☀️';
+            if (text.includes('多云')) return '⛅';
+            if (text.includes('阴')) return '☁️';
+            if (text.includes('雨') || text.includes('雷')) return '🌧️';
+            if (text.includes('雪')) return '❄️';
+            return '🌈';
+        }
+
+        function getSheniangText(text) {
+            if (!text) return '新的一天，加油呀！';
+            if (text.includes('晴')) return '今天天气真好，一起来学习吧~';
+            if (text.includes('多云')) return '天气不冷不热，最适合刷帖了！';
+            if (text.includes('阴')) return '天有点阴，但心情不能阴哦~';
+            if (text.includes('雨') || text.includes('雷')) return '下雨天最适合窝着学习了~';
+            if (text.includes('雪')) return '好冷！记得多穿点！';
+            return '新的一天，加油呀！';
+        }
+
+        async function loadWeather() {
+            try {
+                const res = await fetch(`${window.API_BASE}/weather`);
+                const data = await res.json();
+                if (data && data.text !== undefined) {
+                    document.getElementById('weatherIcon').innerText = getWeatherIcon(data.text);
+                    document.getElementById('weatherText').innerText = data.text;
+                    document.getElementById('weatherTemp').innerText = data.temp + '°C';
+                    document.getElementById('sheniangMessage').innerText = getSheniangText(data.text);
+                }
+            } catch (e) { console.warn('天气加载失败', e); }
+        }
+
+        // ---------- 数据概览 + 图表（需登录） ----------
+        function showLoginPrompt() {
+            document.getElementById('statsSection').innerHTML = '';
+            document.getElementById('dashboardRecords').innerHTML = `
+                <div class="login-prompt-card">
+                    <div class="lp-icon">🔒</div>
+                    <p>登录后即可查看你的数据概览</p>
+                    <a href="/login.html" class="lp-btn">去登录</a>
+                </div>
+            `;
+        }
+
+        async function loadStats(uid) {
+            try {
+                const res = await fetch(`${window.API_BASE}/users/${uid}/stats`);
+                const data = await res.json();
+                if (!res.ok) return;
+                const o = data.overview;
+                document.getElementById('statPosts').textContent = o.posts;
+                document.getElementById('statReplies').textContent = o.replies;
+                document.getElementById('statLikes').textContent = o.likes;
+                document.getElementById('statFavorites').textContent = o.favorites;
+                document.getElementById('statFollowing').textContent = o.following;
+                document.getElementById('statFollowers').textContent = o.followers;
+                if (typeof Chart !== 'undefined') {
+                    renderPostsChart(data.monthlyPosts, data.monthlyReplies);
+                    renderInteractionChart(o);
+                    renderHourlyChart(data.hourlyActivity);
+                }
+            } catch (e) { console.warn('统计数据加载失败:', e); }
+        }
+
+        function fillMonthlyData(months, data) {
+            return months.map(m => {
+                const found = data.find(d => d.month && d.month.startsWith(m));
+                return found ? parseInt(found.count) : 0;
+            });
+        }
+
+        function renderPostsChart(monthlyPosts, monthlyReplies) {
+            const ctx = document.getElementById('postsChart');
+            if (!ctx) return;
+            const now = new Date();
+            const months = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+            }
+            new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        { label: '发帖', data: fillMonthlyData(months, monthlyPosts), borderColor: '#1E88E5', backgroundColor: 'rgba(30,136,229,0.1)', tension: 0.3 },
+                        { label: '回复', data: fillMonthlyData(months, monthlyReplies), borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        function renderInteractionChart(overview) {
+            const ctx = document.getElementById('interactionChart');
+            if (!ctx) return;
+            new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['获赞', '被收藏', '被回复'],
+                    datasets: [{
+                        data: [overview.likes, overview.favorites, overview.replies],
+                        backgroundColor: ['#EF4444', '#F59E0B', '#3B82F6']
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        function renderHourlyChart(hourlyData) {
+            const ctx = document.getElementById('hourlyChart');
+            if (!ctx) return;
+            const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+            const data = Array.from({ length: 24 }, (_, i) => {
+                const found = hourlyData.find(h => parseInt(h.hour) === i);
+                return found ? parseInt(found.total) : 0;
+            });
+            new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ label: '活跃次数', data: data, backgroundColor: '#1E88E5' }] },
+                options: { responsive: true }
+            });
+        }
+
+        // ---------- 我的记录 Tab ----------
+        function bindTabs(uid) {
+            document.querySelectorAll('.dashboard-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.dashboard-tab').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentTab = btn.getAttribute('data-tab');
+                    currentPage = 1;
+                    loadRecords(uid);
+                });
+            });
+            loadRecords(uid);
+        }
+
+        function formatTime(iso) {
+            if (!iso) return '';
+            try {
+                const d = new Date(iso);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            } catch (e) { return ''; }
+        }
+
+        async function loadRecords(uid, append = false) {
+            if (loadingRecords) return;
+            loadingRecords = true;
+            const container = document.getElementById('dashboardRecords');
+            if (!append) {
+                container.innerHTML = '<div class="loading">加载中...</div>';
+            }
+            try {
+                const res = await fetch(`${window.API_BASE}/users/${uid}/${currentTab}?page=${currentPage}&limit=10`);
+                const data = await res.json();
+                const items = data.posts || data.replies || [];
+                totalPages = data.totalPages || 1;
+
+                let html = '';
+                if (currentTab === 'posts') {
+                    items.forEach(p => {
+                        html += `
+                            <div class="dash-record-item">
+                                <a class="dash-record-title" href="/post-detail.html?id=${p.id}">${escapeHtml(p.title)}</a>
+                                <div class="dash-record-meta">${escapeHtml(p.category || '')} · 💬 ${p.reply_count || 0} · ${formatTime(p.created_at)}</div>
+                            </div>`;
+                    });
+                } else if (currentTab === 'replies') {
+                    items.forEach(r => {
+                        html += `
+                            <div class="dash-record-item">
+                                <a class="dash-record-title" href="/post-detail.html?id=${r.post_id}">回复：${escapeHtml(r.post_title || '')}</a>
+                                <div class="dash-record-content">${escapeHtml(stripHtml(r.content))}</div>
+                                <div class="dash-record-meta">${formatTime(r.created_at)}</div>
+                            </div>`;
+                    });
+                } else {
+                    items.forEach(p => {
+                        html += `
+                            <div class="dash-record-item">
+                                <a class="dash-record-title" href="/post-detail.html?id=${p.id}">⭐ ${escapeHtml(p.title)}</a>
+                                <div class="dash-record-meta">${escapeHtml(p.category || '')} · ${formatTime(p.created_at)}</div>
+                            </div>`;
+                    });
+                }
+
+                if (!html) {
+                    html = '<div class="no-posts" style="border:none;">暂无内容</div>';
+                }
+                if (currentPage < totalPages) {
+                    html += `<button class="dash-load-more" id="dashLoadMoreBtn">加载更多</button>`;
+                }
+                container.innerHTML = html;
+
+                const moreBtn = document.getElementById('dashLoadMoreBtn');
+                if (moreBtn) {
+                    moreBtn.addEventListener('click', () => {
+                        currentPage++;
+                        loadRecords(uid, true);
+                    });
+                }
+            } catch (e) {
+                container.innerHTML = '<div class="no-posts" style="border:none;">加载失败，请稍后重试</div>';
+            }
+            loadingRecords = false;
+        }
+
+        function stripHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.innerHTML = str;
+            return div.textContent || div.innerText || '';
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        // ---------- 侧边栏 ----------
+        function fillSidebarUser(me) {
+            if (!me) return;
+            const nickEl = document.getElementById('sidebarNickname');
+            const emailEl = document.getElementById('sidebarEmail');
+            if (nickEl) nickEl.textContent = me.nickname;
+            if (emailEl) emailEl.textContent = me.email;
+        }
+
+        function bindSidebarActions() {
+            const userBtn = document.getElementById('sidebarUserBtn');
+            if (userBtn) userBtn.addEventListener('click', () => {
+                window.location.href = token ? '/profile.html' : '/login.html';
+            });
+            const logoutBtn = document.getElementById('sidebarLogoutBtn');
+            if (logoutBtn) logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login.html';
+            });
+            const searchBtn = document.getElementById('searchBtn');
+            const searchInput = document.getElementById('searchInput');
+            if (searchBtn && searchInput) {
+                searchBtn.addEventListener('click', () => {
+                    const keyword = searchInput.value.trim();
+                    window.location.href = keyword ? `/search.html?q=${encodeURIComponent(keyword)}` : '/search.html';
+                });
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const keyword = searchInput.value.trim();
+                        window.location.href = keyword ? `/search.html?q=${encodeURIComponent(keyword)}` : '/search.html';
+                    }
+                });
+            }
+        }
+
+        // ---------- 初始化 ----------
+        (async function init() {
+            updateDate();
+            updateGaokaoCountdown();
+            updateDailyPoem();
+            loadWeather();
+            bindSidebarActions();
+
+            if (!token) {
+                showLoginPrompt();
+                return;
+            }
+
+            try {
+                const meRes = await fetch(`${window.API_BASE}/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const me = await meRes.json();
+                if (!meRes.ok) {
+                    showLoginPrompt();
+                    return;
+                }
+                currentUid = me.id;
+                fillSidebarUser(me);
+                loadStats(currentUid);
+                bindTabs(currentUid);
+            } catch (e) {
+                showLoginPrompt();
+            }
+        })();
+    </script>
+
+    <script>
+        // 移动端设备引导横幅控制
+        (function() {
+            // 获取今天日期字符串 YYYY-MM-DD
+            function getTodayStr() {
+                const d = new Date();
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            }
+
+            // 关闭函数
+            window.closeAndroidBanner = function() {
+                document.getElementById('androidBanner').style.display = 'none';
+                localStorage.setItem('androidBannerClosedDate', getTodayStr());
+                const topBar = document.querySelector('.top-bar-container');
+                if (topBar) topBar.style.top = '0';
+            };
+
+            window.closeIOSBanner = function() {
+                document.getElementById('iosBanner').style.display = 'none';
+                localStorage.setItem('iosBannerClosedDate', getTodayStr());
+                const topBar = document.querySelector('.top-bar-container');
+                if (topBar) topBar.style.top = '0';
+            };
+
+            // 只在移动端显示
+            if (!window.isMobile) return;
+
+            // 检查是否已添加到桌面（PWA standalone模式）
+            function isPWAStandalone() {
+                return window.matchMedia('(display-mode: standalone)').matches
+                    || window.navigator.standalone === true;
+            }
+
+            const todayStr = getTodayStr();
+
+            if (window.isAndroid) {
+                // 安卓：每天首次访问时弹窗
+                const lastClosed = localStorage.getItem('androidBannerClosedDate');
+                if (lastClosed !== todayStr) {
+                    document.getElementById('androidBanner').style.display = 'block';
+                    const topBar = document.querySelector('.top-bar-container');
+                    if (topBar) topBar.style.top = '40px';
+                }
+            } else if (window.isIOS) {
+                // 已添加到桌面则不弹；未添加则每天首次弹
+                if (isPWAStandalone()) return;
+
+                const lastClosed = localStorage.getItem('iosBannerClosedDate');
+                if (lastClosed !== todayStr) {
+                    // 根据浏览器环境设置不同文案
+                    const ua = navigator.userAgent;
+                    const isWeChat = /MicroMessenger/i.test(ua);
+                    const isQQ = /QQ\//i.test(ua);
+                    const isSafari = /Safari/i.test(ua) && !/Chrome/i.test(ua) && !isWeChat && !isQQ;
+
+                    const textEl = document.getElementById('iosBannerText');
+                    let bannerText = '';
+
+                    if (isWeChat || isQQ) {
+                        bannerText = '请点击右上角“...” → 选择“在浏览器中打开” → 在 Safari 中点击底部分享按钮 → “添加到主屏幕”';
+                    } else if (isSafari) {
+                        bannerText = '点击 Safari 底部的分享按钮（方框+向上箭头）→ 选择“添加到主屏幕”';
+                    } else {
+                        bannerText = '请在系统浏览器中打开此页面，然后通过浏览器菜单“添加到主屏幕”';
+                    }
+
+                    if (textEl) textEl.textContent = bannerText;
+
+                    document.getElementById('iosBanner').style.display = 'block';
+                    const topBar = document.querySelector('.top-bar-container');
+                    if (topBar) topBar.style.top = '40px';
+                }
+            }
+        })();
+    </script>
+</body>
+
+</html>

@@ -94,22 +94,46 @@
         <a href="/index.html" class="${isActive('/index.html')}">
             <i class="fas fa-home"></i><span>首页</span>
         </a>
-        <a href="/study.html" class="${isActive('/study.html')}">
-            <i class="fas fa-clock"></i><span>自习室</span>
+        <a href="/circles.html" class="${isActive('/circles.html')}">
+            <i class="fas fa-users"></i><span>圈子</span>
         </a>
         <a href="/post.html" class="fab">
             <i class="fas fa-plus"></i>
         </a>
-        <a href="/notifications.html" class="${isActive('/notifications.html')}">
-            <i class="fas fa-bell"></i><span>通知</span>
+        <a href="/study.html" class="${isActive('/study.html')}">
+            <i class="fas fa-clock"></i><span>自习室</span>
         </a>
-        <a href="/profile.html" class="${isActive('/profile.html')}">
+        <a href="/mobile-profile.html" class="${isActive('/mobile-profile.html')}">
             <i class="fas fa-user"></i><span>我的</span>
         </a>
     `;
     body.appendChild(nav);
 
-    // 7. 顶部搜索功能
+    // 7. 注入移动端搜索条（顶部栏下方、主内容区上方）
+    function injectMobileSearchBar() {
+        const topBar = document.querySelector('.top-bar-container');
+        if (!topBar || document.getElementById('mobileSearchBar')) return;
+
+        const searchBar = document.createElement('div');
+        searchBar.id = 'mobileSearchBar';
+        searchBar.innerHTML = `
+            <div class="mobile-search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="搜索帖子、用户、圈子..." id="mobileSearchInput">
+            </div>
+        `;
+        topBar.insertAdjacentElement('afterend', searchBar);
+
+        document.getElementById('mobileSearchInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const keyword = this.value.trim();
+                if (keyword) window.location.href = '/search.html?q=' + encodeURIComponent(keyword);
+            }
+        });
+    }
+    injectMobileSearchBar();
+
+    // 8. 顶部搜索功能
     const searchBtn = document.getElementById('searchBtn');
     const searchInput = document.getElementById('searchInput');
     if (searchBtn && searchInput) {
@@ -122,7 +146,33 @@
         });
     }
 
-    // 8. 移除 PC 端的侧边栏折叠状态
+    // 9. 移除 PC 端的侧边栏折叠状态
     sidebar.classList.remove('collapsed');
     body.classList.remove('sidebar-collapsed');
+})();
+
+// 每天首次访问跳转仪表盘
+(function() {
+    if (window.innerWidth > 768) return; // 仅移动端
+
+    // 登录/注册页不跳转
+    const currentPath = window.location.pathname;
+    const excludedPaths = ['/login.html', '/register.html', '/reset-password.html', '/forgot-password.html', '/splash.html'];
+    if (excludedPaths.includes(currentPath)) return;
+
+    // 仪表盘页面本身不跳转
+    if (currentPath.includes('dashboard.html')) return;
+
+    function getTodayStr() {
+        const d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    const today = getTodayStr();
+    const lastVisit = localStorage.getItem('lastDashboardVisit');
+
+    if (lastVisit !== today) {
+        localStorage.setItem('lastDashboardVisit', today);
+        window.location.href = '/dashboard.html';
+    }
 })();

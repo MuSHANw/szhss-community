@@ -216,3 +216,102 @@
         margin: 0;
     }
 }
+/* ========== 移动端全面适配 ========== */
+@media (max-width: 768px) {
+    /* 全局防溢出 */
+    body { overflow-x: hidden; }
+    .container { padding: 0 10px; }
+    .main { padding-bottom: 80px; }
+
+    /* 统一按钮最小触摸区域 */
+    button, .btn, .action-btn, .vote-btn, .feed-tab, .sort-btn, .study-tab, .admin-tab-btn {
+        min-height: 44px;
+    }
+
+    /* 统一输入框字号防iOS缩放 */
+    input, textarea, select {
+        font-size: 16px !important;
+    }
+
+    /* 统一图片容器 */
+    img, video {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* 富文本容器防溢出 */
+    .post-content, .announcement-content, .ql-editor, .event-desc {
+        overflow-wrap: break-word;
+        word-break: break-all;
+    }
+
+    /* 移动端搜索条 */
+    .mobile-search-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: white;
+        border-radius: 40px;
+        padding: 8px 16px;
+        margin: 8px 10px 0;
+        border: 1px solid #eef2f6;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .mobile-search-bar i {
+        color: #9CA3AF;
+        font-size: 0.9rem;
+    }
+    .mobile-search-bar input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 14px;
+        background: transparent;
+    }
+
+    /* 隐藏PC端顶部搜索和关于链接 */
+    .top-bar .search-area { display: none; }
+    .top-bar .about-link { display: none; }
+
+    /* 顶部栏精简 */
+    .top-bar-container { padding: 0 10px; }
+    .top-bar .logo { font-size: 1.1rem; margin-right: auto; }
+
+    /* 移动端隐藏右侧栏 */
+    .right-sidebar, .info-card, .sidebar-card {
+        display: none !important;
+    }
+
+    /* 首页帖子列表全宽 */
+    .posts-list { flex: 1; width: 100%; }
+    .two-columns { display: block; }
+
+    /* 移动端标签栏 */
+    .feed-tabs {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+    }
+}
+
+/* ========== 公告条移动端适配 ========== */
+@media (max-width: 768px) {
+    .announcement-bar {
+        margin: 8px 10px 0;
+        padding: 10px 14px;
+        border-radius: 12px;
+    }
+    .announcement-bar-title {
+        font-size: 0.85rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+        display: block;
+    }
+    .announcement-bar-btn {
+        display: none; /* 移动端不显示确认按钮，点击进详情页确认 */
+    }
+}

@@ -3,22 +3,17 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>反馈与举报 - 深圳高中生社区</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>我的 - 深圳高中生社区</title>
     <link rel="stylesheet" href="/css/style.css">
     <!-- 移动端适配 -->
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
     <script src="/js/device-detect.js"></script>
     <script src="/js/mobile.js" defer></script>
+    <script src="/js/level-utils.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* ========== 全局样式（与 index 一致，但不含右侧面板） ========== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* ========== 全局布局（与 index 一致） ========== */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
             background-color: #F5F7FA;
@@ -27,16 +22,72 @@
             padding-top: 60px;
             margin-left: 260px;
             transition: margin-left 0.3s ease;
+            position: relative;
+            min-height: 100vh;
         }
 
         body.sidebar-collapsed {
             margin-left: 70px;
         }
 
+        /* 背景装饰 */
+        .bg-decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-decorations .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231E88E5" fill-opacity="0.08" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,186.7C672,192,768,224,864,229.3C960,235,1056,213,1152,192C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .bg-decorations .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(30, 136, 229, 0.05);
+        }
+
+        .bg-decorations .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .bg-decorations .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .bg-decorations .circle3 {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: 10%;
+        }
+
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
+        }
+
+        .main {
+            overflow-x: hidden;
         }
 
         /* ========== 顶部栏 ========== */
@@ -103,7 +154,6 @@
             color: #6c757d;
         }
 
-        /* 关于链接 */
         .about-link {
             margin-left: 16px;
             color: #4a5568;
@@ -122,7 +172,6 @@
             margin-right: 4px;
         }
 
-        /* 顶部铃铛链接 */
         .notifications-icon {
             position: relative;
             margin-left: 16px;
@@ -289,137 +338,6 @@
             background: #ffe5e5;
         }
 
-        /* ========== 反馈页面特有样式 ========== */
-        .feedback-container {
-            max-width: 800px;
-            margin: 40px auto;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            border-bottom: 1px solid #eef2f6;
-        }
-
-        .tab-btn {
-            background: none;
-            border: none;
-            padding: 8px 20px;
-            font-size: 1rem;
-            font-weight: 500;
-            color: #6c757d;
-            cursor: pointer;
-            transition: 0.2s;
-            border-radius: 30px;
-        }
-
-        .tab-btn.active {
-            color: #1E88E5;
-            background: #e9f0fe;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #eef2f6;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            background: #e9ecef;
-        }
-
-        .status-resolved {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-rejected {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status-read {
-            background: #cfe2ff;
-            color: #004085;
-        }
-
-        .btn-feedback {
-            background: #1E88E5;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 40px;
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
-
-        .feedback-form {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .feedback-form textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .feedback-form button {
-            margin-top: 12px;
-            background: #1E88E5;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 40px;
-            cursor: pointer;
-        }
-
-        .reply-content {
-            margin-top: 8px;
-            padding: 8px;
-            background: #f0f2f5;
-            border-radius: 12px;
-            color: #1f2d3d;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-        }
-
-        .empty {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-        }
-
         @media (max-width: 768px) {
             body {
                 margin-left: 0;
@@ -435,6 +353,149 @@
                 transform: translateX(0);
             }
         }
+
+        /* ========== 移动端"我的"页面样式 ========== */
+        .mobile-profile-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+
+        .mp-profile-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
+            border: 1px solid #eef2f6;
+            cursor: pointer;
+        }
+
+        .mp-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .mp-profile-info {
+            flex: 1;
+        }
+
+        .mp-nickname {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .mp-level {
+            font-size: 0.85rem;
+            color: #1E88E5;
+            margin: 4px 0;
+        }
+
+        .mp-coins {
+            font-size: 0.85rem;
+            color: #F59E0B;
+        }
+
+        .mp-checkin-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #F59E0B, #F97316);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .mp-checkin-btn.checked {
+            background: #D1D5DB;
+            cursor: default;
+        }
+
+        .mp-section {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #eef2f6;
+        }
+
+        .mp-section-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+
+        .mp-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .mp-badge {
+            font-size: 1.5rem;
+            cursor: help;
+        }
+
+        .mp-badge-empty {
+            font-size: 0.8rem;
+            color: #9CA3AF;
+        }
+
+        /* 简化版活跃度日历 */
+        .mp-calendar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+        }
+
+        .mp-cal-day {
+            width: 11px;
+            height: 11px;
+            border-radius: 2px;
+        }
+
+        .mp-cal-legend {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 10px;
+            font-size: 0.7rem;
+            color: #9CA3AF;
+        }
+
+        .mp-entry-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mp-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #F3F4F6;
+            text-decoration: none;
+            color: #1F2937;
+            font-size: 0.9rem;
+        }
+
+        .mp-entry:last-child {
+            border-bottom: none;
+        }
+
+        .mp-entry i {
+            color: #D1D5DB;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 
@@ -449,6 +510,14 @@
         <button onclick="closeIOSBanner()" style="background:none;border:none;color:#999;margin-left:12px;cursor:pointer;font-size:1.2rem;">✕</button>
     </div>
 
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+        <div class="circle circle1"></div>
+        <div class="circle circle2"></div>
+        <div class="circle circle3"></div>
+        <div class="wave"></div>
+    </div>
+
     <!-- 顶部栏 -->
     <div class="top-bar-container">
         <div class="top-bar">
@@ -460,11 +529,9 @@
                 <input type="text" placeholder="搜索帖子、用户..." id="searchInput">
                 <button id="searchBtn"><i class="fas fa-search"></i></button>
             </div>
-            <!-- 新增：关于按钮 -->
             <a href="/about.html" class="about-link" id="aboutLink">
                 <i class="fas fa-info-circle"></i> 关于
             </a>
-            <!-- 顶部铃铛：改为链接跳转通知页面 -->
             <a href="/notifications.html" class="notifications-icon" id="notifLink">
                 <i class="fas fa-bell"></i>
                 <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
@@ -483,7 +550,7 @@
                 <div class="sidebar-email" id="sidebarEmail"></div>
             </div>
         </div>
-                <nav class="sidebar-nav">
+        <nav class="sidebar-nav">
             <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
             <a href="dashboard.html" class="sidebar-link" title="仪表盘"><i class="fas fa-tachometer-alt"></i><span>仪表盘</span></a>
             <a href="learning.html" class="sidebar-link" title="学习"><i class="fas fa-graduation-cap"></i><span>学习</span></a>
@@ -495,14 +562,13 @@
             <a href="fengji.html" class="sidebar-link" title="风纪广场"><i class="fas fa-shield-alt"></i><span>风纪广场</span></a>
             <a href="notifications.html" class="sidebar-link" id="sidebarNotifLink" title="通知">
                 <i class="fas fa-bell"></i><span>通知</span>
-                <span class="notif-dot" id="sidebarNotifDot" style="display:none;">●</span>
             </a>
             <a href="messages.html" class="sidebar-link" id="sidebarMessagesLink" title="私信">
                 <i class="fas fa-envelope"></i><span>私信</span>
             </a>
-            <a href="profile.html" class="sidebar-link" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
+            <a href="profile.html" class="sidebar-link active" title="个人主页"><i class="fas fa-user"></i><span>个人主页</span></a>
             <a href="settings.html" class="sidebar-link" title="设置"><i class="fas fa-cog"></i><span>设置</span></a>
-            <a href="feedback.html" class="sidebar-link active" id="sidebarFeedbackLink" title="反馈">
+            <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
                 <i class="fas fa-comment-dots"></i><span>反馈</span>
             </a>
             <a href="https://mushanw.github.io/MuShanblog/sponsor.html" class="sidebar-link sponsor-link" title="赞助" target="_blank">
@@ -514,278 +580,225 @@
         </div>
     </div>
 
-    <div class="container feedback-container">
-        <button id="newFeedbackBtn" class="btn-feedback"><i class="fas fa-plus"></i> 我要反馈</button>
-        <div id="feedbackForm" class="feedback-form">
-            <textarea id="feedbackContent" rows="4" placeholder="请输入你的建议或问题..."></textarea>
-            <button id="submitFeedbackBtn">提交反馈</button>
-            <button id="cancelFeedbackBtn">取消</button>
-        </div>
+    <!-- 主内容 -->
+    <main class="main container">
+        <div class="mobile-profile-container">
+            <!-- 个人信息卡片 -->
+            <div class="mp-profile-card" id="mpProfileCard">
+                <img id="mpAvatar" src="" alt="头像" class="mp-avatar">
+                <div class="mp-profile-info">
+                    <div class="mp-nickname" id="mpNickname">未登录</div>
+                    <div class="mp-level" id="mpLevel">LV0 未认证</div>
+                    <div class="mp-coins" id="mpCoins">🪙 0 鹏城币</div>
+                </div>
+            </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="reports">我的举报</button>
-            <button class="tab-btn" data-tab="feedbacks">我的反馈</button>
+            <!-- 签到按钮 -->
+            <button class="mp-checkin-btn" id="mpCheckinBtn">📋 签到 +5</button>
+
+            <!-- 成就徽章墙 -->
+            <div class="mp-section">
+                <div class="mp-section-title">🏆 成就徽章</div>
+                <div class="mp-badges" id="mpBadges">
+                    <span class="mp-badge-empty">登录后查看</span>
+                </div>
+            </div>
+
+            <!-- 活跃度日历 -->
+            <div class="mp-section">
+                <div class="mp-section-title">📊 活跃度</div>
+                <div id="mpCalendar">
+                    <span class="mp-badge-empty">登录后查看</span>
+                </div>
+            </div>
+
+            <!-- 功能入口列表 -->
+            <div class="mp-section">
+                <div class="mp-entry-list">
+                    <a href="/dashboard.html" class="mp-entry">📊 数据仪表盘 <i class="fas fa-chevron-right"></i></a>
+                    <a href="/settings.html" class="mp-entry">✏️ 编辑资料 <i class="fas fa-chevron-right"></i></a>
+                    <a href="/quiz.html" class="mp-entry">📝 入站测试 <i class="fas fa-chevron-right"></i></a>
+                    <a href="/help.html" class="mp-entry">❓ 帮助中心 <i class="fas fa-chevron-right"></i></a>
+                    <a href="/rules.html" class="mp-entry">📜 社区公约 <i class="fas fa-chevron-right"></i></a>
+                    <a href="/changelog.html" class="mp-entry">📋 更新日志 <i class="fas fa-chevron-right"></i></a>
+                    <a href="/about.html" class="mp-entry">ℹ️ 关于我们 <i class="fas fa-chevron-right"></i></a>
+                </div>
+            </div>
         </div>
-        <div id="reportsTab" class="tab-content active">
-            <div id="reportsList">加载中...</div>
-        </div>
-        <div id="feedbacksTab" class="tab-content">
-            <div id="feedbacksList">加载中...</div>
-        </div>
-    </div>
+    </main>
 
     <script>
         window.API_BASE = window.API_BASE || '/api';
-
-        // ---------- 侧边栏展开/收起 ----------
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('menuToggle');
-        const body = document.getElementById('appBody');
-        const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
-        if (!isExpanded) {
-            sidebar.classList.add('collapsed');
-            body.classList.add('sidebar-collapsed');
-        } else {
-            sidebar.classList.remove('collapsed');
-            body.classList.remove('sidebar-collapsed');
-        }
-        toggleBtn.addEventListener('click', () => {
-            const currentlyExpanded = !sidebar.classList.contains('collapsed');
-            if (currentlyExpanded) {
-                sidebar.classList.add('collapsed');
-                body.classList.add('sidebar-collapsed');
-                localStorage.setItem('sidebarExpanded', 'false');
-            } else {
-                sidebar.classList.remove('collapsed');
-                body.classList.remove('sidebar-collapsed');
-                localStorage.setItem('sidebarExpanded', 'true');
-            }
-        });
-
-        // ---------- 用户信息 ----------
         const token = localStorage.getItem('token');
-        const avatarDiv = document.getElementById('sidebarAvatar');
-        const nicknameSpan = document.getElementById('sidebarNickname');
-        const emailSpan = document.getElementById('sidebarEmail');
-        async function updateSidebarUser() {
-            if (!token) {
-                nicknameSpan.innerText = '未登录';
-                emailSpan.innerText = '';
-                avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
-                return;
+        let currentUid = null;
+
+        // ---------- 侧边栏 ----------
+        function fillSidebarUser(me) {
+            if (!me) return;
+            const nickEl = document.getElementById('sidebarNickname');
+            const emailEl = document.getElementById('sidebarEmail');
+            if (nickEl) nickEl.textContent = me.nickname;
+            if (emailEl) emailEl.textContent = me.email;
+        }
+
+        function bindSidebarActions() {
+            const userBtn = document.getElementById('sidebarUserBtn');
+            if (userBtn) userBtn.addEventListener('click', () => {
+                window.location.href = token ? '/mobile-profile.html' : '/login.html';
+            });
+            const logoutBtn = document.getElementById('sidebarLogoutBtn');
+            if (logoutBtn) logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login.html';
+            });
+            const searchBtn = document.getElementById('searchBtn');
+            const searchInput = document.getElementById('searchInput');
+            if (searchBtn && searchInput) {
+                searchBtn.addEventListener('click', () => {
+                    const keyword = searchInput.value.trim();
+                    window.location.href = keyword ? `/search.html?q=${encodeURIComponent(keyword)}` : '/search.html';
+                });
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const keyword = searchInput.value.trim();
+                        window.location.href = keyword ? `/search.html?q=${encodeURIComponent(keyword)}` : '/search.html';
+                    }
+                });
             }
+        }
+
+        // ---------- 签到 ----------
+        function renderCheckinBtn(checkedIn) {
+            const btn = document.getElementById('mpCheckinBtn');
+            if (checkedIn) {
+                btn.classList.add('checked');
+                btn.textContent = '✅ 今日已签到';
+            } else {
+                btn.classList.remove('checked');
+                btn.textContent = '📋 签到 +5';
+            }
+        }
+
+        async function doCheckin() {
+            if (!token) { window.location.href = '/login.html'; return; }
+            const btn = document.getElementById('mpCheckinBtn');
+            if (btn.classList.contains('checked')) return;
             try {
-                const res = await fetch(`${window.API_BASE}/me`, {
+                const res = await fetch(`${window.API_BASE}/daily-checkin`, {
+                    method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+                const data = await res.json();
                 if (res.ok) {
-                    const user = await res.json();
-                    nicknameSpan.innerText = user.nickname || '用户';
-                    emailSpan.innerText = user.email || '';
-                    if (user.avatar_url) {
-                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
-                    } else {
-                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
-                    }
+                    renderCheckinBtn(true);
+                    loadCoins();
+                    alert('✅ 签到成功！' + (data.coins ? '获得 ' + data.coins + ' 鹏城币' : ''));
+                } else {
+                    alert(data.error || '签到失败');
+                    renderCheckinBtn(true);
+                }
+            } catch (e) {
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        async function loadCoins() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${window.API_BASE}/user/coins`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('mpCoins').textContent = `🪙 ${data.coins} 鹏城币`;
+                    renderCheckinBtn(data.checked_in_today);
                 }
             } catch (e) { console.warn(e); }
         }
-        updateSidebarUser();
-        document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
-            window.location.href = '/profile.html';
-        });
 
-        // ---------- 未读小红点 ----------
-        async function updateNotifDot() {
-            if (!token) return;
+        // ---------- 活跃度日历（简化版） ----------
+        async function loadActivity(uid) {
+            const container = document.getElementById('mpCalendar');
             try {
-                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetch(`${window.API_BASE}/users/${uid}/activity`);
                 const data = await res.json();
-                const unreadCount = data.unreadCount || 0;
-                const topBadge = document.getElementById('notifBadge');
-                const sidebarDot = document.getElementById('sidebarNotifDot');
-                if (topBadge) {
-                    if (unreadCount > 0) {
-                        topBadge.style.display = 'flex';
-                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
-                    } else {
-                        topBadge.style.display = 'none';
-                    }
-                }
-                if (sidebarDot) {
-                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
-                }
-            } catch (e) { }
-        }
-        updateNotifDot();
-        if (token) setInterval(updateNotifDot, 30000);
-
-        // ---------- 退出登录 ----------
-        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
-            localStorage.removeItem('token');
-            window.location.href = '/login.html';
-        });
-
-        // ---------- 搜索 ----------
-        const searchBtn = document.getElementById('searchBtn');
-        const searchInput = document.getElementById('searchInput');
-        searchBtn?.addEventListener('click', () => {
-            const keyword = searchInput.value.trim();
-            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
-            else alert('请输入搜索关键词');
-        });
-        searchInput?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchBtn.click();
-        });
-
-        // ---------- 反馈页面功能 ----------
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-        }
-
-        async function loadReports() {
-            const container = document.getElementById('reportsList');
-            container.innerHTML = '<div class="loading">加载中...</div>';
-            try {
-                const res = await fetch(`${window.API_BASE}/my-reports`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await res.json();
-                if (!data.length) {
-                    container.innerHTML = '<div class="empty">暂无举报记录</div>';
+                if (data.hidden || !data.activity) {
+                    container.innerHTML = '<span class="mp-badge-empty">已隐藏活跃度</span>';
                     return;
                 }
-                container.innerHTML = data.map(r => `
-                    <div class="card">
-                        <div>举报目标：${r.target_type === 'post' ? '帖子' : r.target_type === 'reply' ? '回复' : '用户'} ID:${r.target_id}</div>
-                        <div>类型：${r.reason_type}</div>
-                        <div>说明：${escapeHtml(r.reason || '无')}</div>
-                        <div>状态：<span class="status-badge status-${r.status}">${getStatusText(r.status)}</span></div>
-                        <div>提交时间：${new Date(r.created_at).toLocaleString()}</div>
-                        ${r.resolved_at ? `<div>处理时间：${new Date(r.resolved_at).toLocaleString()}</div>` : ''}
-                    </div>
-                `).join('');
-            } catch (err) {
-                container.innerHTML = '<div class="empty">加载失败，请刷新重试</div>';
-            }
-        }
-
-        async function loadFeedbacks() {
-            const container = document.getElementById('feedbacksList');
-            container.innerHTML = '<div class="loading">加载中...</div>';
-            try {
-                const res = await fetch(`${window.API_BASE}/my-feedbacks`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const recent = data.activity.slice(-30);
+                const colors = ['#E5E7EB', '#BFDBFE', '#93C5FD', '#60A5FA', '#1E88E5'];
+                let html = '<div class="mp-calendar">';
+                recent.forEach(d => {
+                    html += `<div class="mp-cal-day" style="background:${colors[d.level] || '#E5E7EB'}" title="${d.date}：${d.count} 次活动"></div>`;
                 });
+                html += '</div>';
+                html += `<div class="mp-cal-legend"><span style="background:#E5E7EB;width:11px;height:11px;border-radius:2px;display:inline-block;"></span> 少 <span style="background:#1E88E5;width:11px;height:11px;border-radius:2px;display:inline-block;"></span> 多（近30天）</div>`;
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = '<span class="mp-badge-empty">活跃度加载失败</span>';
+            }
+        }
+
+        // ---------- 成就徽章 ----------
+        async function loadBadges(uid) {
+            const container = document.getElementById('mpBadges');
+            try {
+                const res = await fetch(`${window.API_BASE}/users/${uid}`);
                 const data = await res.json();
-                if (!data.length) {
-                    container.innerHTML = '<div class="empty">暂无反馈记录</div>';
-                    return;
-                }
-                container.innerHTML = data.map(f => `
-                    <div class="card">
-                        <div>内容：${escapeHtml(f.content)}</div>
-                        <div>状态：<span class="status-badge status-${f.status}">${getFeedbackStatusText(f.status)}</span></div>
-                        ${f.reply ? `<div class="reply-content">管理员回复：${escapeHtml(f.reply)}</div>` : ''}
-                        <div>提交时间：${new Date(f.created_at).toLocaleString()}</div>
-                        ${f.resolved_at ? `<div>处理时间：${new Date(f.resolved_at).toLocaleString()}</div>` : ''}
-                    </div>
-                `).join('');
-            } catch (err) {
-                container.innerHTML = '<div class="empty">加载失败，请刷新重试</div>';
-            }
-        }
-
-        function getStatusText(status) {
-            switch (status) {
-                case 'pending': return '待处理';
-                case 'resolved': return '已处理';
-                case 'rejected': return '已驳回';
-                default: return status;
-            }
-        }
-        function getFeedbackStatusText(status) {
-            switch (status) {
-                case 'pending': return '待回复';
-                case 'read': return '已读';
-                case 'resolved': return '已解决';
-                default: return status;
-            }
-        }
-
-        async function submitFeedback(content) {
-            const res = await fetch(`${window.API_BASE}/feedbacks`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ content })
-            });
-            return res.ok;
-        }
-
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        const reportsTab = document.getElementById('reportsTab');
-        const feedbacksTab = document.getElementById('feedbacksTab');
-
-        function switchTab(tabId) {
-            reportsTab.classList.remove('active');
-            feedbacksTab.classList.remove('active');
-            if (tabId === 'reports') {
-                reportsTab.classList.add('active');
-            } else {
-                feedbacksTab.classList.add('active');
-            }
-            tabBtns.forEach(btn => {
-                if (btn.dataset.tab === tabId) {
-                    btn.classList.add('active');
+                if (res.ok && data.achievements && data.achievements.length) {
+                    container.innerHTML = data.achievements.map(a =>
+                        `<span class="mp-badge" title="${a.name}：${a.description}">${a.icon}</span>`
+                    ).join('');
                 } else {
-                    btn.classList.remove('active');
+                    container.innerHTML = '<span class="mp-badge-empty">还没有获得徽章，继续加油吧~</span>';
                 }
-            });
+            } catch (e) {
+                container.innerHTML = '<span class="mp-badge-empty">徽章加载失败</span>';
+            }
         }
 
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tab = btn.dataset.tab;
-                switchTab(tab);
-            });
-        });
+        // ---------- 初始化 ----------
+        (async function init() {
+            bindSidebarActions();
 
-        const newFeedbackBtn = document.getElementById('newFeedbackBtn');
-        const feedbackForm = document.getElementById('feedbackForm');
-        newFeedbackBtn.addEventListener('click', () => {
-            feedbackForm.style.display = 'block';
-        });
-        document.getElementById('cancelFeedbackBtn').addEventListener('click', () => {
-            feedbackForm.style.display = 'none';
-            document.getElementById('feedbackContent').value = '';
-        });
-        document.getElementById('submitFeedbackBtn').addEventListener('click', async () => {
-            const content = document.getElementById('feedbackContent').value.trim();
-            if (!content) {
-                alert('请输入反馈内容');
+            const profileCard = document.getElementById('mpProfileCard');
+            profileCard.addEventListener('click', () => {
+                window.location.href = token ? '/profile.html' : '/login.html';
+            });
+            document.getElementById('mpCheckinBtn').addEventListener('click', doCheckin);
+
+            if (!token) {
+                document.getElementById('mpAvatar').src = '';
+                document.getElementById('mpNickname').textContent = '未登录';
+                document.getElementById('mpLevel').textContent = '点击登录';
+                document.getElementById('mpCoins').textContent = '🪙 -- 鹏城币';
+                document.getElementById('mpCheckinBtn').textContent = '📋 登录后签到';
                 return;
             }
-            const success = await submitFeedback(content);
-            if (success) {
-                alert('反馈已提交，感谢您的建议');
-                feedbackForm.style.display = 'none';
-                document.getElementById('feedbackContent').value = '';
-                loadFeedbacks();
-                switchTab('feedbacks');
-            } else {
-                alert('提交失败，请稍后重试');
-            }
-        });
 
-        loadReports();
-        loadFeedbacks();
+            try {
+                const meRes = await fetch(`${window.API_BASE}/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const me = await meRes.json();
+                if (!meRes.ok) throw new Error('登录失效');
+
+                currentUid = me.id;
+                document.getElementById('mpAvatar').src = me.avatar_url || '';
+                document.getElementById('mpNickname').textContent = me.nickname;
+                const level = calculateLevel(me.exp, me.has_passed_quiz);
+                document.getElementById('mpLevel').textContent = `LV${level.level} ${level.name}`;
+                document.getElementById('mpCoins').textContent = `🪙 ${me.coins || 0} 鹏城币`;
+
+                fillSidebarUser(me);
+                loadCoins();
+                loadBadges(currentUid);
+                loadActivity(currentUid);
+            } catch (e) {
+                document.getElementById('mpNickname').textContent = '登录已失效';
+                document.getElementById('mpLevel').textContent = '点击重新登录';
+            }
+        })();
     </script>
-    <footer style="background:white;border-top:1px solid #e9ecef;padding:20px 0;text-align:center;font-size:0.75rem;color:#6c757d;margin-top:40px;">
-        <p>© 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | <a href="/help.html" style="color:#6c757d;">帮助中心</a> | <a href="/changelog.html" style="color:#6c757d;">更新日志</a> | 粤ICP备xxxxxxxx号</p>
-    </footer>
+
     <script>
         // 移动端设备引导横幅控制
         (function() {
