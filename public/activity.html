@@ -590,7 +590,7 @@
                 var selected = !hasVoted && !participated && selectedVoteIndex === i;
                 var clickable = !hasVoted && !participated;
                 html += '<div class="vote-option' + (selected ? ' selected' : '') + (isVotedOption ? ' voted' : '') + '" id="voteOpt' + i + '" onclick="' + (clickable ? 'selectVoteOption(' + i + ')' : '') + '">';
-                if (image) html += '    <img class="vote-option-image" src="' + getFullUrl(image) + '" alt="" onerror="this.style.display=\'none\'">';
+                if (image) html += '    <img class="vote-option-image" src="' + getFullUrl(image) + '" alt="" onerror="this.style.display=\'none\'" onclick="event.stopPropagation(); openLightbox(\'' + image + '\')" style="cursor:zoom-in;">';
                 html += '    <div class="vote-option-index">' + (isVotedOption || selected ? '✓' : (i + 1)) + '</div>';
                 html += '    <div class="vote-option-body">';
                 html += '        <div class="vote-option-label">' + escapeHtml(label) + '</div>';
@@ -1156,6 +1156,37 @@
                 }
             }
         })();
+    </script>
+
+    <!-- 图片放大灯箱 -->
+    <div id="imageLightbox" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;justify-content:center;align-items:center;cursor:zoom-out;" onclick="closeLightbox()">
+        <button onclick="closeLightbox()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.2);border:none;color:white;font-size:1.5rem;width:40px;height:40px;border-radius:50%;cursor:pointer;z-index:1;">✕</button>
+        <img id="lightboxImg" src="" alt="放大图片" style="max-width:90%;max-height:90%;object-fit:contain;border-radius:12px;" onclick="event.stopPropagation(); closeLightbox();">
+    </div>
+
+    <script>
+        // 图片放大灯箱
+        function openLightbox(imageUrl) {
+            const fullUrl = getFullUrl(imageUrl);
+            document.getElementById('lightboxImg').src = fullUrl;
+            document.getElementById('imageLightbox').style.display = 'flex';
+            // 禁止背景滚动
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            document.getElementById('imageLightbox').style.display = 'none';
+            document.getElementById('lightboxImg').src = '';
+            // 恢复背景滚动
+            document.body.style.overflow = '';
+        }
+
+        // ESC键关闭灯箱
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            }
+        });
     </script>
 </body>
 </html>
