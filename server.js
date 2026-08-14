@@ -42,7 +42,7 @@ function cleanHtml(content) {
 // ---------- 富文本消毒结束 ----------
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(cors());
 // 信任反向代理（Nginx），确保获取真实用户IP
 app.set('trust proxy', 1);
@@ -888,8 +888,8 @@ app.post('/api/me/avatar', authMiddleware, upload.single('avatar'), async (req, 
 
 // ---------- 通用文件上传（图片/视频）----------
 // 允许的 MIME 类型与扩展名（防上传恶意可执行文件）
-const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/ogg'];
-const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.webm', '.ogv'];
+const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/heic', 'image/heif', 'image/bmp', 'image/x-icon', 'video/mp4', 'video/webm', 'video/ogg'];
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.heic', '.heif', '.bmp', '.ico', '.mp4', '.webm', '.ogv'];
 
 const generalUpload = multer({
     storage,
@@ -4166,17 +4166,16 @@ app.post('/api/activities/:id/vote', writeLimiter, async (req, res) => {
             );
             if (check.rows.length > 0) return res.status(400).json({ error: '你已经投过票了，不能重复投票' });
         } else {
-            // 未登录用户：同一 IP 24小时内最多投 3 票（防刷）
+            // 未登录用户：同一 IP 对同一活动只能投 1 票（防刷）
             if (!ip || ip === 'unknown' || ip === '::1' || ip === '127.0.0.1') {
                 return res.status(400).json({ error: '当前环境无法识别来源，请登录后投票' });
             }
-            const ipCount = await pool.query(
-                `SELECT COUNT(*) as cnt FROM activity_votes
-                 WHERE activity_id = $1 AND ip_address = $2 AND created_at > NOW() - interval '24 hours'`,
+            const ipVoteCheck = await pool.query(
+                'SELECT id FROM activity_votes WHERE activity_id = $1 AND ip_address = $2',
                 [activityId, ip]
             );
-            if (parseInt(ipCount.rows[0].cnt) >= 3) {
-                return res.status(400).json({ error: '投票次数已达上限，24小时内最多投3次' });
+            if (ipVoteCheck.rows.length > 0) {
+                return res.status(400).json({ error: '该设备已投过票' });
             }
         }
 
@@ -4191,6 +4190,13 @@ app.post('/api/activities/:id/vote', writeLimiter, async (req, res) => {
             if (insertErr.code === '23505') return res.status(400).json({ error: '你已经投过票了，不能重复投票' });
             throw insertErr;
         }
+
+        // 同步记录到 activity_participants，保证参与人数统计正确
+        await pool.query(
+            'INSERT INTO activity_participants (activity_id, user_id, action_type, content) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
+            [activityId, userId, 'vote', `投给了选项${optionId}`]
+        );
+
         res.json({ message: '投票成功' });
     } catch (err) {
         console.error('投票失败:', err);
@@ -4380,7 +4386,11 @@ app.post('/api/activities/:id/reward', authMiddleware, adminMiddleware, async (r
 
         // 获取所有参与者
         const participants = await pool.query(
-            'SELECT DISTINCT user_id FROM activity_participants WHERE activity_id = $1',
+            `SELECT DISTINCT user_id FROM (
+                SELECT user_id FROM activity_participants WHERE activity_id = $1 AND user_id IS NOT NULL
+                UNION
+                SELECT user_id FROM activity_votes WHERE activity_id = $1 AND user_id IS NOT NULL
+            ) combined`,
             [activityId]
         );
 
