@@ -171,7 +171,8 @@ async function createNotification(userId, type, sourceId, sourceUserId = null, c
         };
 
         if (pushTitles[type]) {
-            const pushUrl = sourceId ? `/post-detail.html?id=${sourceId}` : '';
+            // 私信通知跳转到消息列表，其他通知跳转到对应帖子详情
+            const pushUrl = type === 'message' ? '/messages.html' : (sourceId ? `/post-detail.html?id=${sourceId}` : '');
             sendPushToUser(userId, pushTitles[type], pushContents[type], pushUrl);
         }
     } catch (err) {
@@ -3686,9 +3687,6 @@ app.post('/api/messages', writeLimiter, authMiddleware, quizRequired, async (req
 
         // 发送通知给接收者（私信通知）
         await createNotification(receiver_id, 'message', result.rows[0].id, senderId, content.trim().substring(0, 50));
-
-        // 触发私信推送（App 端）
-        sendPushToUser(receiver_id, '新私信', '你收到一条新消息', '/messages.html');
 
         res.json({
             id: result.rows[0].id,
