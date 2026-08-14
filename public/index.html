@@ -1132,31 +1132,6 @@
         <div class="wave"></div>
     </div>
 
-    <!-- 内测公告弹窗 -->
-    <div id="betaNoticeModal" class="modal-overlay" style="display: none;">
-        <div class="modal-dialog">
-            <button class="modal-close-btn" id="closeModalBtn">&times;</button>
-            <div class="modal-icon">🚀</div>
-            <div class="modal-title">内测公告</div>
-            <div class="modal-body">
-                欢迎参与深圳高中生社区的首次内测！<br><br>
-                本次内测期间，我们执行更严格的内容审核标准，请大家务必遵守以下规则：
-                <ul>
-                    <li>严禁发布任何违法、违规、敏感信息</li>
-                    <li>禁止人身攻击、网络暴力、校园欺凌</li>
-                    <li>禁止发布广告、垃圾信息</li>
-                    <li>违规者将直接取消内测资格</li>
-                </ul>
-                如遇问题或建议，欢迎通过反馈页面提交，或在群内 @群主。<br>
-                感谢你的支持与理解！(๑•̀ㅂ•́)و✧
-            </div>
-            <div class="modal-footer-actions">
-                <button class="btn-primary-sm" id="confirmNoticeBtn">我知道了</button>
-                <button class="btn-secondary-sm" id="neverShowBtn">不再显示</button>
-            </div>
-        </div>
-    </div>
-
     <!-- 入站考试提醒弹窗 -->
     <div id="examReminderModal" class="modal-overlay" style="display: none;">
         <div class="modal-dialog" style="max-width:480px;">
@@ -2020,42 +1995,6 @@
         loadLatestAnnouncement();
         loadSidebarActivities();
         loadSidebarAnnouncements();
-
-        // ---------- 内测公告弹窗逻辑 ----------
-        (function () {
-            const modal = document.getElementById('betaNoticeModal');
-            const closeBtn = document.getElementById('closeModalBtn');
-            const confirmBtn = document.getElementById('confirmNoticeBtn');
-            const neverShowBtn = document.getElementById('neverShowBtn');
-
-            // 检查是否已标记“不再显示”
-            const neverShow = localStorage.getItem('betaNoticeNeverShow');
-            if (neverShow === 'true') {
-                // 用户曾点击过“不再显示”，直接隐藏弹窗
-                if (modal) modal.style.display = 'none';
-                return;
-            }
-
-            // 首次访问或未标记，显示弹窗
-            if (modal) modal.style.display = 'flex';
-
-            // 关闭弹窗的函数
-            function hideModal() {
-                if (modal) modal.style.display = 'none';
-            }
-
-            // 点击 X 按钮关闭
-            if (closeBtn) closeBtn.addEventListener('click', hideModal);
-            // 点击“我知道了”关闭
-            if (confirmBtn) confirmBtn.addEventListener('click', hideModal);
-            // 点击“不再显示”：关闭弹窗并存储标记
-            if (neverShowBtn) {
-                neverShowBtn.addEventListener('click', function () {
-                    localStorage.setItem('betaNoticeNeverShow', 'true');
-                    hideModal();
-                });
-            }
-        })();
 
         // ---------- 任务与金币系统 ----------
         async function loadTasksAndCoins() {
