@@ -151,17 +151,14 @@
     body.classList.remove('sidebar-collapsed');
 })();
 
-// 每天首次访问跳转仪表盘
+// 每天首次访问首页时跳转仪表盘（仅首页触发）
 (function() {
     if (window.innerWidth > 768) return; // 仅移动端
 
-    // 登录/注册页不跳转
     const currentPath = window.location.pathname;
-    const excludedPaths = ['/login.html', '/register.html', '/reset-password.html', '/forgot-password.html', '/splash.html', '/mobile-profile.html'];
-    if (excludedPaths.includes(currentPath)) return;
 
-    // 仪表盘页面本身不跳转
-    if (currentPath.includes('dashboard.html')) return;
+    // 仅当用户在首页时才跳转
+    if (currentPath !== '/' && currentPath !== '/index.html') return;
 
     function getTodayStr() {
         const d = new Date();
