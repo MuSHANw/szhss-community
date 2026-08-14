@@ -11,6 +11,7 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const QUIZ_ANSWERS = require('./quiz-bank-data.js');
+const sanitizeHtml = require('sanitize-html');
 
 // 获取北京时间日期字符串 (YYYY-MM-DD)
 function getBeijingDate() {
@@ -18,6 +19,27 @@ function getBeijingDate() {
     const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000)); // UTC+8
     return beijingTime.toISOString().slice(0, 10);
 }
+
+// ---------- 富文本消毒（防存储型 XSS） ----------
+const allowedTags = ['p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'blockquote', 'ul', 'ol', 'li', 'a', 'img', 'video', 'code', 'pre', 'span', 'div'];
+const allowedAttributes = {
+    'a': ['href', 'target', 'rel'],
+    'img': ['src', 'alt', 'style'],
+    'video': ['src', 'controls', 'style'],
+    'span': ['style'],
+    'div': ['style'],
+    'p': ['style']
+};
+function cleanHtml(content) {
+    if (typeof content !== 'string') return content;
+    return sanitizeHtml(content, {
+        allowedTags: allowedTags,
+        allowedAttributes: allowedAttributes,
+        allowedSchemes: ['http', 'https', 'data'],
+        allowProtocolRelative: false
+    });
+}
+// ---------- 富文本消毒结束 ----------
 
 const app = express();
 app.use(express.json());
@@ -82,7 +104,7 @@ const transporter = nodemailer.createTransport(
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
 
 // 高德天气API配置（每小时缓存一次，所有用户共享）
-const WEATHER_KEY = 'ba6ede950ab8bdb7a0a91c272e459f49';
+const WEATHER_KEY = process.env.GAODE_WEATHER_KEY || 'ba6ede950ab8bdb7a0a91c272e459f49';
 let weatherCache = { data: null, time: 0 };
 
 // ---------- 昵称校验 ----------
@@ -532,10 +554,8 @@ app.post('/api/login', strictLimiter, async (req, res) => {
 
 // 用户搜索 API（必须放在 /api/users/:id 之前）
 app.get('/api/users/search', async (req, res) => {
-    console.log('>>> 用户搜索被调用，req.query =', req.query);
     const q = req.query.q?.trim();
     if (!q) {
-        console.log('缺少 q 参数');
         return res.status(400).json({ error: '请输入搜索关键词' });
     }
     const limit = parseInt(req.query.limit) || 10;
@@ -549,7 +569,6 @@ app.get('/api/users/search', async (req, res) => {
             LIMIT $2
         `;
         const result = await pool.query(query, [searchPattern, limit]);
-        console.log(`搜索到 ${result.rows.length} 个用户`);
         res.json(result.rows);
     } catch (err) {
         console.error('搜索用户失败:', err);
@@ -729,7 +748,6 @@ app.put('/api/me/profile', authMiddleware, async (req, res) => {
         if (show_favorites !== undefined) { updateFields.push(`show_favorites = $${updateValues.length + 1}`); updateValues.push(show_favorites); }
         if (show_stats !== undefined) { updateFields.push(`show_stats = $${updateValues.length + 1}`); updateValues.push(show_stats); }
         if (updateFields.length > 0) {
-            console.log('🔍 保存隐私设置:', { updateFields, updateValues });
             updateValues.push(userId);
             const query = `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${updateValues.length}`;
             await client.query(query, updateValues);
@@ -786,9 +804,23 @@ app.post('/api/me/avatar', authMiddleware, upload.single('avatar'), async (req, 
 });
 
 // ---------- 通用文件上传（图片/视频）----------
+// 允许的 MIME 类型与扩展名（防上传恶意可执行文件）
+const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/ogg'];
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.webm', '.ogv'];
+
 const generalUpload = multer({
     storage,
-    limits: { fileSize: 200 * 1024 * 1024 } // 200MB（图片/视频通用）
+    limits: { fileSize: 200 * 1024 * 1024 }, // 200MB（图片/视频通用，与前端一致）
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const isValidType = allowedMimeTypes.includes(file.mimetype);
+        const isValidExt = allowedExtensions.includes(ext);
+        if (isValidType && isValidExt) {
+            cb(null, true);
+        } else {
+            cb(new Error('不支持的文件类型'), false);
+        }
+    }
 });
 
 app.post('/api/upload/file', authMiddleware, mediaUploadRequired, generalUpload.single('file'), (req, res) => {
@@ -1532,7 +1564,7 @@ app.post('/api/posts', writeLimiter, authMiddleware, quizRequired, async (req, r
     try {
         const result = await pool.query(
             'INSERT INTO posts (user_id, title, content, category, tags, circle_id, images, videos) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
-            [req.user.userId, title, content, category || '综合', tags || [], circle_id || null, images || [], videos || []]
+            [req.user.userId, title, cleanHtml(content), category || '综合', tags || [], circle_id || null, images || [], videos || []]
         );
         const postId = result.rows[0].id;
         // 将图片/视频 URL 写入 post_media 表
@@ -1716,7 +1748,7 @@ app.put('/api/posts/:id', authMiddleware, async (req, res) => {
         if (post.user_id !== req.user.userId && !isAdmin) return res.status(403).json({ error: '无权编辑此帖子' });
         await pool.query(
             'UPDATE posts SET title = $1, content = $2, category = $3, tags = $4, images = $5, videos = $6, updated_at = NOW() WHERE id = $7',
-            [title, content, category || '综合', tags || [], images || [], videos || [], id]
+            [title, cleanHtml(content), category || '综合', tags || [], images || [], videos || [], id]
         );
         // 同步更新 post_media 表（删除旧记录，插入新记录）
         await pool.query('DELETE FROM post_media WHERE post_id = $1', [id]);
@@ -1859,7 +1891,7 @@ app.post('/api/posts/:id/replies', writeLimiter, authMiddleware, quizRequired, a
         if (postCheck.rows.length === 0) return res.status(404).json({ error: '帖子不存在' });
         const result = await pool.query(
             'INSERT INTO replies (post_id, user_id, content, parent_id) VALUES ($1, $2, $3, $4) RETURNING id',
-            [postId, req.user.userId, content, parent_id || null]
+            [postId, req.user.userId, cleanHtml(content), parent_id || null]
         );
         const postOwner = await pool.query('SELECT user_id FROM posts WHERE id = $1', [postId]);
         const ownerId = postOwner.rows[0].user_id;
@@ -3539,7 +3571,6 @@ app.post('/api/messages', writeLimiter, authMiddleware, quizRequired, async (req
         if (userCheck.rows.length === 0) {
             return res.status(404).json({ error: '用户不存在' });
         }
-        console.log('🔍 allow_messages 调试:', { receiver_id, allow_messages: userCheck.rows[0].allow_messages, type: typeof userCheck.rows[0].allow_messages });
         if (!userCheck.rows[0].allow_messages) {
             return res.status(403).json({ error: '对方未开启私信功能' });
         }
@@ -3619,7 +3650,7 @@ app.post('/api/announcements', authMiddleware, adminMiddleware, async (req, res)
     try {
         const result = await pool.query(
             'INSERT INTO announcements (title, content, created_by) VALUES ($1, $2, $3) RETURNING id',
-            [title.trim(), content.trim(), req.user.userId]
+            [title.trim(), cleanHtml(content.trim()), req.user.userId]
         );
         res.json({ id: result.rows[0].id, message: '公告发布成功' });
     } catch (err) {
@@ -3805,7 +3836,7 @@ app.post('/api/activities', authMiddleware, adminMiddleware, async (req, res) =>
         const result = await pool.query(
             `INSERT INTO activities (title, type, cover_url, description, rules, start_time, end_time, config, reward_coins, reward_badge, created_by)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
-            [title.trim(), type, cover_url, description || '', rules || '', start_time, end_time,
+            [title.trim(), type, cover_url, cleanHtml(description || ''), cleanHtml(rules || ''), start_time, end_time,
              JSON.stringify(config || {}), reward_coins || 0, reward_badge || null, req.user.userId]
         );
         res.json({ id: result.rows[0].id, message: '活动创建成功' });
@@ -4900,7 +4931,7 @@ app.post('/api/circles/:id/announcements', authMiddleware, async (req, res) => {
 
         await pool.query(
             'INSERT INTO circle_announcements (circle_id, content) VALUES ($1, $2)',
-            [circleId, content.trim()]
+            [circleId, cleanHtml(content.trim())]
         );
 
         res.json({ message: '公告发布成功' });
@@ -5691,6 +5722,23 @@ app.put('/api/admin/circle-applications/:id', authMiddleware, adminMiddleware, a
         client.release();
     }
 });
+
+// ---------- 全局错误处理中间件 ----------
+app.use((err, req, res, next) => {
+    // 文件上传错误（multer）
+    if (err && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: '文件过大，请压缩后重试' });
+    }
+    if (err && err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: '文件上传字段错误' });
+    }
+    if (err && err.message === '不支持的文件类型') {
+        return res.status(400).json({ error: '不支持的文件类型' });
+    }
+    console.error('未处理的服务器错误:', err.message);
+    res.status(500).json({ error: '服务器内部错误，请稍后再试' });
+});
+// ---------- 全局错误处理中间件结束 ----------
 
 // ---------- 启动 ----------
 const PORT = process.env.PORT || 3000;
