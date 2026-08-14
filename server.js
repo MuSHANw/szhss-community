@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const multer = require('multer');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -21,7 +22,12 @@ function getBeijingDate() {
 const app = express();
 app.use(express.json());
 app.use(cors());
+// 信任反向代理（Nginx），确保获取真实用户IP
+app.set('trust proxy', 1);
 app.use(express.static('public'));
+
+// 全局限流：对 /api/ 路径统一生效
+app.use('/api/', globalApiLimiter);
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
@@ -223,6 +229,37 @@ async function addExp(userId, actionType) {
     }
 }
 
+// ---------- 接口限流配置 ----------
+
+// 全局API限流：所有/api/接口每分钟60次
+const globalApiLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1分钟
+    max: 60,
+    message: { error: '请求过于频繁，请稍后再试' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// 严格限流：登录、验证码、注册、重置密码等敏感接口每分钟5次
+const strictLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    message: { error: '操作过于频繁，请1分钟后再试' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// 中度限流：发帖、回复、私信等写操作每分钟10次
+const writeLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { error: '操作过于频繁，请稍后再试' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// ---------- 接口限流配置结束 ----------
+
 // ---------- 中间件 ----------
 const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -314,7 +351,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 2 * 1024 * 1024 } });
 
 // 发送密码重置验证码
-app.post('/api/forgot-password', async (req, res) => {
+app.post('/api/forgot-password', strictLimiter, async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: '邮箱不能为空' });
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -383,7 +420,7 @@ app.post('/api/reset-password', async (req, res) => {
 });
 
 // ---------- 用户相关 API ----------
-app.post('/api/send-code', async (req, res) => {
+app.post('/api/send-code', strictLimiter, async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: '邮箱不能为空' });
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -421,7 +458,7 @@ app.post('/api/send-code', async (req, res) => {
     }
 });
 
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', strictLimiter, async (req, res) => {
     const { email, code, password, nickname } = req.body;
     if (!email || !code || !password) return res.status(400).json({ error: '请填写完整信息' });
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -473,7 +510,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', strictLimiter, async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: '邮箱和密码不能为空' });
     try {
@@ -1489,7 +1526,7 @@ function fixPostMedia(post) {
 }
 
 // ---------- 帖子相关 API ----------
-app.post('/api/posts', authMiddleware, quizRequired, async (req, res) => {
+app.post('/api/posts', writeLimiter, authMiddleware, quizRequired, async (req, res) => {
     const { title, content, category, tags, circle_id, images, videos } = req.body;
     if (!title || !content) return res.status(400).json({ error: '标题和内容不能为空' });
     try {
@@ -1812,7 +1849,7 @@ app.delete('/api/posts/:id', authMiddleware, async (req, res) => {
 });
 
 // ---------- 回复 API ----------
-app.post('/api/posts/:id/replies', authMiddleware, quizRequired, async (req, res) => {
+app.post('/api/posts/:id/replies', writeLimiter, authMiddleware, quizRequired, async (req, res) => {
     const postId = parseInt(req.params.id);
     if (isNaN(postId)) return res.status(400).json({ error: '无效的帖子ID' });
     const { content, parent_id } = req.body;
@@ -3485,7 +3522,7 @@ app.get('/api/messages/:userId', authMiddleware, async (req, res) => {
 });
 
 // 发送私信
-app.post('/api/messages', authMiddleware, quizRequired, async (req, res) => {
+app.post('/api/messages', writeLimiter, authMiddleware, quizRequired, async (req, res) => {
     const senderId = req.user.userId;
     const { receiver_id, content } = req.body;
 
@@ -3953,7 +3990,7 @@ app.delete('/api/activities/:id', authMiddleware, adminMiddleware, async (req, r
 });
 
 // 用户参与活动
-app.post('/api/activities/:id/participate', authMiddleware, async (req, res) => {
+app.post('/api/activities/:id/participate', writeLimiter, authMiddleware, async (req, res) => {
     const activityId = parseInt(req.params.id);
     const userId = req.user.userId;
     const { action_type, content } = req.body;
@@ -3982,7 +4019,7 @@ app.post('/api/activities/:id/participate', authMiddleware, async (req, res) => 
 });
 
 // 用户投票
-app.post('/api/activities/:id/vote', async (req, res) => {
+app.post('/api/activities/:id/vote', writeLimiter, async (req, res) => {
     const activityId = parseInt(req.params.id);
     const { option_id } = req.body;
 
@@ -4468,7 +4505,7 @@ app.get('/api/fengji/reports', async (req, res) => {
 });
 
 // 风纪投票
-app.post('/api/fengji/vote', authMiddleware, async (req, res) => {
+app.post('/api/fengji/vote', writeLimiter, authMiddleware, async (req, res) => {
     const userId = req.user.userId;
     const { report_id, vote_type } = req.body;
 
