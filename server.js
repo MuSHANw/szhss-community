@@ -26,6 +26,37 @@ app.use(cors());
 app.set('trust proxy', 1);
 app.use(express.static('public'));
 
+// ---------- 接口限流配置 ----------
+
+// 全局API限流：所有/api/接口每分钟60次
+const globalApiLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1分钟
+    max: 60,
+    message: { error: '请求过于频繁，请稍后再试' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// 严格限流：登录、验证码、注册、重置密码等敏感接口每分钟5次
+const strictLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    message: { error: '操作过于频繁，请1分钟后再试' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// 中度限流：发帖、回复、私信等写操作每分钟10次
+const writeLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { error: '操作过于频繁，请稍后再试' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// ---------- 接口限流配置结束 ----------
+
 // 全局限流：对 /api/ 路径统一生效
 app.use('/api/', globalApiLimiter);
 
@@ -228,37 +259,6 @@ async function addExp(userId, actionType) {
         console.error('增加经验值失败:', err);
     }
 }
-
-// ---------- 接口限流配置 ----------
-
-// 全局API限流：所有/api/接口每分钟60次
-const globalApiLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1分钟
-    max: 60,
-    message: { error: '请求过于频繁，请稍后再试' },
-    standardHeaders: true,
-    legacyHeaders: false
-});
-
-// 严格限流：登录、验证码、注册、重置密码等敏感接口每分钟5次
-const strictLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 5,
-    message: { error: '操作过于频繁，请1分钟后再试' },
-    standardHeaders: true,
-    legacyHeaders: false
-});
-
-// 中度限流：发帖、回复、私信等写操作每分钟10次
-const writeLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 10,
-    message: { error: '操作过于频繁，请稍后再试' },
-    standardHeaders: true,
-    legacyHeaders: false
-});
-
-// ---------- 接口限流配置结束 ----------
 
 // ---------- 中间件 ----------
 const authMiddleware = (req, res, next) => {
