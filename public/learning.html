@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/css/style.css">
     <!-- 移动端适配 -->
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
+    <script src="/js/device-detect.js"></script>
     <script src="/js/mobile.js" defer></script>
     <script src="/js/level-utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -791,6 +792,16 @@
 </head>
 
 <body id="appBody">
+    <div id="androidBanner" style="display:none;background:linear-gradient(135deg,#1E88E5,#1565C0);color:white;padding:10px 16px;text-align:center;position:fixed;top:0;left:0;right:0;z-index:9999;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+        📱 深圳高中生社区 App 已上线！
+        <a href="https://szhss-community.top/uploads/szhss-community.apk" style="color:#FFD93D;font-weight:700;text-decoration:underline;">点击下载安卓版</a>
+        <button onclick="closeAndroidBanner()" style="background:none;border:none;color:white;margin-left:12px;cursor:pointer;font-size:1.2rem;">✕</button>
+    </div>
+    <div id="iosBanner" style="display:none;background:#F3F4F6;color:#333;padding:10px 16px;text-align:center;position:fixed;top:0;left:0;right:0;z-index:9999;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        📱 点击下方 <strong>分享按钮</strong> → <strong>添加到桌面</strong>，体验和App一样流畅！
+        <button onclick="closeIOSBanner()" style="background:none;border:none;color:#999;margin-left:12px;cursor:pointer;font-size:1.2rem;">✕</button>
+    </div>
+
     <!-- 背景装饰 -->
     <div class="bg-decorations">
         <div class="circle circle1"></div>
@@ -1330,6 +1341,62 @@
 
         initSortButtons();
         loadPosts();
+    </script>
+    <script>
+        // 移动端设备引导横幅控制
+        (function() {
+            // 获取今天日期字符串 YYYY-MM-DD
+            function getTodayStr() {
+                const d = new Date();
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            }
+
+            // 关闭函数
+            window.closeAndroidBanner = function() {
+                document.getElementById('androidBanner').style.display = 'none';
+                localStorage.setItem('androidBannerClosedDate', getTodayStr());
+                const topBar = document.querySelector('.top-bar-container');
+                if (topBar) topBar.style.top = '0';
+            };
+
+            window.closeIOSBanner = function() {
+                document.getElementById('iosBanner').style.display = 'none';
+                localStorage.setItem('iosBannerClosedDate', getTodayStr());
+                const topBar = document.querySelector('.top-bar-container');
+                if (topBar) topBar.style.top = '0';
+            };
+
+            // 只在移动端显示
+            if (!window.isMobile) return;
+
+            // 检查是否已添加到桌面（PWA standalone模式）
+            function isPWAStandalone() {
+                return window.matchMedia('(display-mode: standalone)').matches
+                    || window.navigator.standalone === true;
+            }
+
+            const todayStr = getTodayStr();
+
+            if (window.isAndroid) {
+                // 安卓：每天首次访问时弹窗
+                const lastClosed = localStorage.getItem('androidBannerClosedDate');
+                if (lastClosed !== todayStr) {
+                    document.getElementById('androidBanner').style.display = 'block';
+                    const topBar = document.querySelector('.top-bar-container');
+                    if (topBar) topBar.style.top = '40px';
+                }
+            } else if (window.isIOS) {
+                // iOS：已添加到桌面则不弹；未添加则每天首次弹
+                if (isPWAStandalone()) return;
+
+                const lastClosed = localStorage.getItem('iosBannerClosedDate');
+                if (lastClosed !== todayStr) {
+                    document.getElementById('iosBanner').style.display = 'block';
+                    const topBar = document.querySelector('.top-bar-container');
+                    if (topBar) topBar.style.top = '40px';
+                }
+            }
+        })();
     </script>
 </body>
 
