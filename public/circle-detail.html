@@ -137,14 +137,12 @@
         /* ========== Hero 横幅 ========== */
         .circle-hero {
             position: relative;
-            height: 220px;
+            height: 160px;
             background-size: cover;
             background-position: center;
             border-radius: 20px 20px 0 0;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            align-items: flex-end;
         }
         .circle-hero::before {
             content: '';
@@ -155,23 +153,34 @@
         }
         .circle-hero-content {
             position: relative;
-            text-align: center;
+            text-align: left;
             color: white;
             z-index: 2;
+            width: 100%;
+            padding-left: 76px;
+            padding-right: 170px;
+            padding-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
         }
         .circle-hero-logo {
-            width: 80px; height: 80px; border-radius: 20px;
-            border: 3px solid white; object-fit: cover; margin-bottom: 12px;
+            width: 48px; height: 48px; border-radius: 14px;
+            border: 3px solid white; object-fit: cover;
             background: rgba(255, 255, 255, 0.2);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 1.4rem;
+            position: absolute;
+            bottom: -24px;
+            left: 16px;
+            z-index: 2;
         }
-        .circle-hero-name { font-size: 1.8rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
-        .circle-hero-desc { font-size: 0.9rem; opacity: 0.9; margin-top: 4px; max-width: 500px; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
-        .circle-hero-stats { display: flex; gap: 24px; justify-content: center; margin-top: 12px; font-size: 0.85rem; }
-        .circle-hero-stats span { background: rgba(255, 255, 255, 0.15); padding: 4px 14px; border-radius: 20px; backdrop-filter: blur(4px); }
+        .circle-hero-name { font-size: 1.4rem; font-weight: 700; margin-bottom: 2px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+        .circle-hero-desc { font-size: 0.85rem; opacity: 0.9; margin-top: 2px; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; }
+        .circle-hero-stats { display: flex; gap: 16px; margin-top: 4px; font-size: 0.8rem; }
+        .circle-hero-stats span { background: rgba(255, 255, 255, 0.15); padding: 4px 14px; border-radius: 20px; backdrop-filter: blur(4px); white-space: nowrap; }
         .circle-hero-actions {
             position: absolute;
             bottom: 16px;
@@ -237,7 +246,7 @@
         .circle-detail-wrapper {
             display: flex;
             gap: 24px;
-            margin: 0 0 24px 0;
+            margin: 28px 0 24px 0;
         }
         .circle-sidebar {
             width: 300px;
@@ -834,20 +843,27 @@
                 width: 100%;
             }
             .circle-hero {
-                height: 180px;
+                min-height: 120px;
+                height: auto;
                 border-radius: 12px 12px 0 0;
+                flex-direction: column;
+                align-items: stretch;
             }
-            .circle-hero-logo { width: 60px; height: 60px; }
-            .circle-hero-name { font-size: 1.4rem; }
+            .circle-hero-logo { width: 40px; height: 40px; bottom: -20px; left: 12px; border-radius: 12px; font-size: 1.1rem; }
+            .circle-hero-name { font-size: 1.2rem; }
             .circle-hero-actions {
                 position: static;
-                margin-top: 12px;
-                justify-content: center;
+                margin-top: 10px;
+                justify-content: flex-start;
                 flex-wrap: wrap;
+                padding-left: 60px;
             }
             .circle-hero-content {
-                padding: 20px 16px;
+                padding-left: 60px;
+                padding-right: 16px;
+                padding-bottom: 0;
             }
+            .circle-hero-desc { max-width: 100%; }
             .search-area {
                 width: 140px;
             }
@@ -872,8 +888,8 @@
     
         /* ========== 移动端专项优化（第二批） ========== */
 @media (max-width: 768px) {
-    .circle-hero { height: 140px; }
-    .circle-hero-name { font-size: 1.3rem; }
+    .circle-hero { height: auto; min-height: 120px; }
+    .circle-hero-name { font-size: 1.2rem; }
     .modal-dialog { max-height: 80vh; overflow-y: auto; }
     .mgmt-member-item, .member-list-item { flex-wrap: wrap; }
     .mgmt-member-actions { width: 100%; justify-content: flex-end; margin-top: 8px; }

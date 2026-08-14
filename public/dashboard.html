@@ -1038,10 +1038,18 @@
         // ---------- 侧边栏 ----------
         function fillSidebarUser(me) {
             if (!me) return;
+            const avatarDiv = document.getElementById('sidebarAvatar');
             const nickEl = document.getElementById('sidebarNickname');
             const emailEl = document.getElementById('sidebarEmail');
             if (nickEl) nickEl.textContent = me.nickname;
             if (emailEl) emailEl.textContent = me.email;
+            if (avatarDiv) {
+                if (me.avatar_url) {
+                    avatarDiv.innerHTML = `<img src="${me.avatar_url}" alt="头像">`;
+                } else {
+                    avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
+                }
+            }
         }
 
         function bindSidebarActions() {
