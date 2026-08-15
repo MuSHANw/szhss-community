@@ -4166,16 +4166,17 @@ app.post('/api/activities/:id/vote', writeLimiter, async (req, res) => {
             );
             if (check.rows.length > 0) return res.status(400).json({ error: '你已经投过票了，不能重复投票' });
         } else {
-            // 未登录用户：同一 IP 对同一活动只能投 1 票（防刷）
+            // 未登录用户：同一 IP 每天对该活动最多投一票（防刷，兼顾同 WiFi 多设备）
             if (!ip || ip === 'unknown' || ip === '::1' || ip === '127.0.0.1') {
                 return res.status(400).json({ error: '当前环境无法识别来源，请登录后投票' });
             }
+            const today = getBeijingDate();
             const ipVoteCheck = await pool.query(
-                'SELECT id FROM activity_votes WHERE activity_id = $1 AND ip_address = $2',
-                [activityId, ip]
+                'SELECT id FROM activity_votes WHERE activity_id = $1 AND ip_address = $2 AND created_at::date = $3',
+                [activityId, ip, today]
             );
             if (ipVoteCheck.rows.length > 0) {
-                return res.status(400).json({ error: '该设备已投过票' });
+                return res.status(400).json({ error: '该设备今天已投过票，请明天再来' });
             }
         }
 
