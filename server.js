@@ -729,14 +729,14 @@ app.post('/api/weather/refresh', authMiddleware, adminMiddleware, async (req, re
 // ---------- App 版本更新 API ----------
 
 // 版本更新检查接口
-const APP_VERSION = '1.1.8';
+const APP_VERSION = '1.1.9';
 const APP_DOWNLOAD_URL = 'https://szhss-community.top/uploads/szhss-community.apk';
 
 app.get('/api/app/version', (req, res) => {
     res.json({
         latest_version: APP_VERSION,
         download_url: APP_DOWNLOAD_URL,
-        update_note: '更新内容：公告弹窗、侧边栏优化、风纪广场更新、首页横幅更新、投票功能更新、登录协议更新、检测更新优化、仪表盘更新、管理员系统更新、修复若干Bug'
+        update_note: '更新内容：推送通知功能上线、通知系统优化、签到功能修复'
     });
 });
 
