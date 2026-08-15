@@ -4,14 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>更新日志 - 深圳高中生社区</title>
+    <title>隐私政策 - 深圳高中生社区</title>
     <link rel="stylesheet" href="/css/style.css">
     <!-- 移动端适配 -->
     <link rel="stylesheet" href="/css/mobile.css" media="screen and (max-width: 768px)">
     <script src="/js/device-detect.js"></script>
     <script src="/js/mobile.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* ========== 全局样式（与 index 一致） ========== */
         * {
@@ -92,6 +91,32 @@
             padding: 0 20px;
         }
 
+        /* 顶部铃铛链接 */
+        .notifications-icon {
+            position: relative;
+            margin-left: 16px;
+            font-size: 1.4rem;
+            color: #6c757d;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53e3e;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         /* ========== 顶部栏 ========== */
         .top-bar-container {
             position: fixed;
@@ -156,6 +181,7 @@
             color: #6c757d;
         }
 
+        /* 关于链接 */
         .about-link {
             margin-left: 16px;
             color: #4a5568;
@@ -172,31 +198,6 @@
 
         .about-link i {
             margin-right: 4px;
-        }
-
-        .notifications-icon {
-            position: relative;
-            margin-left: 16px;
-            font-size: 1.4rem;
-            color: #6c757d;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .notif-badge {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #e53e3e;
-            color: white;
-            font-size: 0.7rem;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         /* ========== 侧边栏 ========== */
@@ -340,91 +341,82 @@
             background: #ffe5e5;
         }
 
-        /* ========== 更新日志页面 ========== */
-        .changelog-container {
-            display: flex;
-            gap: 0;
-            max-width: 1000px;
-            margin: 24px auto;
+        /* ========== 隐私政策内容样式（与社区公约一致） ========== */
+        .rules-wrapper {
+            max-width: 900px;
+            margin: 40px auto;
+        }
+
+        .rules-card {
             background: white;
-            border-radius: 16px;
+            border-radius: 24px;
+            padding: 40px;
             border: 1px solid #eef2f6;
-            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
         }
 
-        .changelog-sidebar {
-            width: 220px;
-            flex-shrink: 0;
-            border-right: 1px solid #F3F4F6;
-            padding: 20px 0;
-            overflow-y: auto;
-            max-height: calc(100vh - 140px);
-            position: sticky;
-            top: 80px;
-        }
-
-        .changelog-sidebar h3 {
-            padding: 0 16px 12px;
-            font-size: 0.95rem;
-            border-bottom: 1px solid #F3F4F6;
+        .rules-title {
+            font-size: 2rem;
+            font-weight: 700;
             margin-bottom: 8px;
+            color: #1f2d3d;
         }
 
-        .changelog-toc-item {
-            display: block;
-            padding: 6px 16px;
-            font-size: 0.85rem;
-            color: #6B7280;
-            text-decoration: none;
-            transition: background 0.15s;
-            cursor: pointer;
+        .rules-subtitle {
+            color: #6c757d;
+            border-bottom: 1px solid #eef2f6;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
         }
 
-        .changelog-toc-item:hover {
-            background: #F9FAFB;
-        }
-
-        .changelog-toc-item.active {
-            background: #EFF6FF;
-            color: #1E88E5;
-            font-weight: 600;
-        }
-
-        .changelog-content {
-            flex: 1;
-            padding: 24px 32px;
-            overflow-y: auto;
-            max-height: calc(100vh - 140px);
-        }
-
-        .changelog-content h2 {
-            font-size: 1.4rem;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #F3F4F6;
-        }
-
-        .changelog-date-block {
+        .rules-section {
             margin-bottom: 32px;
         }
 
-        .changelog-date-block ul {
-            margin-left: 20px;
+        .rules-section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            border-left: 4px solid #1E88E5;
+            padding-left: 12px;
         }
 
-        .changelog-date-block li {
-            margin-bottom: 6px;
-            color: #4a5568;
+        .rules-section h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 16px 0 8px;
+            color: #1f2d3d;
+        }
+
+        .rules-section p,
+        .rules-section li {
             line-height: 1.6;
+            color: #4a5568;
         }
 
-        .changelog-empty {
-            padding: 40px;
+        .rules-section ul {
+            margin-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .rules-section li {
+            margin-bottom: 8px;
+        }
+
+        .rules-section a {
+            color: #1E88E5;
+        }
+
+        .footer-note {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eef2f6;
             text-align: center;
+            font-size: 0.85rem;
             color: #6c757d;
         }
 
-        /* 页脚 */
+        /* ========== 页脚 ========== */
         .footer {
             background: white;
             border-top: 1px solid #e9ecef;
@@ -450,61 +442,25 @@
                 transform: translateX(0);
             }
 
+            .rules-card {
+                padding: 24px;
+                margin: 20px;
+            }
+
+            .rules-title {
+                font-size: 1.6rem;
+            }
+
             .search-area {
                 width: 180px;
             }
+        }
 
-            .about-link {
-                margin-left: 8px;
-                font-size: 0.85rem;
-            }
-
-            .changelog-container {
-                flex-direction: column;
-            }
-
-            .changelog-sidebar {
-                width: 100%;
-                max-height: none;
-                position: static;
-                border-right: none;
-                border-bottom: 1px solid #F3F4F6;
-                padding: 12px 16px;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 6px;
-            }
-
-            .changelog-sidebar h3 {
-                width: 100%;
-                padding: 0 0 8px;
-                border-bottom: 1px solid #F3F4F6;
-            }
-
-            .changelog-toc-item {
-                padding: 4px 10px;
-                font-size: 0.8rem;
-                border-radius: 12px;
-                background: #F3F4F6;
-            }
-
-            .changelog-toc-item.active {
-                background: #EFF6FF;
-            }
-
-            .changelog-content {
-                padding: 20px;
-                max-height: none;
+        @media (max-width: 480px) {
+            .search-area {
+                width: 150px;
             }
         }
-    
-        /* ========== 移动端专项优化（第二批） ========== */
-@media (max-width: 768px) {
-    .changelog-container { flex-direction: column; }
-    .changelog-sidebar { flex-direction: row; overflow-x: auto; }
-    .changelog-sidebar a { white-space: nowrap; flex-shrink: 0; min-height: 44px; }
-    .changelog-content { overflow-wrap: break-word; word-break: break-all; }
-}
     </style>
 </head>
 
@@ -563,7 +519,7 @@
                 <div class="sidebar-email" id="sidebarEmail"></div>
             </div>
         </div>
-                <nav class="sidebar-nav">
+        <nav class="sidebar-nav">
             <a href="index.html" class="sidebar-link" title="首页"><i class="fas fa-home"></i><span>首页</span></a>
             <a href="dashboard.html" class="sidebar-link" title="仪表盘"><i class="fas fa-tachometer-alt"></i><span>仪表盘</span></a>
             <a href="learning.html" class="sidebar-link" title="学习"><i class="fas fa-graduation-cap"></i><span>学习</span></a>
@@ -585,25 +541,116 @@
             <a href="feedback.html" class="sidebar-link" id="sidebarFeedbackLink" title="反馈">
                 <i class="fas fa-comment-dots"></i><span>反馈</span>
             </a>
-                    </nav>
+        </nav>
         <div class="sidebar-footer">
             <button class="sidebar-logout" id="sidebarLogoutBtn">退出登录</button>
         </div>
     </div>
 
+    <!-- 隐私政策内容 -->
     <div class="container">
-        <div class="changelog-container">
-            <!-- 左侧目录 -->
-            <aside class="changelog-sidebar" id="changelogToc">
-                <h3>📋 更新目录</h3>
-            </aside>
-            <!-- 右侧内容 -->
-            <div class="changelog-content" id="changelogContent">
-                <div class="changelog-empty" id="changelogLoading">加载中...</div>
+        <div class="rules-wrapper">
+            <div class="rules-card">
+                <h1 class="rules-title">🔒 深圳高中生社区 · 隐私政策</h1>
+                <div class="rules-subtitle">最后更新日期：2026年8月15日</div>
+
+                <div class="rules-section">
+                    <h2>一、引言</h2>
+                    <p>深圳高中生社区（以下简称"我们"）深知个人信息对您的重要性，我们将按照法律法规要求，采取相应的安全保护措施，尽力保护您的个人信息安全可控。请在使用我们的产品（或服务）前，仔细阅读并了解本《隐私政策》。</p>
+                </div>
+
+                <div class="rules-section">
+                    <h2>二、我们收集哪些信息</h2>
+                    <h3>2.1 您主动提供的信息</h3>
+                    <ul>
+                        <li><strong>注册与登录信息</strong>：邮箱地址、昵称、密码（加密存储，不可明文查看）</li>
+                        <li><strong>个人资料</strong>：头像、学校、区域、兴趣爱好、个人简介</li>
+                        <li><strong>内容信息</strong>：您发布的帖子、回复、圈子、评论、举报、反馈等</li>
+                    </ul>
+                    <h3>2.2 我们自动收集的信息</h3>
+                    <ul>
+                        <li><strong>设备与技术信息</strong>：IP 地址、浏览器类型、操作系统、访问时间（用于安全防护与故障排查）</li>
+                        <li><strong>日志信息</strong>：您访问本站的页面浏览记录</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>三、我们如何使用您的信息</h2>
+                    <ul>
+                        <li>提供、维护和改进社区功能（登录认证、内容发布、通知推送等）</li>
+                        <li>保障账户安全（身份验证、异常行为监测）</li>
+                        <li>用于统计分析，优化产品体验</li>
+                        <li>依法履行法律法规规定的义务</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>四、我们如何共享、转让、公开披露您的信息</h2>
+                    <p>我们<strong>不会</strong>向任何第三方出售您的个人信息。仅在以下情形可能共享：</p>
+                    <ul>
+                        <li>获得您的明确同意</li>
+                        <li>法律法规要求（如配合公安机关、司法机关的调查取证）</li>
+                        <li>涉及违法犯罪的，将依法提供必要的用户信息及日志记录</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>五、您如何管理您的个人信息</h2>
+                    <p>您可以通过【个人资料 / 设置】页面：</p>
+                    <ul>
+                        <li>查询、更正您的个人资料</li>
+                        <li>设置隐私（隐藏活跃度、回复、收藏、统计数据等）</li>
+                        <li>注销账号：请通过【反馈】联系我们处理</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>六、信息安全</h2>
+                    <p>我们采用符合行业标准的安全保护措施：</p>
+                    <ul>
+                        <li>密码使用 bcrypt 加密存储</li>
+                        <li>传输使用 HTTPS 加密</li>
+                        <li>数据库访问权限最小化</li>
+                        <li>定期数据备份（保留 14 天）</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>七、未成年人保护</h2>
+                    <p>本社区面向<strong>高中生群体</strong>，若您未满 14 周岁，请在监护人陪同下使用。我们将严格保护未成年人信息，严禁任何侵犯未成年人的行为。</p>
+                </div>
+
+                <div class="rules-section">
+                    <h2>八、Cookie 与本地存储</h2>
+                    <p>我们使用 localStorage 保存您的登录状态（Token）与偏好设置。您可以在浏览器设置中清除。</p>
+                </div>
+
+                <div class="rules-section">
+                    <h2>九、政策变更</h2>
+                    <p>我们可能适时修订本政策。重大变更将在【公告】页面通知。</p>
+                </div>
+
+                <div class="rules-section">
+                    <h2>十、联系我们</h2>
+                    <ul>
+                        <li>反馈渠道：<a href="/feedback.html">意见反馈页面</a></li>
+                        <li>管理员邮箱：<strong>MuSHANwyc@outlook.com</strong> 或 <strong>yingming988@qq.com</strong></li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>附：公安联网备案提示</h2>
+                    <p>本网站部署于境外服务器（新加坡节点），正在办理公安联网备案（beian.mps.gov.cn）。本社区为非营利性学生交流平台，不涉及商业经营活动。</p>
+                </div>
+
+                <div class="footer-note">
+                    <i class="fas fa-shield-alt"></i> 深圳高中生社区 · 保护你的每一份隐私
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- 页脚 -->
     <footer class="footer">
         <div class="container">
             <p>© 2026 深圳高中生社区 | <a href="/rules.html" style="color:#6c757d;">社区公约</a> | <a href="/privacy.html" style="color:#6c757d;">隐私政策</a> | <a href="/help.html" style="color:#6c757d;">帮助中心</a> | <a href="/changelog.html" style="color:#6c757d;">更新日志</a> | 粤ICP备xxxxxxxx号</p>
@@ -612,318 +659,79 @@
 
     <script>
         window.API_BASE = window.API_BASE || '/api';
-
-        // ---------- 更新日志数据（精简自 docs/dev-log.md，需手动同步维护） ----------
-        const DEV_LOG_CONTENT = `
-## 2026-08-11
-
-- 重置密码改为 6 位邮箱验证码流程（配合 MING 的 App 端），Web 端找回密码页面同步改造。
-- 新增 App 版本更新检查接口 /api/app/version。
-- 风纪检查站全面完善：被举报内容导向链接、合规投票权重规则、管理员一票决定、投票完成自动移交管理员最终裁决。
-- 风纪广场申请入口完善：申请条件按用户实际状态动态显示（✅/❌），不满足时隐藏申请按钮；修复资格验证漏洞。
-- 搜索功能修复：过滤邮箱匹配的用户结果，数量显示改为过滤后数量。
-- 升学页面"历年分数线"链接更新为广东省教育考试院官网。
-- 首页公告模块动态化（保留社区公约，动态加载最新公告），新增校园大使招募公告。
-- 天气接口多轮修复（host 修正、错误处理增强、改用 Node 原生 https 模块），问题待明日进一步排查。
-
-## 2026-08-09
-
-- 帖子置顶与加精功能（完整实现）：首页轮播横幅、置顶/精华标识、管理操作。
-- 数据统计仪表盘（个人主页 + 他人主页）：六项统计 + 发帖趋势折线图 + 互动构成环形图 + 活跃时段柱状图。
-- 社区公告系统（完整实现 + 两轮优化）：全站公告发布、首页提示条、公告详情页、确认收到、确认用户头像墙。
-- 为 App 开发者 MING 提供移动端开发文档（docs/mobile-app-guide.md）。
-
-## 2026-07-25
-
-- 注册机制升级：邮箱验证码注册，忘记密码流程重构为邮箱验证码方式。
-- 社区任务与鹏城币系统（完整实现）：每日任务 + 成就任务 + 金币流水 + 右侧面板展示。
-- 圈子系统深度优化（四批迭代完成）：公告、精华、活动、成员管理、分享海报。
-- 圈子广场全面升级：顶部轮播 + 动态流 + 分类标签 + 卡片升级。
-
-## 2026-07-24
-
-- 帖子编辑器从 Markdown 升级为 Quill.js 富文本编辑器，图片视频直接嵌入。
-- 新增草稿箱系统（每30秒自动保存，多篇草稿）。
-- 入站考试系统重构：两级考试 + JS 题库迁移 + 每日3次限制。
-
-## 2026-07-12
-
-- 帖子编辑器升级为 Markdown 编辑器（发帖页 + 编辑页，实时预览）。
-- 所有帖子展示页面增加 Markdown 渲染支持，摘要去标净化显示。
-
-## 2026-07-11
-
-- 帖子推荐算法实现（Hacker News 风格热度衰减）。
-- 三个内容页面创建（生活 / 社团 / 升学）。
-- 信息流改造：全站帖子列表从卡片式改为列表式。
-- 服务器购买与域名配置，公网部署上线。
-
-## 2026-06-13
-
-- 私信系统完整实现（对话列表 + 聊天气泡 + 防骚扰机制 + 8秒轮询）。
-- 举报处理接口升级（举报通过后自动删除违规内容）。
-- 登录页多账号切换功能。
-- 用户经验值与等级系统 + 入站答题机制（大功能）。
-
-## 2026-05-17
-
-- 接入 AI 编程助手，开发模式升级（Claude Code + DeepSeek 双通道开发）。
-
-## 2026-05-10
-
-- 自习室功能完整实现（区域自习室 + 个人创建 + 番茄钟 + 轮询同步）。
-- 宣传页 landing.html 创建（单页下拉式设计）。
-- 公开统计接口新增、Git 仓库初始化并推送 GitHub。
-
-## 2026-05-02
-
-- 用户关注功能实现（前端 + 后端 + 数据库）。
-- 前端页面全面适配关注功能（关注动态流、关注列表、粉丝列表）。
-
-## 2026-05-01
-
-- 首次公网内测启动与反馈收集。
-- 合规性研究与备案规划。
-- 公网部署细节处理。
-
-## 2026-04-30
-
-- 移动端适配（全站）：mobile.css + mobile.js，底部导航 + 侧边滑出菜单。
-- 移动端信息栏（今日日期、高考倒计时、每日诗句）。
-- 公网部署与 API 地址修正。
-
-## 2026-04-18
-
-- 圈子创建申请流程重构（参与者确认机制，5人联合申请）。
-- 用户搜索 API 修复。
-
-## 2026-04-12
-
-- 全局页面布局统一与侧边栏重构（14 个页面）。
-- 首页右侧信息面板增强（日期、高考倒计时、每日诗句）。
-- 背景装饰统一、后端接口参数校验增强。
-
-## 2026-04-05
-
-- 站内通知系统（完整实现）。
-- 管理员仪表盘增强（数据统计与可视化 Chart.js）。
-- 学校选择模态框优化（普高/中职分类）。
-- 反馈与举报页面完善、全局头像同步修复。
-- 搜索功能增强（支持分类搜索）。
-
-## 2026-04-04（晚间）
-
-- 用户资料编辑与隐私设置。
-- 全局头像同步、搜索功能增强。
-- 个人主页与用户主页完善。
-- 点赞与收藏功能。
-
-## 2026-04-04（上午）
-
-- 发帖功能与帖子详情页。
-- 数据库升级（标签、回复表、索引）。
-- Bug 修复。
-
-## 2026-04-03
-
-- 项目启动：初始化 Node.js 项目，安装依赖。
-- 配置 PostgreSQL 数据库，实现注册、登录、发送验证码、获取个人信息接口。
-- 用 Thunder Client 测试全部接口通过。
-- 进行项目调研。
-`;
-
-        // ---------- 渲染更新日志 ----------
-        function initChangelog() {
-            const tocEl = document.getElementById('changelogToc');
-            const contentEl = document.getElementById('changelogContent');
-            if (!tocEl || !contentEl) return;
-
-            const blocks = DEV_LOG_CONTENT.trim().split(/^## /m).filter(Boolean);
-            if (!blocks.length) {
-                contentEl.innerHTML = '<div class="changelog-empty">暂无更新记录</div>';
-                return;
-            }
-
-            const sectionIds = [];
-            const tocItems = [];
-
-            blocks.forEach(block => {
-                const title = block.split('\n')[0].trim();
-                const id = 'date-' + title.replace(/[^\w一-龥]/g, '-');
-                sectionIds.push({ id, title });
-
-                // 目录项
-                const a = document.createElement('a');
-                a.href = '#' + id;
-                a.className = 'changelog-toc-item';
-                a.textContent = title;
-                a.dataset.id = id;
-                tocEl.appendChild(a);
-                tocItems.push(a);
-
-                // 内容区块
-                const div = document.createElement('div');
-                div.className = 'changelog-date-block';
-                div.id = id;
-                div.innerHTML = marked.parse('## ' + block);
-                contentEl.appendChild(div);
-            });
-
-            // 点击目录项平滑滚动
-            tocItems.forEach(item => {
-                item.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const target = document.getElementById(item.dataset.id);
-                    if (target) {
-                        contentEl.scrollTo({ top: target.offsetTop - 24, behavior: 'smooth' });
-                    }
-                });
-            });
-
-            // 滚动监听高亮
-            function updateActive() {
-                const scrollTop = contentEl.scrollTop;
-                let currentId = sectionIds[0].id;
-                sectionIds.forEach(item => {
-                    const el = document.getElementById(item.id);
-                    if (el && el.offsetTop - 80 <= scrollTop) currentId = item.id;
-                });
-                tocItems.forEach(item => {
-                    item.classList.toggle('active', item.dataset.id === currentId);
-                });
-            }
-
-            contentEl.addEventListener('scroll', updateActive, { passive: true });
-
-            // URL hash 支持（如 changelog.html#date-2026-07-25）
-            const hash = window.location.hash;
-            if (hash) {
-                const target = document.getElementById(hash.slice(1));
-                if (target) {
-                    setTimeout(() => {
-                        contentEl.scrollTop = target.offsetTop - 24;
-                    }, 100);
-                }
-            } else {
-                updateActive();
-            }
-        }
-
-        initChangelog();
+        const token = localStorage.getItem('token');
 
         // ---------- 侧边栏展开/收起 ----------
         const sidebar = document.getElementById('sidebar');
         const toggleBtn = document.getElementById('menuToggle');
-        const body = document.getElementById('appBody');
+        const appBody = document.getElementById('appBody');
         const isExpanded = localStorage.getItem('sidebarExpanded') !== 'false';
         if (!isExpanded) {
             sidebar.classList.add('collapsed');
-            body.classList.add('sidebar-collapsed');
-        } else {
-            sidebar.classList.remove('collapsed');
-            body.classList.remove('sidebar-collapsed');
+            appBody.classList.add('sidebar-collapsed');
         }
         toggleBtn.addEventListener('click', () => {
-            const currentlyExpanded = !sidebar.classList.contains('collapsed');
-            if (currentlyExpanded) {
-                sidebar.classList.add('collapsed');
-                body.classList.add('sidebar-collapsed');
-                localStorage.setItem('sidebarExpanded', 'false');
-            } else {
-                sidebar.classList.remove('collapsed');
-                body.classList.remove('sidebar-collapsed');
-                localStorage.setItem('sidebarExpanded', 'true');
-            }
+            sidebar.classList.toggle('collapsed');
+            appBody.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebarExpanded', !sidebar.classList.contains('collapsed'));
         });
 
-        // ---------- 用户信息 ----------
-        const token = localStorage.getItem('token');
-        const avatarDiv = document.getElementById('sidebarAvatar');
-        const nicknameSpan = document.getElementById('sidebarNickname');
-        const emailSpan = document.getElementById('sidebarEmail');
-        async function updateSidebarUser() {
-            if (!token) {
-                nicknameSpan.innerText = '未登录';
-                emailSpan.innerText = '';
-                avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
-                return;
-            }
-            try {
-                const res = await fetch(`${window.API_BASE}/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const user = await res.json();
-                    nicknameSpan.innerText = user.nickname || '用户';
-                    emailSpan.innerText = user.email || '';
-                    if (user.avatar_url) {
-                        avatarDiv.innerHTML = `<img src="${user.avatar_url}" alt="头像">`;
-                    } else {
-                        avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
-                    }
+        // ---------- 侧边栏用户 ----------
+        function fillSidebarUser(me) {
+            if (!me) return;
+            const avatarDiv = document.getElementById('sidebarAvatar');
+            const nickEl = document.getElementById('sidebarNickname');
+            const emailEl = document.getElementById('sidebarEmail');
+            if (nickEl) nickEl.textContent = me.nickname;
+            if (emailEl) emailEl.textContent = me.email;
+            if (avatarDiv) {
+                if (me.avatar_url) {
+                    avatarDiv.innerHTML = `<img src="${me.avatar_url}" alt="头像">`;
+                } else {
+                    avatarDiv.innerHTML = '<i class="fas fa-user-circle"></i>';
                 }
-            } catch (e) { console.warn(e); }
+            }
         }
-        updateSidebarUser();
+
         document.getElementById('sidebarUserBtn')?.addEventListener('click', () => {
-            window.location.href = '/profile.html';
+            window.location.href = token ? '/profile.html' : '/login.html';
         });
-
-        // ---------- 未读小红点 ----------
-        async function updateNotifDot() {
-            if (!token) return;
-            try {
-                const res = await fetch(`${window.API_BASE}/notifications?page=1&limit=1`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await res.json();
-                const unreadCount = data.unreadCount || 0;
-                const topBadge = document.getElementById('notifBadge');
-                const sidebarDot = document.getElementById('sidebarNotifDot');
-                if (topBadge) {
-                    if (unreadCount > 0) {
-                        topBadge.style.display = 'flex';
-                        topBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
-                    } else {
-                        topBadge.style.display = 'none';
-                    }
-                }
-                if (sidebarDot) {
-                    sidebarDot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
-                }
-            } catch (e) { }
-        }
-        updateNotifDot();
-        if (token) setInterval(updateNotifDot, 30000);
-
-        // ---------- 退出登录 ----------
         document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
             localStorage.removeItem('token');
+            localStorage.removeItem('user');
             window.location.href = '/login.html';
         });
 
-        // ---------- 搜索 ----------
         const searchBtn = document.getElementById('searchBtn');
         const searchInput = document.getElementById('searchInput');
-        searchBtn?.addEventListener('click', () => {
-            const keyword = searchInput.value.trim();
-            if (keyword) window.location.href = `/search.html?q=${encodeURIComponent(keyword)}`;
-            else alert('请输入搜索关键词');
-        });
-        searchInput?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchBtn.click();
-        });
+        if (searchBtn && searchInput) {
+            const goSearch = () => {
+                const keyword = searchInput.value.trim();
+                window.location.href = keyword ? `/search.html?q=${encodeURIComponent(keyword)}` : '/search.html';
+            };
+            searchBtn.addEventListener('click', goSearch);
+            searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') goSearch(); });
+        }
+
+        // ---------- 加载用户信息 ----------
+        (async function init() {
+            if (!token) return;
+            try {
+                const meRes = await fetch(`${window.API_BASE}/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const me = await meRes.json();
+                if (meRes.ok) fillSidebarUser(me);
+            } catch (e) {}
+        })();
     </script>
+
     <script>
         // 移动端设备引导横幅控制
         (function() {
-            // 获取今天日期字符串 YYYY-MM-DD
             function getTodayStr() {
                 const d = new Date();
                 return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
             }
 
-            // 关闭函数
             window.closeAndroidBanner = function() {
                 document.getElementById('androidBanner').style.display = 'none';
                 localStorage.setItem('androidBannerClosedDate', getTodayStr());
@@ -945,10 +753,8 @@
                 if (topBar) topBar.style.top = '0';
             };
 
-            // 只在移动端显示
             if (!window.isMobile) return;
 
-            // 检查是否已添加到桌面（PWA standalone模式）
             function isPWAStandalone() {
                 return window.matchMedia('(display-mode: standalone)').matches
                     || window.navigator.standalone === true;
@@ -957,7 +763,6 @@
             const todayStr = getTodayStr();
 
             if (window.isHarmonyOS) {
-                // 鸿蒙：每天首次弹窗引导添加到桌面
                 const lastClosed = localStorage.getItem('harmonyBannerClosedDate');
                 if (lastClosed !== todayStr) {
                     document.getElementById('harmonyBanner').style.display = 'block';
@@ -965,7 +770,6 @@
                     if (topBar) topBar.style.top = '40px';
                 }
             } else if (window.isAndroid) {
-                // 安卓：每天首次访问时弹窗
                 const lastClosed = localStorage.getItem('androidBannerClosedDate');
                 if (lastClosed !== todayStr) {
                     document.getElementById('androidBanner').style.display = 'block';
@@ -973,12 +777,10 @@
                     if (topBar) topBar.style.top = '40px';
                 }
             } else if (window.isIOS) {
-                // 已添加到桌面则不弹；未添加则每天首次弹
                 if (isPWAStandalone()) return;
 
                 const lastClosed = localStorage.getItem('iosBannerClosedDate');
                 if (lastClosed !== todayStr) {
-                    // 根据浏览器环境设置不同文案
                     const ua = navigator.userAgent;
                     const isWeChat = /MicroMessenger/i.test(ua);
                     const isQQ = /QQ\//i.test(ua);
