@@ -80,7 +80,9 @@ const writeLimiter = rateLimit({
 // ---------- 接口限流配置结束 ----------
 
 // 全局限流：对 /api/ 路径统一生效
-app.use('/api/', globalApiLimiter);
+// 已移除全局限流：60次/分钟对正常用户太紧，频繁切换页面会误伤触发429
+// 只保留针对写操作的限流（strictLimiter / writeLimiter）
+// app.use('/api/', globalApiLimiter);
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
